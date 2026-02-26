@@ -2,15 +2,15 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Send, 
-  Bot, 
-  User, 
-  Sparkles, 
+import {
+  Send,
+  Bot,
+  User,
+  Sparkles,
   ArrowRight,
   MessageSquare,
   RefreshCw,
-  Info
+  Info,
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -28,75 +28,198 @@ const SUGGESTED_QUESTIONS = [
   "What are the admission requirements?",
   "Tell me about the campus life.",
   "What scholarships are available?",
-  "How do I apply for financial aid?"
+  "How do I apply for financial aid?",
 ];
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! I'm your College Assistant. How can I help you today?"
-    }
+      content: "Hello! I'm your College Assistant. How can I help you today?",
+    },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const handleSend = async (text: string = input) => {
-    if (!text.trim() || isLoading) return;
+const handleSend = async (text: string = input) => {
+  if (!text.trim() || isLoading) return;
 
-    const userMessage: Message = {
-      role: "user",
-      content: text,
-    };
+  const currentInput = text;
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("http://localhost:4000/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message: text }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to get response from server");
-      }
-
-      const data = await response.json();
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: data.reply,
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error("Error sending message:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Sorry, I'm having trouble connecting to the server. Please check if the backend is running.",
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
+  const userMessage: Message = {
+    role: "user",
+    content: currentInput,
   };
+
+  setMessages((prev) => [...prev, userMessage]);
+  setInput("");
+  setIsLoading(true);
+
+  try {
+    const response = await fetch("http://localhost:4000/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: currentInput }),
+    });
+
+    if (!response.body) throw new Error("No response body");
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    let assistantText = "";
+
+    // Add empty assistant message first
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: "" },
+    ]);
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split("\n");
+
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue;
+
+        const json = line.replace("data: ", "").trim();
+        if (json === "[DONE]") break;
+
+        try {
+          const parsed = JSON.parse(json);
+          const content = parsed.choices?.[0]?.delta?.content;
+
+          if (content) {
+            assistantText += content;
+
+            setMessages((prev) => {
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                role: "assistant",
+                content: assistantText,
+              };
+              return updated;
+            });
+          }
+        } catch {
+          // Ignore partial JSON chunks
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Streaming error:", error);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+          "Sorry, I'm having trouble connecting to the server.",
+      },
+    ]);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+  // const handleSend = async (text: string = input) => {
+  //   if (!text.trim() || isLoading) return;
+  //   const currentInput = text;
+
+  //   const userMessage: Message = {
+  //     role: "user",
+  //     content: text,
+  //   }; 
+
+  //   setMessages((prev) => [...prev, userMessage]);
+  //   setInput("");
+  //   setIsLoading(true);
+  //   const response = await fetch("http://localhost:4000/chat", {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({ message: currentInput }),
+  //   });
+
+  //   if (!response.body) throw new Error("No response body");
+
+  //   const reader = response.body.getReader();
+  //   const decoder = new TextDecoder();
+
+  //   let assistantText = "";
+
+  //   setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+  //   while (true) {
+  //     const { done, value } = await reader.read();
+  //     if (done) break;
+
+  //     const chunk = decoder.decode(value);
+  //     assistantText += chunk;
+
+  //     setMessages((prev) => {
+  //       const updated = [...prev];
+  //       updated[updated.length - 1] = {
+  //         role: "assistant",
+  //         content: assistantText,
+  //       };
+  //       return updated;
+  //     });
+  //   }
+
+    // try {
+    //   const response = await fetch("http://localhost:4000/chat", {
+    //     method: "POST",
+    //     headers: {
+    //     "Content-Type": "application/json",
+    //   },
+    //   body: JSON.stringify({ message: text }),
+    // });
+
+    // if (!response.ok) {
+    //   throw new Error("Failed to get response from server");
+    // }
+
+    // const data = await response.json();
+    // const assistantMessage: Message = {
+    //   role: "assistant",
+    //   content: data.reply,
+    // };
+
+    // setMessages((prev) => [...prev, assistantMessage]);
+    // } catch (error) {
+    //   console.error("Error sending message:", error);
+    //   setMessages((prev) => [
+    //     ...prev,
+    //     {
+    //       role: "assistant",
+    //       content: "Sorry, I'm having trouble connecting to the server. Please check if the backend is running.",
+    //     },
+    //   ]);
+    // } finally {
+    //   setIsLoading(false);
+    // }
+  // };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
   const resetChat = () => {
-    setMessages([{
-      role: "assistant",
-      content: "Hello! I'm your College Assistant. How can I help you today?"
-    }]);
+    setMessages([
+      {
+        role: "assistant",
+        content: "Hello! I'm your College Assistant. How can I help you today?",
+      },
+    ]);
   };
 
   return (
@@ -108,11 +231,13 @@ export default function ChatPage() {
             <Bot size={24} />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-[var(--text-main)] leading-none">College Assistant</h1>
+            <h1 className="text-lg font-bold text-[var(--text-main)] leading-none">
+              College Assistant
+            </h1>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={resetChat}
             className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-[var(--text-muted)] transition-colors"
             title="Reset Chat"
@@ -137,21 +262,29 @@ export default function ChatPage() {
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className={cn(
                   "flex items-start gap-3",
-                  msg.role === "user" ? "flex-row-reverse" : "flex-row"
+                  msg.role === "user" ? "flex-row-reverse" : "flex-row",
                 )}
               >
-                <div className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-sm",
-                  msg.role === "user" ? "bg-gray-200 text-black" : "bg-gray-100 text-gray-400"
-                )}>
-                  {msg.role === "user" ? <User size={18} /> : <Sparkles size={18} className="text-black" />}
+                <div
+                  className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-sm",
+                    msg.role === "user"
+                      ? "bg-gray-200 text-black"
+                      : "bg-gray-100 text-gray-400",
+                  )}
+                >
+                  {msg.role === "user" ? (
+                    <User size={18} />
+                  ) : (
+                    <Sparkles size={18} className="text-black" />
+                  )}
                 </div>
                 <div
                   className={cn(
                     "max-w-[80%] px-5 py-3 rounded-2xl text-sm leading-relaxed shadow-sm",
                     msg.role === "user"
                       ? "bg-gray-200 text-black rounded-tr-none font-medium"
-                      : "bg-gray-500/10 text-black rounded-tl-none border border-black/5"
+                      : "bg-gray-500/10 text-black rounded-tl-none border border-black/5",
                   )}
                 >
                   {msg.content}
@@ -161,7 +294,7 @@ export default function ChatPage() {
           </AnimatePresence>
 
           {isLoading && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="flex items-start gap-3"
@@ -185,7 +318,7 @@ export default function ChatPage() {
         <div className="max-w-3xl mx-auto">
           {/* Suggested Questions */}
           {messages.length === 1 && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="flex flex-wrap gap-2 mb-4 justify-center"
@@ -198,7 +331,10 @@ export default function ChatPage() {
                 >
                   <MessageSquare size={14} />
                   {q}
-                  <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ArrowRight
+                    size={12}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  />
                 </button>
               ))}
             </motion.div>
@@ -225,9 +361,9 @@ export default function ChatPage() {
                   disabled={isLoading || !input.trim()}
                   className={cn(
                     "p-2.5 rounded-xl transition-all duration-300 transform",
-                    input.trim() 
-                      ? "bg-black text-white shadow-md active:scale-95" 
-                      : "bg-black/10 text-black/40 cursor-not-allowed"
+                    input.trim()
+                      ? "bg-black text-white shadow-md active:scale-95"
+                      : "bg-black/10 text-black/40 cursor-not-allowed",
                   )}
                 >
                   <Send size={20} />
@@ -235,8 +371,7 @@ export default function ChatPage() {
               </div>
             </div>
           </div>
-          <p className="  mt-10 ">
-            </p>
+          <p className="  mt-10 "></p>
         </div>
       </div>
     </div>

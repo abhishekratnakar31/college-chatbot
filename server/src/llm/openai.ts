@@ -28,7 +28,7 @@
 //   return choice.message.content || "I'm sorry, I couldn't generate a response.";
 // }
 
-export async function generateResponse(message: string) {
+export async function generateStream(message: string) {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -39,6 +39,7 @@ export async function generateResponse(message: string) {
     },
     body: JSON.stringify({
       model: "openai/gpt-4o-mini",
+      stream:true,
       messages: [
         {
           role: "system",
@@ -52,13 +53,14 @@ export async function generateResponse(message: string) {
       ],
     }),
   });
+return response.body;
 
-  const data = await response.json();
+  // const data = await response.json();
 
-  if (!response.ok) {
-    console.error(data);
-    throw new Error("OpenRouter API error");
-  }
+  // if (!response.ok) {
+  //   console.error(data);
+  //   throw new Error("OpenRouter API error");
+  // }
 
-  return data.choices[0].message.content;
+  // return data.choices[0].message.content;
 }
