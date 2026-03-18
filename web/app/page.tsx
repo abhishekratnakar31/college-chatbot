@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
 import {
   Send,
   Bot,
@@ -42,92 +43,100 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-const handleSend = async (text: string = input) => {
-  if (!text.trim() || isLoading) return;
+  const sessionId = useRef(
+    typeof window !== "undefined"
+      ? localStorage.getItem("sessionId") || crypto.randomUUID()
+      : ""
+  );
 
-  const currentInput = text;
+  useEffect(() => {
+    if (!sessionId.current && typeof crypto !== "undefined") {
+      sessionId.current = crypto.randomUUID();
+    }
+    localStorage.setItem("sessionId", sessionId.current);
+  }, []);
 
-  const userMessage: Message = {
-    role: "user",
-    content: currentInput,
-  };
+  const handleSend = async (text: string = input) => {
+    if (!text.trim() || isLoading) return;
 
-  setMessages((prev) => [...prev, userMessage]);
-  setInput("");
-  setIsLoading(true);
+    const currentInput = text;
 
-  try {
-    const response = await fetch("http://localhost:4000/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ message: currentInput }),
-    });
+    const userMessage: Message = {
+      role: "user",
+      content: currentInput,
+    };
 
-    if (!response.body) throw new Error("No response body");
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
+    try {
+      const response = await fetch("http://localhost:4000/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: currentInput, sessionId: sessionId.current }),
+      });
 
-    let assistantText = "";
+      if (!response.body) throw new Error("No response body");
 
-    // Add empty assistant message first
-    setMessages((prev) => [
-      ...prev,
-      { role: "assistant", content: "" },
-    ]);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      let assistantText = "";
 
-      const chunk = decoder.decode(value);
-      const lines = chunk.split("\n");
+      // Add empty assistant message first
+      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
-      for (const line of lines) {
-        if (!line.startsWith("data:")) continue;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-        const json = line.replace("data: ", "").trim();
-        if (json === "[DONE]") break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
 
-        try {
-          const parsed = JSON.parse(json);
-          const content = parsed.choices?.[0]?.delta?.content;
+        for (const line of lines) {
+          if (!line.startsWith("data:")) continue;
 
-          if (content) {
-            assistantText += content;
+          const json = line.replace("data: ", "").trim();
+          if (json === "[DONE]") break;
 
-            setMessages((prev) => {
-              const updated = [...prev];
-              updated[updated.length - 1] = {
-                role: "assistant",
-                content: assistantText,
-              };
-              return updated;
-            });
+          try {
+            const parsed = JSON.parse(json);
+            const content = parsed.choices?.[0]?.delta?.content;
+
+            if (content) {
+              assistantText += content;
+
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                  role: "assistant",
+                  content: assistantText,
+                };
+                return updated;
+              });
+            }
+          } catch {
+            // Ignore partial JSON chunks
           }
-        } catch {
-          // Ignore partial JSON chunks
         }
       }
+    } catch (error) {
+      console.error("Streaming error:", error);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Sorry, I'm having trouble connecting to the server.",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    console.error("Streaming error:", error);
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        content:
-          "Sorry, I'm having trouble connecting to the server.",
-      },
-    ]);
-  } finally {
-    setIsLoading(false);
-  }
-};
-
+  };
 
   // const handleSend = async (text: string = input) => {
   //   if (!text.trim() || isLoading) return;
@@ -136,7 +145,7 @@ const handleSend = async (text: string = input) => {
   //   const userMessage: Message = {
   //     role: "user",
   //     content: text,
-  //   }; 
+  //   };
 
   //   setMessages((prev) => [...prev, userMessage]);
   //   setInput("");
@@ -175,38 +184,38 @@ const handleSend = async (text: string = input) => {
   //     });
   //   }
 
-    // try {
-    //   const response = await fetch("http://localhost:4000/chat", {
-    //     method: "POST",
-    //     headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify({ message: text }),
-    // });
+  // try {
+  //   const response = await fetch("http://localhost:4000/chat", {
+  //     method: "POST",
+  //     headers: {
+  //     "Content-Type": "application/json",
+  //   },
+  //   body: JSON.stringify({ message: text }),
+  // });
 
-    // if (!response.ok) {
-    //   throw new Error("Failed to get response from server");
-    // }
+  // if (!response.ok) {
+  //   throw new Error("Failed to get response from server");
+  // }
 
-    // const data = await response.json();
-    // const assistantMessage: Message = {
-    //   role: "assistant",
-    //   content: data.reply,
-    // };
+  // const data = await response.json();
+  // const assistantMessage: Message = {
+  //   role: "assistant",
+  //   content: data.reply,
+  // };
 
-    // setMessages((prev) => [...prev, assistantMessage]);
-    // } catch (error) {
-    //   console.error("Error sending message:", error);
-    //   setMessages((prev) => [
-    //     ...prev,
-    //     {
-    //       role: "assistant",
-    //       content: "Sorry, I'm having trouble connecting to the server. Please check if the backend is running.",
-    //     },
-    //   ]);
-    // } finally {
-    //   setIsLoading(false);
-    // }
+  // setMessages((prev) => [...prev, assistantMessage]);
+  // } catch (error) {
+  //   console.error("Error sending message:", error);
+  //   setMessages((prev) => [
+  //     ...prev,
+  //     {
+  //       role: "assistant",
+  //       content: "Sorry, I'm having trouble connecting to the server. Please check if the backend is running.",
+  //     },
+  //   ]);
+  // } finally {
+  //   setIsLoading(false);
+  // }
   // };
 
   useEffect(() => {
@@ -287,7 +296,7 @@ const handleSend = async (text: string = input) => {
                       : "bg-gray-500/10 text-black rounded-tl-none border border-black/5",
                   )}
                 >
-                  {msg.content}
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
               </motion.div>
             ))}

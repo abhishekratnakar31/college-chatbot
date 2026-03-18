@@ -6,8 +6,11 @@ import { chatRoute } from "./routes/chat.js";
 const app = Fastify();
 
 await app.register(cors, {
-  origin: true, // In production, replace with your frontend URL
+  origin: true,
+  methods:["GET", "POST", "OPTIONS"]
+  // In production, replace with your frontend URL
 });
+
 
 await app.register(chatRoute);
 

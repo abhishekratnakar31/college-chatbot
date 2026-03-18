@@ -28,7 +28,9 @@
 //   return choice.message.content || "I'm sorry, I couldn't generate a response.";
 // }
 
-export async function generateStream(message: string) {
+import type { ChatMessage } from "../types/chat.js";
+
+export async function generateStream(messages: ChatMessage[]) {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -40,17 +42,8 @@ export async function generateStream(message: string) {
     body: JSON.stringify({
       model: "openai/gpt-4o-mini",
       stream:true,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a helpful college information assistant. Answer clearly and concisely.",
-        },
-        {
-          role: "user",
-          content: message,
-        },
-      ],
+      messages,
+      max_tokens:200,
     }),
   });
 return response.body;
