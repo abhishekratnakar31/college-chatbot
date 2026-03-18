@@ -24,7 +24,8 @@ export function addMessage(
   session.messages.push(message);
 
   // Keep only last 20 messages (basic trimming)
-  if (session.messages.length > 20) {
-    session.messages = session.messages.slice(-20);
+const MAX_MESSAGES = 12;
+  if (session.messages.length > MAX_MESSAGES) {
+    session.messages = session.messages.slice(-MAX_MESSAGES);
   }
 }

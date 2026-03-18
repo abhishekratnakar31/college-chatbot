@@ -3,6 +3,8 @@ import { generateStream } from "../llm/openai.js";
 import { getSession, addMessage } from "../lib/memory.js";
 import type { ChatMessage } from "../types/chat.js";
 import crypto from "node:crypto";
+import { collegeData } from "../data/collegeData.js";
+import { retrieveRelevantChunks } from "../lib/retrieval.js";
 
 export async function chatRoute(app: FastifyInstance) {
   // app.post("/chat", async (request, reply) => {
@@ -92,20 +94,36 @@ export async function chatRoute(app: FastifyInstance) {
       role: "user",
       content: body.message,
     });
+    const relevantChunks = retrieveRelevantChunks(body.message, collegeData);
+const context = relevantChunks.join("\n");
 
     const messages: ChatMessage[] = [
       {
           role: "system",
-  content: `
+//   content: `
+// You are a college assistant chatbot.
+
+// Rules:
+// - Give SHORT and clear answers (max 5-6 lines)
+// - Use bullet points when helpful
+// - Do NOT give long explanations
+// - Do NOT include markdown symbols like ### or **
+// - Answer like a helpful student guide
+// - If unsure, say "Please check the official website"
+// `,
+content: `
 You are a college assistant chatbot.
 
+Use the provided context to answer.
+Context:
+${context}
+
 Rules:
-- Give SHORT and clear answers (max 5-6 lines)
-- Use bullet points when helpful
-- Do NOT give long explanations
-- Do NOT include markdown symbols like ### or **
-- Answer like a helpful student guide
-- If unsure, say "Please check the official website"
+- Use previous conversation context when answering
+- Answer ONLY from the given context
+- If answer is not in context, say "Please check official website"
+- Keep answers short (max 5-6 lines)
+- Be clear and student-friendly
 `,
       },
       ...getSession(sessionId).messages,
