@@ -7,7 +7,7 @@ export async function getEmbedding(text: string) {
     },
     body: JSON.stringify({
       model: "text-embedding-3-small",
-      input: text,
+      input: text.slice(0,1000),
     }),
   });
 

@@ -39,8 +39,10 @@ export async function chatRoute(app: FastifyInstance) {
 
         const relevantChunks = scored
           .sort((a, b) => b.score - a.score)
-          .slice(0, 3)
+          .slice(0, 6)
           .map((c) => c.text);
+        console.log("Chunks count:", storedChunks.length);
+        console.log("Top chunks:", relevantChunks);
 
         context = relevantChunks.join("\n");
       }
@@ -52,16 +54,21 @@ export async function chatRoute(app: FastifyInstance) {
           content: `
 You are a college assistant chatbot.
 
-Use the provided context to answer.
+Use the context below to answer the question.
 
 Context:
-${context || "No data available"}
+${context}
 
 Rules:
-- Answer ONLY from the context
-- If answer is not in context, say "Please check official website"
-- Keep answers short (max 5-6 lines)
-- Be clear and student-friendly
+- Context may be messy (from PDF)
+- Try to find relevant information even if not perfectly formatted
+- If related information exists, answer confidently
+- Only say "Please check official website" if absolutely nothing relevant is found
+
+Keep answers:
+- Short (4-5 lines)
+- Clear
+- Student-friendly
 `,
         },
         ...getSession(sessionId).messages,
@@ -73,7 +80,7 @@ Rules:
       reply.raw.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
+        Connection: "keep-alive",
         "Access-Control-Allow-Origin": "*",
       });
 
@@ -117,7 +124,6 @@ Rules:
       });
 
       reply.raw.end();
-
     } catch (err) {
       console.error("CHAT ERROR:", err);
       try {

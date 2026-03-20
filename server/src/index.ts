@@ -14,7 +14,11 @@ await app.register(cors, {
 
 
 await app.register(chatRoute);
-await app.register(multipart);
+await app.register(multipart, {
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+  },
+});
 await app.register(uploadRoute);
 
 const PORT = Number(process.env.PORT) || 4000;
