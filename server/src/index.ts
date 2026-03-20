@@ -2,7 +2,8 @@ import "dotenv/config";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { chatRoute } from "./routes/chat.js";
-
+import multipart from "@fastify/multipart";
+import { uploadRoute } from "./routes/upload.js";
 const app = Fastify();
 
 await app.register(cors, {
@@ -13,6 +14,8 @@ await app.register(cors, {
 
 
 await app.register(chatRoute);
+await app.register(multipart);
+await app.register(uploadRoute);
 
 const PORT = Number(process.env.PORT) || 4000;
 

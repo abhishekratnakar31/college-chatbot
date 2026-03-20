@@ -32,6 +32,7 @@ const SUGGESTED_QUESTIONS = [
   "How do I apply for financial aid?",
 ];
 
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -41,7 +42,10 @@ export default function ChatPage() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const sessionId = useRef(
     typeof window !== "undefined"
@@ -55,6 +59,33 @@ export default function ChatPage() {
     }
     localStorage.setItem("sessionId", sessionId.current);
   }, []);
+
+  const handleUpload = async () => {
+    if (!file) return;
+    setIsUploading(true);
+    
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("http://localhost:4000/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      console.log("UPLOAD RESPONSE:", data);
+      
+      setFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (err) {
+      console.error("Upload failed:", err);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSend = async (text: string = input) => {
     if (!text.trim() || isLoading) return;
@@ -135,88 +166,9 @@ export default function ChatPage() {
       ]);
     } finally {
       setIsLoading(false);
+      
     }
   };
-
-  // const handleSend = async (text: string = input) => {
-  //   if (!text.trim() || isLoading) return;
-  //   const currentInput = text;
-
-  //   const userMessage: Message = {
-  //     role: "user",
-  //     content: text,
-  //   };
-
-  //   setMessages((prev) => [...prev, userMessage]);
-  //   setInput("");
-  //   setIsLoading(true);
-  //   const response = await fetch("http://localhost:4000/chat", {
-  //     method: "POST",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //     body: JSON.stringify({ message: currentInput }),
-  //   });
-
-  //   if (!response.body) throw new Error("No response body");
-
-  //   const reader = response.body.getReader();
-  //   const decoder = new TextDecoder();
-
-  //   let assistantText = "";
-
-  //   setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
-
-  //   while (true) {
-  //     const { done, value } = await reader.read();
-  //     if (done) break;
-
-  //     const chunk = decoder.decode(value);
-  //     assistantText += chunk;
-
-  //     setMessages((prev) => {
-  //       const updated = [...prev];
-  //       updated[updated.length - 1] = {
-  //         role: "assistant",
-  //         content: assistantText,
-  //       };
-  //       return updated;
-  //     });
-  //   }
-
-  // try {
-  //   const response = await fetch("http://localhost:4000/chat", {
-  //     method: "POST",
-  //     headers: {
-  //     "Content-Type": "application/json",
-  //   },
-  //   body: JSON.stringify({ message: text }),
-  // });
-
-  // if (!response.ok) {
-  //   throw new Error("Failed to get response from server");
-  // }
-
-  // const data = await response.json();
-  // const assistantMessage: Message = {
-  //   role: "assistant",
-  //   content: data.reply,
-  // };
-
-  // setMessages((prev) => [...prev, assistantMessage]);
-  // } catch (error) {
-  //   console.error("Error sending message:", error);
-  //   setMessages((prev) => [
-  //     ...prev,
-  //     {
-  //       role: "assistant",
-  //       content: "Sorry, I'm having trouble connecting to the server. Please check if the backend is running.",
-  //     },
-  //   ]);
-  // } finally {
-  //   setIsLoading(false);
-  // }
-  // };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -261,6 +213,22 @@ export default function ChatPage() {
 
       {/* Main Chat Area */}
       <main className="flex-1 overflow-y-auto pt-24 pb-32 px-4 md:px-0">
+        <div className="max-w-3xl mx-auto mb-6 flex items-center gap-3 p-4 bg-white/50 rounded-2xl border border-gray-200 shadow-sm backdrop-blur-sm">
+          <input
+            type="file"
+            accept="application/pdf"
+            ref={fileInputRef}
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-black/5 file:text-black hover:file:bg-black/10 transition-colors"
+          />
+          <button
+            onClick={handleUpload}
+            disabled={!file || isUploading}
+            className="bg-black text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-black/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isUploading ? "Uploading..." : "Upload PDF"}
+          </button>
+        </div>
         <div className="max-w-3xl mx-auto space-y-6">
           <AnimatePresence mode="popLayout">
             {messages.map((msg, index) => (
