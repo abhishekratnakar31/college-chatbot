@@ -1,12 +1,11 @@
+
 import type { FastifyInstance } from "fastify";
 import { generateStream } from "../llm/openai.js";
 import { getSession, addMessage } from "../lib/memory.js";
 import type { ChatMessage } from "../types/chat.js";
 import crypto from "node:crypto";
-
-import { storedChunks } from "./upload.js";
-import { getEmbedding } from "../llm/embedding.js";
-import { cosineSimilarity } from "../lib/similarity.js";
+import { retrieveRelevantChunks } from "../lib/retrieval.js";
+import { getChunks } from "../lib/chunkStore.js";
 
 export async function chatRoute(app: FastifyInstance) {
   app.post("/chat", async (request, reply) => {
@@ -20,34 +19,20 @@ export async function chatRoute(app: FastifyInstance) {
 
       const sessionId = body.sessionId || crypto.randomUUID();
 
-      // ✅ store user message
+      // Store user message
       addMessage(sessionId, {
         role: "user",
         content: body.message,
       });
 
-      // 🔥 REAL RAG (FIXED)
-      let context = "";
+      // Retrieve relevant chunks from in-memory store
+      const relevantChunks = await retrieveRelevantChunks(body.message, getChunks());
 
-      if (storedChunks.length > 0) {
-        const queryEmbedding = await getEmbedding(body.message);
+      console.log("Top chunks:", relevantChunks);
 
-        const scored = storedChunks.map((chunk) => ({
-          text: chunk.text,
-          score: cosineSimilarity(queryEmbedding, chunk.embedding),
-        }));
+      const context = relevantChunks.join("\n");
 
-        const relevantChunks = scored
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 6)
-          .map((c) => c.text);
-        console.log("Chunks count:", storedChunks.length);
-        console.log("Top chunks:", relevantChunks);
-
-        context = relevantChunks.join("\n");
-      }
-
-      // ✅ messages
+      // LLM messages
       const messages: ChatMessage[] = [
         {
           role: "system",
@@ -76,11 +61,11 @@ Keep answers:
 
       const stream = await generateStream(messages);
 
-      // 🔥 SSE headers
+      // SSE headers
       reply.raw.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
-        Connection: "keep-alive",
+        "Connection": "keep-alive",
         "Access-Control-Allow-Origin": "*",
       });
 
@@ -117,7 +102,7 @@ Keep answers:
         }
       }
 
-      // ✅ store assistant reply
+      // Store assistant response
       addMessage(sessionId, {
         role: "assistant",
         content: assistantReply,
@@ -126,6 +111,7 @@ Keep answers:
       reply.raw.end();
     } catch (err) {
       console.error("CHAT ERROR:", err);
+
       try {
         reply.raw.end();
       } catch {}
