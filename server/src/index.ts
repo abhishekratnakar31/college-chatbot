@@ -4,6 +4,7 @@ import cors from "@fastify/cors";
 import { chatRoute } from "./routes/chat.js";
 import multipart from "@fastify/multipart";
 import { uploadRoute } from "./routes/upload.js";
+import { qdrant } from "./lib/qdrant.js";
 const app = Fastify();
 
 await app.register(cors, {
@@ -20,6 +21,24 @@ await app.register(multipart, {
   },
 });
 await app.register(uploadRoute);
+async function initVectorDB() {
+  const collections = await qdrant.getCollections();
+  const exists = collections.collections.some((c) => c.name === "college_docs");
+
+  if (!exists) {
+    await qdrant.createCollection("college_docs", {
+      vectors: {
+        size: 1536,
+        distance: "Cosine",
+      },
+    });
+    console.log("Vector DB Initialized: Collection created.");
+  } else {
+    console.log("Vector DB Initialized: Collection already exists.");
+  }
+}
+
+await initVectorDB();
 
 const PORT = Number(process.env.PORT) || 4000;
 

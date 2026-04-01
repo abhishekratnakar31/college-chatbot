@@ -1,6 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { createRequire } from "module";
-import { setChunks } from "../lib/chunkStore.js";
+import { qdrant } from "../lib/qdrant.js";
+import { getEmbedding } from "../llm/embedding.js";
+import crypto from "node:crypto";
 const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
 
@@ -37,14 +39,43 @@ export async function uploadRoute(app: FastifyInstance) {
 
       console.log("Generated chunks:", chunks.length);
 
-      // Store chunks in memory (replaces PostgreSQL insert)
-      setChunks(chunks);
+      // Generate embeddings and store in Qdrant
+      // for (const chunk of chunks) {
+      //   const embedding = await getEmbedding(chunk);
+
+      //   await qdrant.upsert("college_docs", {
+      //     points: [
+      //       {
+      //         id: crypto.randomUUID(),
+      //         vector: embedding,
+      //         payload: { text: chunk },
+      //       },
+      //     ],
+      //   });
+      // }
+
+      for (const [i, chunk] of chunks.entries()) {
+        const embedding = await getEmbedding(chunk);
+
+        await qdrant.upsert("college_docs", {
+          points: [
+            {
+              id: crypto.randomUUID(),
+              vector: embedding,
+              payload: {
+                text: chunk,
+                document: data.filename,
+                chunk_index: i,
+              },
+            },
+          ],
+        });
+      }
 
       reply.send({
-        message: "PDF processed and embedded",
+        message: "PDF processed and stored in Qdrant",
         chunksCount: chunks.length,
       });
-
     } catch (err) {
       console.error("Upload error:", err);
 
