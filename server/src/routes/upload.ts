@@ -39,6 +39,17 @@ export async function uploadRoute(app: FastifyInstance) {
 
       console.log("Generated chunks:", chunks.length);
 
+      // Setup SSE
+      reply.raw.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "Access-Control-Allow-Origin": "*",
+      });
+      reply.hijack();
+
+      reply.raw.write(`data: ${JSON.stringify({ status: "started", total: chunks.length })}\n\n`);
+
       // Generate embeddings and store in Qdrant
       // for (const chunk of chunks) {
       //   const embedding = await getEmbedding(chunk);
@@ -70,19 +81,24 @@ export async function uploadRoute(app: FastifyInstance) {
             },
           ],
         });
+        console.log(`Indexed chunk ${i+1}/${chunks.length}`)
+        reply.raw.write(`data: ${JSON.stringify({ status: "embedding", progress: i + 1, total: chunks.length })}\n\n`);
       }
 
-      reply.send({
-        message: "PDF processed and stored in Qdrant",
-        chunksCount: chunks.length,
-      });
+      reply.raw.write(`data: ${JSON.stringify({ status: "done", message: "PDF processed and embedded", chunksCount: chunks.length })}\n\n`);
+      reply.raw.end();
     } catch (err) {
       console.error("Upload error:", err);
 
-      reply.status(500).send({
-        error: "Upload Error",
-        message: err instanceof Error ? err.message : "Failed to process PDF",
-      });
+      if (!reply.raw.headersSent) {
+        reply.status(500).send({
+          error: "Upload Error",
+          message: err instanceof Error ? err.message : "Failed to process PDF",
+        });
+      } else {
+        reply.raw.write(`data: ${JSON.stringify({ status: "error", message: err instanceof Error ? err.message : "Failed to process PDF" })}\n\n`);
+        reply.raw.end();
+      }
     }
   });
 }

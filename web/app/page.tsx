@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { p } from "framer-motion/client";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -44,6 +45,8 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -63,6 +66,8 @@ export default function ChatPage() {
   const handleUpload = async () => {
     if (!file) return;
     setIsUploading(true);
+    setUploadStatus("Uploading & parsing PDF...");
+    setUploadProgress(0);
     
     const formData = new FormData();
     formData.append("file", file);
@@ -73,17 +78,48 @@ export default function ChatPage() {
         body: formData,
       });
 
-      const data = await res.json();
-      console.log("UPLOAD RESPONSE:", data);
-      
-      setFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+      if (!res.body) throw new Error("No response body");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (!line.startsWith("data:")) continue;
+
+          const json = line.replace("data: ", "").trim();
+          if (!json) continue;
+
+          try {
+            const parsed = JSON.parse(json);
+            if (parsed.status === "started") {
+              setUploadStatus(`Generating embeddings for ${parsed.total} chunks...`);
+              setUploadProgress(5); // Show a tiny bit of progress
+            } else if (parsed.status === "embedding") {
+              setUploadStatus(`Vectorizing chunk ${parsed.progress} of ${parsed.total}...`);
+              setUploadProgress((parsed.progress / parsed.total) * 100);
+            } else if (parsed.status === "done") {
+              setUploadStatus(`Successfully indexed ${parsed.chunksCount} chunks!`);
+              setUploadProgress(100);
+            } else if (parsed.status === "error") {
+              setUploadStatus(`Error: ${parsed.message}`);
+            }
+          } catch {
+            // Ignore partial JSON chunks
+          }
+        }
       }
     } catch (err) {
-      console.error("Upload failed:", err);
+      setUploadStatus(`Failed to upload and index PDF`);
     } finally {
       setIsUploading(false);
+      setTimeout(() => setUploadProgress(0), 4000);
     }
   };
 
@@ -213,21 +249,36 @@ export default function ChatPage() {
 
       {/* Main Chat Area */}
       <main className="flex-1 overflow-y-auto pt-24 pb-32 px-4 md:px-0">
-        <div className="max-w-3xl mx-auto mb-6 flex items-center gap-3 p-4 bg-white/50 rounded-2xl border border-gray-200 shadow-sm backdrop-blur-sm">
-          <input
-            type="file"
-            accept="application/pdf"
-            ref={fileInputRef}
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-black/5 file:text-black hover:file:bg-black/10 transition-colors"
-          />
-          <button
-            onClick={handleUpload}
-            disabled={!file || isUploading}
-            className="bg-black text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-black/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isUploading ? "Uploading..." : "Upload PDF"}
-          </button>
+        <div className="max-w-3xl mx-auto mb-6 flex flex-col gap-3 p-4 bg-white/50 rounded-2xl border border-gray-200 shadow-sm backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <input
+              type="file"
+              accept="application/pdf"
+              ref={fileInputRef}
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-black/5 file:text-black hover:file:bg-black/10 transition-colors"
+            />
+            <button
+              onClick={handleUpload}
+              disabled={!file || isUploading}
+              className="bg-black text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-black/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isUploading ? "Uploading..." : "Upload PDF"}
+            </button>
+            {uploadStatus && (
+              <p className="text-sm text-gray-500">{uploadStatus}</p>
+            )}
+          </div>
+          {uploadProgress > 0 && (
+            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden flex-shrink-0">
+              <motion.div
+                className="h-full bg-black rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${uploadProgress}%` }}
+                transition={{ duration: 0.2 }}
+              />
+            </div>
+          )}
         </div>
         <div className="max-w-3xl mx-auto space-y-6">
           <AnimatePresence mode="popLayout">

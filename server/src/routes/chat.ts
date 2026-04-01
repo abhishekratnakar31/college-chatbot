@@ -131,7 +131,7 @@ Keep answers:
           const identifier = `${s.document}-${s.chunk}`;
           if (!seen.has(identifier)) {
             seen.add(identifier);
-            sourcesText += `Document: ${s.document}, Chunk: ${s.chunk}\n`;
+            sourcesText += `• ${s.document} (chunk ${s.chunk})\n`;
           }
         }
 
