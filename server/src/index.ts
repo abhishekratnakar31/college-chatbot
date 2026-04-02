@@ -4,17 +4,19 @@ import cors from "@fastify/cors";
 import { chatRoute } from "./routes/chat.js";
 import multipart from "@fastify/multipart";
 import { uploadRoute } from "./routes/upload.js";
+import { conversationRoutes } from "./routes/conversations.js";
 import { qdrant } from "./lib/qdrant.js";
 const app = Fastify();
 
 await app.register(cors, {
   origin: true,
-  methods:["GET", "POST", "OPTIONS"]
+  methods:["GET", "POST", "OPTIONS", "PUT", "DELETE"]
   // In production, replace with your frontend URL
 });
 
 
 await app.register(chatRoute);
+await app.register(conversationRoutes);
 await app.register(multipart, {
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB limit

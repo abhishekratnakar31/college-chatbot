@@ -50,21 +50,6 @@ export async function uploadRoute(app: FastifyInstance) {
 
       reply.raw.write(`data: ${JSON.stringify({ status: "started", total: chunks.length })}\n\n`);
 
-      // Generate embeddings and store in Qdrant
-      // for (const chunk of chunks) {
-      //   const embedding = await getEmbedding(chunk);
-
-      //   await qdrant.upsert("college_docs", {
-      //     points: [
-      //       {
-      //         id: crypto.randomUUID(),
-      //         vector: embedding,
-      //         payload: { text: chunk },
-      //       },
-      //     ],
-      //   });
-      // }
-
       for (const [i, chunk] of chunks.entries()) {
         const embedding = await getEmbedding(chunk);
 
