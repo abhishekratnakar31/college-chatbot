@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Send,
   Bot,
@@ -73,6 +74,9 @@ export default function ChatPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [currentFileIndex, setCurrentFileIndex] = useState(0);
+  const [totalFiles, setTotalFiles] = useState(0);
 
   // --- Refs ---
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -174,64 +178,115 @@ export default function ChatPage() {
     }
   };
 
-  const handleUpload = async (newFile?: File) => {
-    const fileToUpload = newFile || file;
-    if (!fileToUpload) return;
+  const handleUpload = async (newFiles?: File | File[]) => {
+    let filesToUpload: File[] = [];
+    if (newFiles) {
+      filesToUpload = Array.isArray(newFiles) ? newFiles : [newFiles];
+    } else if (file) {
+      filesToUpload = [file];
+    }
+
+    if (!filesToUpload.length) return;
     
     setIsUploading(true);
-    setUploadStatus("Uploading & parsing PDF...");
-    setUploadProgress(0);
+    setTotalFiles(filesToUpload.length);
+    const batchResults: { name: string, url: string }[] = [];
     
-    const formData = new FormData();
-    formData.append("file", fileToUpload);
+    for (let i = 0; i < filesToUpload.length; i++) {
+        const currentFile = filesToUpload[i];
+        setCurrentFileIndex(i + 1);
+        setUploadStatus(`(File ${i + 1}/${filesToUpload.length}) Uploading...`);
+        setUploadProgress(0);
+        
+        const formData = new FormData();
+        formData.append("file", currentFile);
 
-    try {
-      const res = await fetch("http://localhost:4000/upload", {
-        method: "POST",
-        body: formData,
-      });
+        try {
+          const res = await fetch("http://localhost:4000/upload", {
+            method: "POST",
+            body: formData,
+          });
 
-      if (!res.body) throw new Error("No response body");
+          if (!res.body) throw new Error("No response body");
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let isFinished = false;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+          while (!isFinished) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n");
+            const chunk = decoder.decode(value);
+            const lines = chunk.split("\n");
 
-        for (const line of lines) {
-          if (!line.startsWith("data:")) continue;
+            for (const line of lines) {
+              if (!line.startsWith("data:")) continue;
 
-          const json = line.replace("data: ", "").trim();
-          if (!json) continue;
+              const json = line.replace("data: ", "").trim();
+              if (!json) continue;
 
-          try {
-            const parsed = JSON.parse(json);
-            if (parsed.status === "started") {
-              setUploadStatus(`Generating embeddings for ${parsed.total} chunks...`);
-              setUploadProgress(5);
-            } else if (parsed.status === "embedding") {
-              setUploadStatus(`Vectorizing chunk ${parsed.progress} of ${parsed.total}...`);
-              setUploadProgress((parsed.progress / parsed.total) * 100);
-            } else if (parsed.status === "done") {
-              setUploadStatus(`Successfully indexed ${parsed.chunksCount} chunks!`);
-              setUploadProgress(100);
-            } else if (parsed.status === "error") {
-              setUploadStatus(`Error: ${parsed.message}`);
+                try {
+                  const parsed = JSON.parse(json);
+                  const prefix = filesToUpload.length > 1 ? `(${i + 1}/${filesToUpload.length}) ` : "";
+
+                  if (parsed.status === "ocr_converting") {
+                    setUploadStatus(`${prefix}Converting pages...`);
+                    setUploadProgress(10);
+                  } else if (parsed.status === "ocr_processing") {
+                    const percent = Math.round((parsed.progress / parsed.total) * 100);
+                    setUploadStatus(`${prefix}OCR: Page ${parsed.progress} of ${parsed.total}`);
+                    setUploadProgress(10 + (percent * 0.4));
+                  } else if (parsed.status === "started") {
+                    setUploadStatus(`${prefix}Indexing...`);
+                    setUploadProgress(50);
+                  } else if (parsed.status === "embedding") {
+                    const percent = Math.round((parsed.progress / parsed.total) * 100);
+                    setUploadStatus(`${prefix}Vectorizing: ${percent}%`);
+                    setUploadProgress(50 + (percent * 0.5));
+                  } else if (parsed.status === "done") {
+                    setUploadStatus(`${prefix}Success!`);
+                    setUploadProgress(100);
+                    
+                    // Buffer this file's result
+                    batchResults.push({ name: currentFile.name, url: parsed.fileUrl });
+                    isFinished = true;
+                  } else if (parsed.status === "error") {
+                    setUploadStatus(`${prefix}Error: ${parsed.message}`);
+                    isFinished = true;
+                  }
+                } catch {
+                }
             }
-          } catch {
           }
+        } catch (err) {
+          console.error(`Upload failed for ${currentFile.name}`, err);
         }
-      }
-    } catch (err) {
-      setUploadStatus(`Failed to upload and index PDF`);
-    } finally {
-      setIsUploading(false);
     }
+    
+    // Once ALL files are done, update the chat history ONCE
+    if (batchResults.length > 0) {
+      const attachmentMessages = batchResults.map(res => ({
+        role: "user" as const,
+        content: `ATTACHMENT|${res.name}|${res.url}`
+      }));
+      
+      const confirmationMsg = {
+        role: "assistant" as const,
+        content: batchResults.length > 1
+          ? `I've finished indexing **${batchResults.length} documents**. You can now ask me questions about them!`
+          : `I've finished indexing **${batchResults[0].name}**. You can now ask me questions about its content!`
+      };
+
+      setMessages(prev => [...prev, ...attachmentMessages, confirmationMsg]);
+    }
+
+    setIsUploading(false);
+    setUploadStatus("");
+    setUploadProgress(0);
+    setFile(null);
+    setCurrentFileIndex(0);
+    setTotalFiles(0);
   };
 
   const handleSend = async (text: string = input) => {
@@ -352,6 +407,73 @@ export default function ChatPage() {
 
     return Object.entries(groups).filter(([_, items]) => items.length > 0);
   }, [conversations]);
+
+  // --- Helper Functions ---
+
+  // Helper to render source chips inline within text
+  const renderWithSources = (children: any, fullContent: string) => {
+    if (!children) return null;
+    
+    if (typeof children !== "string") {
+      if (Array.isArray(children)) {
+        return children.map((child, i) => (
+          <span key={i}>
+            {typeof child === "string" ? renderWithSources(child, fullContent) : child}
+          </span>
+        ));
+      }
+      return children;
+    }
+
+    // Extract sources from the full content block
+    const parts_meta = fullContent.split("\n\n---\n**Sources:**");
+    const sourceBlock = parts_meta[1] || "";
+    const sourceLines = sourceBlock.split("\n").filter(l => l.trim().startsWith("•") || l.trim().startsWith("-"));
+    const sourceMap = new Map();
+    
+    // Build a map of index -> source metadata
+    sourceLines.forEach((line, idx) => {
+      const content = line.replace(/^[•-]\s*/, "").trim();
+      const isUrl = content.startsWith("http");
+      sourceMap.set((idx + 1).toString(), {
+        name: isUrl ? new URL(content).hostname : content,
+        url: isUrl ? content : null,
+        type: isUrl ? "web" : "pdf"
+      });
+    });
+
+    // Replace [Source ID: X] or [X] with chips (case-insensitive)
+    const parts = children.split(/(\[Source ID:\s*\d+\]|\[\s*\d+\s*\]|\[\d+\])/gi);
+    return parts.map((part, i) => {
+      const match = part.match(/\[(?:Source ID:\s*)?(\s*\d+\s*)\]/i);
+      if (match) {
+        const id = match[1].trim();
+        const source = sourceMap.get(id);
+        if (source) {
+          return (
+            <span 
+              key={i} 
+              onClick={(e) => {
+                e.stopPropagation();
+                if (source.url) {
+                  window.open(source.url, "_blank");
+                } else {
+                  const fileName = source.name.split(" (section")[0].trim();
+                  setPreviewUrl(`http://localhost:4000/uploads/${encodeURIComponent(fileName)}`);
+                }
+              }}
+              className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/30 rounded-md text-[11px] font-bold text-red-700 dark:text-red-400 mx-1 cursor-pointer transition-all active:scale-95 shadow-sm align-middle leading-none"
+            >
+              {source.type === "web" ? <Globe size={11} className="text-blue-500" /> : <FileText size={11} className="text-red-500" />}
+              {source.name.split(" (section")[0]}
+            </span>
+          );
+        }
+        return part; // Return as text if not found in map
+      }
+      return part;
+    });
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -484,7 +606,7 @@ export default function ChatPage() {
         </header>
 
         <main className="flex-1 overflow-y-auto custom-scrollbar pt-14 pb-48">
-          {messages.length <= 1 && !isLoading && !file && !isUploading && (
+          {messages.filter(m => !m.content.startsWith("ATTACHMENT")).length <= 1 && !isLoading && !isUploading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
                <h1 className="text-3xl tracking-tight font-medium text-[#0d0d0d] dark:text-[#ececec] mb-8">Which college are you exploring today?</h1>
             </div>
@@ -510,50 +632,76 @@ export default function ChatPage() {
                   <div className={cn(
                     "relative min-w-0 text-[15px] leading-7",
                     msg.role === "user" 
-                      ? "bg-[#f4f4f4] dark:bg-[#2f2f2f] px-5 py-2.5 rounded-3xl max-w-[70%] text-[#0d0d0d] dark:text-[#ececec]" 
+                      ? msg.content.startsWith("ATTACHMENT|") 
+                        ? "" // No background for the card itseld
+                        : "bg-[#f4f4f4] dark:bg-[#2f2f2f] px-4 py-2 rounded-2xl max-w-[85%] text-[#0d0d0d] dark:text-[#ececec] border border-transparent dark:border-zinc-800" 
                       : "text-[#0d0d0d] dark:text-[#ececec] w-full"
                   )}>
-                    {!msg.content && msg.role === "assistant" && isLoading ? (
+                    {msg.content.startsWith("ATTACHMENT|") ? (
+                      (() => {
+                        const [, name, url] = msg.content.split("|");
+                        return (
+                          <div 
+                            onClick={() => setPreviewUrl(url)}
+                            className="bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 rounded-xl p-2.5 flex items-center gap-3 w-full max-w-[280px] cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all group active:scale-[0.98] shadow-sm ml-auto"
+                          >
+                            <div className="w-10 h-10 bg-[#ef4444] rounded-lg flex items-center justify-center text-white font-bold shadow-sm">
+                               <FileText size={20} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                               <div className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 flex items-center justify-between">
+                                 <span className="truncate pr-2">{name}</span>
+                                 <ExternalLink size={12} className="text-zinc-400 opacity-50 group-hover:opacity-100" />
+                               </div>
+                               <div className="text-zinc-500 dark:text-zinc-400 text-[10px] font-medium uppercase tracking-widest mt-0.5">PDF Document</div>
+                            </div>
+                          </div>
+                        );
+                      })()
+                    ) : !msg.content && msg.role === "assistant" && isLoading ? (
                        <div className="flex gap-1 items-center py-2 text-gray-400 italic text-xs animate-pulse">
                           Searching knowledge base and web...
                        </div>
                     ) : msg.content.includes("\n\n---\n**Sources:**") ? (
                       <div className="space-y-6">
-                        <div className="prose dark:prose-invert prose-sm max-w-none">
-                          <ReactMarkdown>{msg.content.split("\n\n---\n**Sources:**")[0]}</ReactMarkdown>
+                        <div className="prose dark:prose-invert prose-base max-w-none 
+                          prose-headings:text-[#0d0d0d] dark:prose-headings:text-[#ececec] 
+                          prose-h1:text-4xl prose-h1:font-extrabold prose-h1:tracking-tight prose-h1:mt-12 prose-h1:mb-8
+                          prose-h2:text-3xl prose-h2:font-bold prose-h2:tracking-tight prose-h2:mt-10 prose-h2:mb-6 prose-h2:border-b prose-h2:border-gray-100 dark:prose-h2:border-gray-800 prose-h2:pb-3
+                          prose-h3:text-2xl prose-h3:font-semibold prose-h3:tracking-tight prose-h3:mt-8 prose-h3:mb-4
+                          prose-p:text-[16px] prose-p:leading-8 prose-p:text-[#374151] dark:prose-p:text-[#d1d5db] prose-p:mb-6
+                          prose-li:text-[16px] prose-li:leading-8 prose-li:text-[#374151] dark:prose-li:text-[#d1d5db] prose-li:mb-2
+                          prose-strong:text-[#0d0d0d] dark:prose-strong:text-[#ececec] prose-strong:font-bold
+                          prose-table:w-full prose-table:my-10 prose-table:border prose-table:border-gray-300 dark:prose-table:border-gray-700 prose-table:rounded-2xl prose-table:overflow-hidden
+                          prose-th:bg-gray-100 dark:prose-th:bg-zinc-900 prose-th:px-5 prose-th:py-4 prose-th:font-bold prose-th:text-left
+                          prose-td:px-5 prose-td:py-4 prose-td:border-t prose-td:border-gray-200 dark:prose-td:border-gray-700
+                        ">
+                          <ReactMarkdown 
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                            p: ({ children }) => <p className="mb-6">{renderWithSources(children, msg.content)}</p>,
+                            li: ({ children }) => <li className="mb-2 leading-relaxed">{renderWithSources(children, msg.content)}</li>,
+                            td: ({ children }) => <td>{renderWithSources(children, msg.content)}</td>,
+                          }}>
+                            {msg.content.split("\n\n---\n**Sources:**")[0]}
+                          </ReactMarkdown>
                         </div>
                         
-                        {/* Source Shelf - Modern UI */}
-                        <div className="pt-4 mt-6">
-                           <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">
-                              <Sparkles size={14} />
-                              Verified Sources
-                           </div>
-                           <div className="flex flex-wrap gap-2">
-                              {msg.content.split("\n\n---\n**Sources:**")[1]?.split("\n").filter(l => l.trim().startsWith("•")).map((source, sIdx) => {
-                                const sourceContent = source.replace("• ", "").trim();
-                                const isUrl = sourceContent.startsWith("http");
-                                
-                                return (
-                                  <div key={sIdx} className="group/chip flex items-center gap-2 px-3 py-1.5 bg-[#f9f9f9] dark:bg-[#2f2f2f] rounded-xl text-[12px] font-medium transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 border-none">
-                                    {isUrl ? <Globe size={14} className="text-blue-500" /> : <FileText size={14} className="text-orange-500" />}
-                                    <span className="max-w-[150px] truncate underline decoration-dotted decoration-gray-300 underline-offset-4">
-                                      {isUrl ? new URL(sourceContent).hostname : sourceContent}
-                                    </span>
-                                    {isUrl && (
-                                       <a href={sourceContent} target="_blank" rel="noreferrer" className="p-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 opacity-50 group-hover/chip:opacity-100 transition-opacity">
-                                          <ExternalLink size={10} />
-                                       </a>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                           </div>
+                        {/* Hidden source block to keep it in the DOM but rely on inline chips */}
+                        <div className="hidden">
+                          {msg.content.split("\n\n---\n**Sources:**")[1]}
                         </div>
                       </div>
                     ) : (
-                      <div className="prose dark:prose-invert prose-sm max-w-none">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <div className="prose dark:prose-invert prose-base max-w-none prose-p:text-[#374151] dark:prose-p:text-[#d1d5db] prose-li:text-[#374151] dark:prose-li:text-[#d1d5db] shadow-none border-none">
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({ children }) => <p className="mb-4">{renderWithSources(children, msg.content)}</p>,
+                            li: ({ children }) => <li className="mb-2 leading-relaxed">{renderWithSources(children, msg.content)}</li>,
+                          }}>
+                          {msg.content}
+                        </ReactMarkdown>
                       </div>
                     )}
                   </div>
@@ -606,9 +754,16 @@ export default function ChatPage() {
                       className="px-4 pt-4"
                    >
                      <div className="relative w-fit min-w-[220px] max-w-[300px] p-2.5 rounded-2xl bg-white dark:bg-[#212121] border border-[#e5e7eb] dark:border-[#404040] flex items-center gap-3 shadow-sm group">
-                        <div className="w-10 h-10 rounded-lg bg-red-500 flex items-center justify-center flex-shrink-0 relative overflow-hidden">
-                           <div className="w-5 h-5 rounded-full border-2 border-white/80" />
-                           {isUploading && (
+                        <div className={cn(
+                          "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 relative overflow-hidden",
+                          uploadProgress === 100 ? "bg-green-500" : "bg-red-500"
+                        )}>
+                           {uploadProgress === 100 ? (
+                             <Check size={20} className="text-white" strokeWidth={3} />
+                           ) : (
+                             <div className="w-5 h-5 rounded-full border-2 border-white/80" />
+                           )}
+                           {isUploading && uploadProgress < 100 && (
                               <motion.div initial={{ height: 0 }} animate={{ height: `${uploadProgress}%` }} className="absolute bottom-0 left-0 w-full bg-white/30" />
                            )}
                         </div>
@@ -617,7 +772,7 @@ export default function ChatPage() {
                              {file?.name || "Processing..."}
                            </div>
                            <div className="text-[12px] text-gray-500 font-medium">
-                              {isUploading ? `${Math.round(uploadProgress)}%` : "PDF"}
+                              {uploadProgress === 100 ? "Ready" : `${Math.round(uploadProgress)}%`}
                            </div>
                         </div>
                         
@@ -639,13 +794,14 @@ export default function ChatPage() {
                   type="file" 
                   id="pdf-upload" 
                   accept=".pdf" 
+                  multiple
                   className="hidden" 
                   ref={fileInputRef} 
                   onChange={(e) => {
-                    const selected = e.target.files?.[0] || null;
-                    setFile(selected);
-                    if (selected) {
-                      handleUpload(selected);
+                    const selectedFiles = Array.from(e.target.files || []);
+                    if (selectedFiles.length > 0) {
+                      setFile(selectedFiles[0]); // Keep individual card behavior for UI logic if needed
+                      handleUpload(selectedFiles);
                     }
                   }} 
                 />
@@ -661,9 +817,12 @@ export default function ChatPage() {
                 
                 <textarea
                   rows={1}
-                  className="flex-1 max-h-[200px] min-h-[48px] py-3.5 px-3 mb-1 bg-transparent text-[15px] resize-none outline-none overflow-y-auto leading-6 scrollbar-hide text-[#0d0d0d] dark:text-[#ECECEC] placeholder-gray-500"
-                  placeholder="Message College Assistant"
+                  className="flex-1 max-h-[200px] min-h-[48px] py-3.5 px-3 mb-1 bg-transparent text-[15px] resize-none outline-none overflow-y-auto leading-6 scrollbar-hide text-[#0d0d0d] dark:text-[#ECECEC] placeholder-gray-500 disabled:opacity-50"
+                  placeholder={isUploading 
+                    ? `Processing ${currentFileIndex || 1} of ${totalFiles || 1}...` 
+                    : "Message College Assistant"}
                   value={input}
+                  disabled={isLoading || isUploading}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
@@ -678,7 +837,7 @@ export default function ChatPage() {
                   disabled={isLoading || !input.trim()}
                   className={cn(
                     "p-2.5 mb-1.5 mr-1.5 rounded-full transition-all duration-200 flex items-center justify-center",
-                    input.trim() 
+                    input.trim() && !isLoading && !isUploading
                       ? "bg-black dark:bg-[#ffffff] text-white dark:text-[#171717] shadow-sm active:scale-90" 
                       : "bg-[#e5e5e5] dark:bg-[#404040] text-[#a3a3a3] dark:text-[#212121]"
                   )}
@@ -693,6 +852,45 @@ export default function ChatPage() {
             </p>
           </div>
         </div>
+
+        {/* PDF Preview Overlay */}
+        <AnimatePresence>
+          {previewUrl && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 md:p-10"
+            >
+              <motion.div 
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-white dark:bg-[#1a1a1a] w-full h-full max-w-6xl rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+              >
+                 <div className="h-14 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 bg-white dark:bg-[#1a1a1a]">
+                    <div className="flex items-center gap-3">
+                       <div className="p-2 bg-red-500 rounded-lg">
+                          <FileText size={16} className="text-white" />
+                       </div>
+                       <span className="text-sm font-semibold truncate max-w-[200px]">Previewing Document</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <a href={previewUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                          <ExternalLink size={20} />
+                       </a>
+                       <button onClick={() => setPreviewUrl(null)} className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 transition-colors">
+                          <X size={24} />
+                       </button>
+                    </div>
+                 </div>
+                 <div className="flex-1 bg-gray-100 dark:bg-black relative">
+                    <iframe src={previewUrl} className="w-full h-full border-none" title="PDF Preview" />
+                 </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </div>
     </div>

@@ -6,12 +6,23 @@ import multipart from "@fastify/multipart";
 import { uploadRoute } from "./routes/upload.js";
 import { conversationRoutes } from "./routes/conversations.js";
 import { qdrant } from "./lib/qdrant.js";
+import fastifyStatic from "@fastify/static";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = Fastify();
 
 await app.register(cors, {
   origin: true,
   methods:["GET", "POST", "OPTIONS", "PUT", "DELETE"]
-  // In production, replace with your frontend URL
+});
+
+await app.register(fastifyStatic, {
+  root: path.join(__dirname, "../uploads"),
+  prefix: "/uploads/",
 });
 
 
