@@ -89,7 +89,7 @@ export async function uploadRoute(app: FastifyInstance) {
         status: "done", 
         message: "PDF processed and embedded", 
         chunksCount: chunks.length,
-        fileUrl: `http://localhost:4000/uploads/${encodeURIComponent(data.filename)}` 
+        fileUrl: `/uploads/${encodeURIComponent(data.filename)}` 
       })}\n\n`);
       reply.raw.end();
     } catch (err) {

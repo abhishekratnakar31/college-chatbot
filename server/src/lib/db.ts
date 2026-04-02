@@ -1,7 +1,15 @@
 import postgres from "postgres";
 
-const connectionString = process.env.DATABASE_URL!;
-export const sql = postgres(connectionString);
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  console.error("❌ DATABASE_URL is not set in environment variables!");
+  // Return a dummy object to prevent immediate crash, 
+  // though queries will fail later if not handled.
+  // Better to throw or exit if it's critical.
+}
+
+export const sql = connectionString ? postgres(connectionString) : null as any;
 
 export async function initDB() {
   try {

@@ -57,6 +57,7 @@ const SUGGESTED_QUESTIONS = [
 
 export default function ChatPage() {
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const resolveUrl = (path: string) => path.startsWith("http") ? path : `${API_BASE_URL}${path}`;
   // --- States ---
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -104,7 +105,7 @@ export default function ChatPage() {
   // --- API Functions ---
   const loadConversations = async () => {
     try {
-      const res = await fetch("${API_BASE_URL}/conversations");
+      const res = await fetch(resolveUrl("/conversations"));
       const data = await res.json();
       setConversations(data);
     } catch (err) {
@@ -203,7 +204,7 @@ export default function ChatPage() {
         formData.append("file", currentFile);
 
         try {
-          const res = await fetch("${API_BASE_URL}/upload", {
+          const res = await fetch(`${API_BASE_URL}/upload`, {
             method: "POST",
             body: formData,
           });
@@ -313,7 +314,7 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("${API_BASE_URL}/chat", {
+      const response = await fetch(`${API_BASE_URL}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -460,7 +461,7 @@ export default function ChatPage() {
                   window.open(source.url, "_blank");
                 } else {
                   const fileName = source.name.split(" (section")[0].trim();
-                  setPreviewUrl(`${API_BASE_URL}/uploads/${encodeURIComponent(fileName)}`);
+                  setPreviewUrl(resolveUrl(`/uploads/${encodeURIComponent(fileName)}`));
                 }
               }}
               className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/30 rounded-md text-[11px] font-bold text-red-700 dark:text-red-400 mx-1 cursor-pointer transition-all active:scale-95 shadow-sm align-middle leading-none"
@@ -643,7 +644,7 @@ export default function ChatPage() {
                         const [, name, url] = msg.content.split("|");
                         return (
                           <div 
-                            onClick={() => setPreviewUrl(url)}
+                            onClick={() => setPreviewUrl(resolveUrl(url))}
                             className="bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 rounded-xl p-2.5 flex items-center gap-3 w-full max-w-[280px] cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all group active:scale-[0.98] shadow-sm ml-auto"
                           >
                             <div className="w-10 h-10 bg-[#ef4444] rounded-lg flex items-center justify-center text-white font-bold shadow-sm">
