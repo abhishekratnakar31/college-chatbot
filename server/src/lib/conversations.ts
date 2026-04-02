@@ -1,47 +1,48 @@
-import { db } from "./db.js";
+import { sql } from "./db.js";
 import { randomUUID } from "node:crypto";
 
-export function createConversation() {
+export async function createConversation() {
   const id = randomUUID();
 
-  db.prepare(`
+  await sql`
     INSERT INTO conversations (id, title)
-    VALUES (?, ?)
-  `).run(id, "New Chat");
+    VALUES (${id}, 'New Chat')
+  `;
 
   return id;
 }
 
-export function ensureConversation(id: string, title: string = "New Chat") {
-  const existing = db.prepare(`SELECT id FROM conversations WHERE id = ?`).get(id);
+export async function ensureConversation(id: string, title: string = "New Chat") {
+  const rows = await sql`SELECT id FROM conversations WHERE id = ${id}`;
+  const existing = rows[0];
   
   if (!existing) {
-    db.prepare(`
+    await sql`
       INSERT INTO conversations (id, title)
-      VALUES (?, ?)
-    `).run(id, title);
+      VALUES (${id}, ${title})
+    `;
   }
 }
 
-export function getConversations() {
-  return db.prepare(`
+export async function getConversations() {
+  return await sql`
     SELECT id, title, created_at
     FROM conversations
     ORDER BY created_at DESC
-  `).all();
+  `;
 }
 
-export function updateConversationTitle(id: string, title: string) {
-  db.prepare(`
+export async function updateConversationTitle(id: string, title: string) {
+  await sql`
     UPDATE conversations
-    SET title = ?
-    WHERE id = ?
-  `).run(title, id);
+    SET title = ${title}
+    WHERE id = ${id}
+  `;
 }
 
-export function deleteConversation(id: string) {
-  db.prepare(`
+export async function deleteConversation(id: string) {
+  await sql`
     DELETE FROM conversations
-    WHERE id = ?
-  `).run(id);
+    WHERE id = ${id}
+  `;
 }

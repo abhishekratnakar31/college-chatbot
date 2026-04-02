@@ -56,6 +56,7 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 export default function ChatPage() {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   // --- States ---
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -103,7 +104,7 @@ export default function ChatPage() {
   // --- API Functions ---
   const loadConversations = async () => {
     try {
-      const res = await fetch("http://localhost:4000/conversations");
+      const res = await fetch("${API_BASE_URL}/conversations");
       const data = await res.json();
       setConversations(data);
     } catch (err) {
@@ -113,7 +114,7 @@ export default function ChatPage() {
 
   const loadConversationHistory = async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/conversations/${id}`);
+      const res = await fetch(`${API_BASE_URL}/conversations/${id}`);
       const data = await res.json();
       
       if (data && data.length > 0) {
@@ -146,7 +147,7 @@ export default function ChatPage() {
     if (!confirm("Are you sure you want to delete this conversation?")) return;
 
     try {
-      await fetch(`http://localhost:4000/conversations/${id}`, {
+      await fetch(`${API_BASE_URL}/conversations/${id}`, {
         method: "DELETE",
       });
       
@@ -166,7 +167,7 @@ export default function ChatPage() {
     }
 
     try {
-      await fetch(`http://localhost:4000/conversations/${id}`, {
+      await fetch(`${API_BASE_URL}/conversations/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: editingTitle }),
@@ -202,7 +203,7 @@ export default function ChatPage() {
         formData.append("file", currentFile);
 
         try {
-          const res = await fetch("http://localhost:4000/upload", {
+          const res = await fetch("${API_BASE_URL}/upload", {
             method: "POST",
             body: formData,
           });
@@ -312,7 +313,7 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:4000/chat", {
+      const response = await fetch("${API_BASE_URL}/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -459,7 +460,7 @@ export default function ChatPage() {
                   window.open(source.url, "_blank");
                 } else {
                   const fileName = source.name.split(" (section")[0].trim();
-                  setPreviewUrl(`http://localhost:4000/uploads/${encodeURIComponent(fileName)}`);
+                  setPreviewUrl(`${API_BASE_URL}/uploads/${encodeURIComponent(fileName)}`);
                 }
               }}
               className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/30 rounded-md text-[11px] font-bold text-red-700 dark:text-red-400 mx-1 cursor-pointer transition-all active:scale-95 shadow-sm align-middle leading-none"

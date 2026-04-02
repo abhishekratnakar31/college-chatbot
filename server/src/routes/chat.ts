@@ -19,20 +19,20 @@ export async function chatRoute(app: FastifyInstance) {
       }
 
       const conversationId = body.conversationId || body.sessionId || crypto.randomUUID();
-      ensureConversation(conversationId);
-      const history = getConversationMessages(conversationId);
+      await ensureConversation(conversationId);
+      const history = await getConversationMessages(conversationId);
 
       if (history.length === 0) {
-        updateConversationTitle(conversationId, body.message.slice(0, 50));
+        await updateConversationTitle(conversationId, body.message.slice(0, 50));
       }
 
-      addMessage(conversationId, {
+      await addMessage(conversationId, {
         role: "user",
         content: body.message,
       });
 
       // 1. Optimize Search Query for Retrieval
-      const currentHistory = getConversationMessages(conversationId);
+      const currentHistory = await getConversationMessages(conversationId);
       const optimizedQuery = await generateSearchQuery(currentHistory);
 
       // 2. Retrieve relevant chunks from Qdrant (Local PDFs)
@@ -187,7 +187,7 @@ ${context}
       }
 
       // 7. Finalize message history
-      addMessage(conversationId, {
+      await addMessage(conversationId, {
         role: "assistant",
         content: assistantReply,
       });

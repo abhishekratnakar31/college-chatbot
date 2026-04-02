@@ -5,12 +5,12 @@ import { getConversationMessages } from "../lib/memory.js";
 export async function conversationRoutes(app: FastifyInstance) {
   // get all conversations
   app.get("/conversations", async () => {
-    return getConversations();
+    return await getConversations();
   });
 
   // create new conversation
   app.post("/conversations", async () => {
-    const id = createConversation();
+    const id = await createConversation();
     return { id };
   });
 
@@ -23,21 +23,21 @@ export async function conversationRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: "Title is required" });
     }
 
-    updateConversationTitle(id, title);
+    await updateConversationTitle(id, title);
     return { success: true };
   });
 
   // delete a conversation
   app.delete("/conversations/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
-    deleteConversation(id);
+    await deleteConversation(id);
     return { success: true };
   });
 
   // get messages for a specific conversation
   app.get("/conversations/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
-    const messages = getConversationMessages(id);
+    const messages = await getConversationMessages(id);
     
     if (!messages) {
       return reply.status(404).send({ error: "Conversation not found" });

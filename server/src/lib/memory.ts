@@ -1,29 +1,25 @@
 import type { ChatMessage } from "../types/chat.js";
-import { db } from "./db.js";
+import { sql } from "./db.js";
 
-interface SessionMemory {
-  messages: ChatMessage[];
-}
-
-export function getConversationMessages(conversationId: string): ChatMessage[] {
-  const rows = db.prepare(`
+export async function getConversationMessages(conversationId: string): Promise<ChatMessage[]> {
+  const rows = await sql`
     SELECT role, content FROM (
       SELECT id, role, content FROM messages
-      WHERE conversation_id = ?
+      WHERE conversation_id = ${conversationId}
       ORDER BY id DESC
       LIMIT 12
-    ) ORDER BY id ASC
-  `).all(conversationId) as ChatMessage[];
+    ) AS subquery ORDER BY id ASC
+  `;
 
-  return rows;
+  return rows as unknown as ChatMessage[];
 }
 
-export function addMessage(
+export async function addMessage(
   conversationId: string,
   message: ChatMessage
 ) {
-  db.prepare(`
+  await sql`
     INSERT INTO messages (conversation_id, role, content)
-    VALUES (?, ?, ?)
-  `).run(conversationId, message.role, message.content);
+    VALUES (${conversationId}, ${message.role}, ${message.content})
+  `;
 }
