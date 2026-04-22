@@ -4,7 +4,8 @@ import cors from "@fastify/cors";
 import { chatRoute } from "./routes/chat.js";
 import multipart from "@fastify/multipart";
 import { uploadRoute } from "./routes/upload.js";
-import { conversationRoutes } from "./routes/conversations.js";
+import { registerRateLimiter } from "./guardrails/index.js";
+
 import { qdrant } from "./lib/qdrant.js";
 import { initDB } from "./lib/db.js";
 import fastifyStatic from "@fastify/static";
@@ -23,18 +24,24 @@ if (!fs.existsSync(uploadsDir)) {
 const app = Fastify();
 
 await app.register(cors, {
-  origin: process.env.ALLOWED_ORIGIN === "*" ? true : process.env.ALLOWED_ORIGIN || true,
-  methods:["GET", "POST", "OPTIONS", "PUT", "DELETE"]
+  origin:
+    process.env.ALLOWED_ORIGIN === "*"
+      ? true
+      : process.env.ALLOWED_ORIGIN || true,
+  methods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
 });
+
+// ── Register global rate limiter ────────────────────────────────────
+registerRateLimiter(app);
+// ───────────────────────────────────────────────────────────────────
 
 await app.register(fastifyStatic, {
   root: path.join(__dirname, "../uploads"),
   prefix: "/uploads/",
 });
 
-
 await app.register(chatRoute);
-await app.register(conversationRoutes);
+
 await app.register(multipart, {
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB limit
@@ -52,8 +59,26 @@ async function initVectorDB() {
         distance: "Cosine",
       },
     });
-    console.log("Vector DB Initialized: Collection created.");
+    
+    // Create payload index for the 'document' field to allow filtering
+    await qdrant.createPayloadIndex("college_docs", {
+      field_name: "document",
+      field_schema: "keyword",
+      wait: true,
+    });
+    
+    console.log("Vector DB Initialized: Collection and index created.");
   } else {
+    // Ensure index exists even if collection was already there
+    try {
+      await qdrant.createPayloadIndex("college_docs", {
+        field_name: "document",
+        field_schema: "keyword",
+        wait: true,
+      });
+    } catch (e) {
+      // Ignore if index already exists
+    }
     console.log("Vector DB Initialized: Collection already exists.");
   }
 }
@@ -63,6 +88,6 @@ await initVectorDB();
 
 const PORT = Number(process.env.PORT) || 4000;
 
-app.listen({ port: PORT, host: '0.0.0.0' }, () => {
+app.listen({ port: PORT, host: "0.0.0.0" }, () => {
   console.log(`Server running on port ${PORT}`);
 });

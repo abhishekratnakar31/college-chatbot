@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { createRequire } from "module";
 import { qdrant } from "../lib/qdrant.js";
-import { getEmbedding } from "../llm/embedding.js";
+import { getEmbeddings } from "../llm/embedding.js";
 import { extractTextFromPDF } from "../utils/ocr.js";
 import crypto from "node:crypto";
 import * as fs from "node:fs/promises";
@@ -14,6 +14,71 @@ const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
 
 export async function uploadRoute(app: FastifyInstance) {
+  /**
+   * POST /extract-text
+   * ─────────────────────────────────────────────────────────────────
+   * Lightweight PDF text extraction endpoint — does NOT index into
+   * Qdrant. Used in web-search mode to enrich search queries with
+   * PDF content without storing anything permanently.
+   *
+   * Returns: { text: string }  (first 3000 chars of extracted text)
+   */
+  app.post("/extract-text", async (req, reply) => {
+    try {
+      const data = await req.file();
+      if (!data) {
+        return reply.status(400).send({ error: "No file uploaded" });
+      }
+
+      const buffer = await data.toBuffer();
+      console.log(`[ExtractText] Extracting text from: ${data.filename}`);
+
+      let text = "";
+      let usedOcr = false;
+
+      // ── Step 1: Try pdf-parse (fast, text-based PDFs) ──────────────
+      try {
+        const parsed = await pdfParse(buffer);
+        text = (parsed.text || "").replace(/\s+/g, " ").trim();
+        console.log(`[ExtractText] pdf-parse returned ${text.length} chars`);
+      } catch (err) {
+        console.warn(`[ExtractText] pdf-parse threw — will try OCR:`, err);
+      }
+
+      // ── Step 2: If empty (scanned PDF), fall back to OCR ───────────
+      if (!text) {
+        console.log(`[ExtractText] Empty text from pdf-parse — trying OCR fallback...`);
+        try {
+          text = (await extractTextFromPDF(buffer, data.filename, () => {}))
+            .replace(/\s+/g, " ")
+            .trim();
+          usedOcr = true;
+          console.log(`[ExtractText] OCR returned ${text.length} chars`);
+        } catch (ocrErr) {
+          console.error(`[ExtractText] OCR also failed:`, ocrErr);
+        }
+      }
+
+      // Allow up to ~15,000 chars (approx 3-4k tokens) for Web Mode context
+      const snippet = text.slice(0, 15000);
+      console.log(`[ExtractText] Final snippet length: ${snippet.length} chars (OCR: ${usedOcr})`);
+
+      return reply.send({
+        text: snippet,
+        filename: data.filename,
+        scanned: usedOcr,
+        empty: !snippet,
+      });
+    } catch (err) {
+      console.error("[ExtractText] Error:", err);
+      return reply.status(500).send({
+        error: "ExtractText Error",
+        message: err instanceof Error ? err.message : "Failed to extract text",
+      });
+    }
+  });
+
+
   app.post("/upload", async (req, reply) => {
     try {
       const data = await req.file();
@@ -38,11 +103,12 @@ export async function uploadRoute(app: FastifyInstance) {
          reply.raw.write(`data: ${JSON.stringify(prog)}\n\n`);
       });
 
-      console.log("TEXT LENGTH:", text.length);
+      console.log(`[RAG Upload] Extracted Text Length: ${text.length} characters`);
+      console.log(`[RAG Upload] Chunking text into chunks of size 4000 with 500 overlap...`);
 
       // Chunk text
-      const chunkSize = 800;
-      const overlap = 200;
+      const chunkSize = 4000;
+      const overlap = 500;
 
       const chunks: string[] = [];
 
@@ -58,27 +124,64 @@ export async function uploadRoute(app: FastifyInstance) {
         throw new Error("No readable text found in this PDF. It might be a scanned image or empty file.");
       }
 
+      console.log(`[RAG Upload] Successfully created ${chunks.length} chunks. Starting vectorization and indexing...`);
       reply.raw.write(`data: ${JSON.stringify({ status: "started", total: chunks.length })}\n\n`);
 
-      for (const [i, chunk] of chunks.entries()) {
-        const embedding = await getEmbedding(chunk);
+      // ── Client-disconnect guard ─────────────────────────────────────
+      let clientAborted = false;
+      const onSocketClose = () => {
+        clientAborted = true;
+        console.warn(`[RAG Upload] Client disconnected — aborting embedding loop.`);
+      };
+      reply.raw.socket?.on("close", onSocketClose);
+      // ──────────────────────────────────────────────────────────────
 
-        await qdrant.upsert("college_docs", {
-          wait: true,
-          points: [
-            {
-              id: crypto.randomUUID(),
-              vector: embedding,
-              payload: {
-                text: chunk,
-                document: data.filename,
-                chunk_index: i,
-              },
-            },
-          ],
-        });
-        console.log(`Indexed chunk ${i+1}/${chunks.length}`)
-        reply.raw.write(`data: ${JSON.stringify({ status: "embedding", progress: i + 1, total: chunks.length })}\n\n`);
+      // ── Parallel batch processing ───────────────────────────────────
+      // Instead of 1 embed + 1 upsert per chunk (553 serial roundtrips),
+      // we embed BATCH_SIZE chunks concurrently and do a single bulk upsert.
+      // At batch=8: 553 chunks → ~70 batches ≈ 8-10x faster.
+      const BATCH_SIZE = 8;
+      let totalIndexed = 0;
+
+      for (let batchStart = 0; batchStart < chunks.length; batchStart += BATCH_SIZE) {
+        // Early exit if client disconnected
+        if (clientAborted) {
+          console.warn(`[RAG Upload] Aborted at chunk ${totalIndexed + 1}/${chunks.length} — client disconnected.`);
+          break;
+        }
+
+        const batch = chunks.slice(batchStart, Math.min(batchStart + BATCH_SIZE, chunks.length));
+
+        // 1. Embed all chunks in this batch using a single bulk network request
+        const embeddings = await getEmbeddings(batch);
+
+        // 2. Build all Qdrant points for this batch
+        const points = batch.map((chunk, j) => ({
+          id: crypto.randomUUID(),
+          vector: embeddings[j]!,
+          payload: {
+            text: chunk,
+            document: data.filename,
+            chunk_index: batchStart + j,
+          },
+        }));
+
+        // 3. Single bulk upsert (one network roundtrip for all BATCH_SIZE points)
+        await qdrant.upsert("college_docs", { wait: true, points });
+
+        totalIndexed += batch.length;
+        console.log(`[RAG Upload] Batch upserted chunks ${batchStart + 1}–${totalIndexed}/${chunks.length}`);
+        reply.raw.write(`data: ${JSON.stringify({ status: "embedding", progress: totalIndexed, total: chunks.length })}\n\n`);
+      }
+      // ──────────────────────────────────────────────────────────────
+
+      // Remove listener regardless of how the loop ended
+      reply.raw.socket?.off("close", onSocketClose);
+
+      // If client left mid-upload, close cleanly without a done event
+      if (clientAborted) {
+        reply.raw.end();
+        return;
       }
 
       // Save the original file to uploads folder for previewing
