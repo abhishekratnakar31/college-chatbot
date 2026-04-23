@@ -481,9 +481,9 @@ function ChatContent() {
   }, [messages, isLoading]);
 
   return (
-    <div className="flex h-screen bg-[#ffffff] dark:bg-[#212121] text-[#0d0d0d] dark:text-[#ececec] font-sans selection:bg-orange-500/30 overflow-hidden">
+    <div className="flex h-screen bg-black text-[#ececec] font-sans selection:bg-zinc-800 overflow-hidden">
       {/* Main Content */}
-      <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-white dark:bg-[#212121] transition-colors">
+      <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-black transition-colors">
         {/* Modern GPT Header */}
         <header className="absolute top-0 w-full z-20 bg-transparent">
           <div className="px-4 h-14 flex items-center justify-between">
@@ -501,7 +501,7 @@ function ChatContent() {
             !isLoading &&
             !isUploading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
-                <h1 className="text-2xl md:text-3xl tracking-tight font-medium text-center text-[#0d0d0d] dark:text-[#ececec] mb-8 px-4">
+                <h1 className="text-2xl md:text-3xl tracking-tight font-medium text-center text-[#ececec] mb-64 px-4">
                   Which college are you exploring today?
                 </h1>
               </div>
@@ -530,7 +530,7 @@ function ChatContent() {
                         msg.role === "user"
                           ? msg.content.startsWith("ATTACHMENT|")
                             ? "" // No background for the card itseld
-                            : "bg-[#f4f4f4] dark:bg-[#2f2f2f] px-3 md:px-4 py-2 rounded-2xl max-w-[90%] md:max-w-[85%] text-[#0d0d0d] dark:text-[#ececec] border border-transparent dark:border-zinc-800"
+                            : "bg-zinc-900 px-3 md:px-4 py-2 rounded-2xl max-w-[90%] md:max-w-[85%] text-[#ececec] border border-zinc-800"
                           : "text-[#0d0d0d] dark:text-[#ececec] w-full",
                       )}
                     >
@@ -655,24 +655,15 @@ function ChatContent() {
           </div>
         </main>
 
-        {/* Input Dock - Centered Floating Pod */}
-        <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 md:p-8 z-30 pointer-events-none">
+        {/* Input Dock - Centered Floating Pod when empty, fixed to bottom when chatting */}
+        <div className={cn(
+          "absolute left-0 right-0 p-2 sm:p-4 md:p-8 z-30 transition-all duration-700 ease-in-out pointer-events-none",
+          messages.filter(m => !m.content.startsWith("ATTACHMENT")).length <= 1 && !isLoading && !isUploading
+            ? "bottom-1/2 translate-y-1/2" 
+            : "bottom-0 translate-y-0"
+        )}>
           <div className="max-w-3xl mx-auto w-full pointer-events-auto">
-            {/* Starter Prompts */}
-            {messages.length === 1 && !isLoading && !file && !isUploading && (
-              <div className="flex flex-wrap gap-2 mb-4 md:mb-8 justify-center px-2">
-                {SUGGESTED_QUESTIONS.map((q, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSend(q)}
-                    className="px-3 py-1.5 md:px-4 md:py-2 bg-white dark:bg-[#262626] border border-[#e5e7eb] dark:border-[#404040] rounded-xl text-[11px] md:text-xs font-semibold text-[#171717] dark:text-[#ECECEC] hover:bg-black/5 dark:hover:bg-white/10 transition-all shadow-sm active:scale-95"
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            )}
-                    <div className="relative rounded-[30px] bg-[#f4f4f4] dark:bg-[#2f2f2f] focus-within:ring-0 transition-all shadow-none flex flex-col">
+                    <div className="relative rounded-[30px] bg-zinc-900 focus-within:ring-0 transition-all shadow-none flex flex-col">
               {/* Plus Menu Dropdown (Moved outside overflow-hidden) */}
               <AnimatePresence>
                 {isMenuOpen && (
@@ -1016,8 +1007,8 @@ function ChatContent() {
 export default function ChatPage() {
   return (
     <Suspense fallback={
-      <div className="flex h-screen items-center justify-center bg-white dark:bg-[#212121]">
-        <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+      <div className="flex h-screen items-center justify-center bg-black">
+        <div className="w-8 h-8 border-4 border-zinc-700 border-t-transparent rounded-full animate-spin" />
       </div>
     }>
       <ChatContent />
