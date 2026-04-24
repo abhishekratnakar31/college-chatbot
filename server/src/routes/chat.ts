@@ -7,6 +7,7 @@ import { getEmbedding } from "../llm/embedding.js";
 import { searchWeb } from "../lib/search.js";
 import { runInputGuardrails, runOutputGuardrails } from "../guardrails/index.js";
 import { generatePdfAwareSearchQuery } from "../llm/queryEnricher.js";
+import { reRankChunks } from "../llm/reranker.js";
 
 export async function chatRoute(app: FastifyInstance) {
   app.post("/chat", async (request, reply) => {
@@ -16,6 +17,7 @@ export async function chatRoute(app: FastifyInstance) {
         mode?: "pdf" | "web";
         pdfContext?: string;    // Extracted PDF text (may be empty for scanned PDFs)
         pdfFilename?: string;   // PDF filename — used as fallback when text is empty
+        filters?: Record<string, any>; // Optional metadata filters (e.g. { page_number: 5 })
       };
       const mode = body.mode || "pdf";
       console.log(`[DEBUG CHAT] Mode: ${mode}, Request Body:`, typeof body, body);
@@ -139,30 +141,76 @@ export async function chatRoute(app: FastifyInstance) {
         console.log(`[RAG Search] Scoping search to active document: ${activeDocument}`);
       }
 
+      // Build additional metadata filters if provided
+      const customFilters = body.filters ? Object.entries(body.filters).map(([key, value]) => ({
+        key,
+        match: { value }
+      })) : [];
+
       // 3. Retrieve relevant chunks from Qdrant (Local PDFs)
       let qdrantResults: any[] = [];
       if (mode === "pdf") {
+        console.log(`[RAG Search] Starting Hybrid Search (Vector + Keyword)...`);
         const queryEmbedding = await getEmbedding(optimizedQuery);
-        const searchOptions: any = {
+        
+        // 1. Vector Similarity Search
+        const vectorSearchOptions: any = {
           vector: queryEmbedding,
-          limit: 15,
+          limit: 25, // Get more candidates for re-ranking
         };
 
-        if (activeDocument) {
-          searchOptions.filter = {
+        if (activeDocument || customFilters.length > 0) {
+          vectorSearchOptions.filter = {
             must: [
-              {
-                key: "document",
-                match: {
-                  value: activeDocument,
-                },
-              },
+              ...(activeDocument ? [{ key: "document", match: { value: activeDocument } }] : []),
+              ...customFilters
             ],
           };
         }
 
-        qdrantResults = (await qdrant.search("college_docs", searchOptions)) || [];
-        console.log(`[RAG Search] Found ${qdrantResults.length} relevant chunks in local PDFs via Qdrant.`);
+        const vectorResults = (await qdrant.search("college_docs", vectorSearchOptions)) || [];
+        console.log(`[RAG Search] Vector search returned ${vectorResults.length} candidates.`);
+
+        // 2. Keyword Match Search (Full-text)
+        // This helps find specific terms/codes that embeddings might miss
+        const keywordSearchOptions: any = {
+          limit: 15,
+          filter: {
+            must: [
+              ...(activeDocument ? [{ key: "document", match: { value: activeDocument } }] : []),
+              ...customFilters,
+              {
+                key: "text",
+                match: {
+                  text: optimizedQuery,
+                },
+              },
+            ],
+          },
+        };
+
+        const keywordResults = (await qdrant.scroll("college_docs", keywordSearchOptions)) || { points: [] };
+        console.log(`[RAG Search] Keyword search (scroll) found ${keywordResults.points.length} candidates.`);
+
+        // 3. Merge and Deduplicate
+        const seenIds = new Set(vectorResults.map((r: any) => r.id));
+        const combinedCandidates = [...vectorResults];
+        
+        for (const point of keywordResults.points) {
+          if (!seenIds.has(point.id)) {
+            combinedCandidates.push(point as any);
+            seenIds.add(point.id);
+          }
+        }
+        console.log(`[RAG Search] Total unique candidates for re-ranking: ${combinedCandidates.length}`);
+
+        // 4. Re-ranking Step
+        // Use LLM to intelligently rank the combined candidates
+        const rankedResults = await reRankChunks(optimizedQuery, combinedCandidates);
+        
+        // Take top 8 highly relevant chunks for the final context
+        qdrantResults = rankedResults.slice(0, 8);
+        console.log(`[RAG Search] Final top ${qdrantResults.length} chunks selected after re-ranking.`);
       }
 
       // 4. Retrieve relevant info from Web (Live Search)

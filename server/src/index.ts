@@ -59,27 +59,24 @@ async function initVectorDB() {
         distance: "Cosine",
       },
     });
-    
-    // Create payload index for the 'document' field to allow filtering
+    console.log("Vector DB Initialized: Collection created.");
+  }
+
+  // Ensure indexes exist (safe to call even if they already exist)
+  try {
     await qdrant.createPayloadIndex("college_docs", {
       field_name: "document",
       field_schema: "keyword",
       wait: true,
     });
-    
-    console.log("Vector DB Initialized: Collection and index created.");
-  } else {
-    // Ensure index exists even if collection was already there
-    try {
-      await qdrant.createPayloadIndex("college_docs", {
-        field_name: "document",
-        field_schema: "keyword",
-        wait: true,
-      });
-    } catch (e) {
-      // Ignore if index already exists
-    }
-    console.log("Vector DB Initialized: Collection already exists.");
+    await qdrant.createPayloadIndex("college_docs", {
+      field_name: "text",
+      field_schema: "text",
+      wait: true,
+    });
+    console.log("Vector DB Initialized: Payload indexes ensured.");
+  } catch (e) {
+    console.warn("Notice: One or more payload indexes could not be created (they may already exist).");
   }
 }
 

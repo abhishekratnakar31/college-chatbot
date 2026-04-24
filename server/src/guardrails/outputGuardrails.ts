@@ -69,7 +69,7 @@ const PROFANITY_LIST: string[] = [
 
 const PROFANITY_REGEX = new RegExp(
   `\\b(${PROFANITY_LIST.join("|")})\\b`,
-  "gi"
+  "i"  // No 'g' flag — .test() must not be stateful
 );
 
 // Disclaimer messages

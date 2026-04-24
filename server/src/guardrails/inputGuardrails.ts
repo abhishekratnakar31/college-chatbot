@@ -55,7 +55,7 @@ const INJECTION_PATTERNS: RegExp[] = [
 const OFF_TOPIC_KEYWORDS: RegExp[] = [
   /\b(recipe|ingredients?|cook(ing)?|bake|baking)\b/i,
   /\b(box\s*office|movie\s*review|film\s*critic)\b/i,
-  /\b(stock\s*market|crypto(currency)?|bitcoin|forex\s*trade)\b/i,
+  /\b(stock\s*market|crypto(currency)?|bitcoin|forex)\b/i,
   /\b(horoscope|astrology|zodiac\s*sign)\b/i,
   /\b(sports?\s*bet|gambling|casino|poker)\b/i,
 ];
