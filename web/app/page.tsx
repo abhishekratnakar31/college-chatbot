@@ -215,7 +215,7 @@ function TopStudyPlaces() {
             className="flex-shrink-0 w-40 aspect-square snap-start p-4 rounded-xl bg-white border border-zinc-100 hover:border-blue-100 hover:bg-blue-50/10 transition-all group flex flex-col items-center justify-center text-center gap-4"
           >
             <div className="group-hover:scale-105 transition-transform duration-500">
-              {React.cloneElement(city.icon as React.ReactElement, { strokeWidth: 1.5 })}
+              {React.cloneElement(city.icon as React.ReactElement<any>, { strokeWidth: 1.5 })}
             </div>
             <span className="text-sm font-bold text-zinc-700 group-hover:text-black transition-colors">
               {city.name}

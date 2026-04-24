@@ -36,9 +36,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4000";
 interface College {
   id: number;
   name: string;
+  college?: string;      // Fallback from backend
   category: string;
+  nirf_category?: string; // Fallback from backend
   state: string;
   rank_2024: number;
+  nirf_rank?: number | null;
   score: number;
   avg_package?: number;
   innovation_score?: number;
