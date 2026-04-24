@@ -35,12 +35,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4000";
 
 interface College {
   id: number;
-  name: string;
+  name?: string;         // Made optional to handle different backend responses
   college?: string;      // Fallback from backend
   category: string;
   nirf_category?: string; // Fallback from backend
   state: string;
-  rank_2024: number;
+  rank_2024?: number;    // Made optional
   nirf_rank?: number | null;
   score: number;
   avg_package?: number;
@@ -313,7 +313,7 @@ export default function RankingsPage() {
                       {/* Middle: Name & Info */}
                       <div className="flex-grow min-w-0">
                         <h3 className="text-lg font-bold text-zinc-800 mb-1 group-hover:text-black transition-colors truncate">
-                          {college.name || college.college}
+                          {college.name || college.college || "Unknown Institution"}
                         </h3>
                         <div className="flex flex-wrap items-center gap-3">
                           <span className="text-[9px] font-black uppercase text-zinc-400 border border-zinc-100 px-2 py-0.5 rounded-full">

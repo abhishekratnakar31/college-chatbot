@@ -134,11 +134,7 @@ function ChatContent() {
       const extractedText: string = data.text || "";
       setWebPdfContext(extractedText);
       setWebPdfScanned(!!data.scanned || extractedText.length === 0);
-      console.log(
-        `[WebPDF] Extracted ${extractedText.length} chars from ${selectedFile.name}` +
-        (data.scanned ? " (OCR used)" : "") +
-        (data.empty ? " ⚠️ EMPTY" : "")
-      );
+      // extraction complete
     } catch (err) {
       // Network error — keep the filename so the backend can still use it as a hint
       console.error("[WebPDF] Text extraction failed:", err);

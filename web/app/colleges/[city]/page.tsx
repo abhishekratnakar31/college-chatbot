@@ -98,7 +98,7 @@ export default function CityCollegesPage() {
                     <MapPin className="w-3 h-3 text-blue-600" /> {cityNameDisplay}
                   </span>
                 </div>
-                <h1 className="text-5xl lg:text-7xl font-black tracking-tighter leading-none text-white">
+                <h1 className="text-5xl lg:text-7xl font-black tracking-tighter leading-none text-black">
                   Colleges in <span className="text-zinc-200">{cityNameDisplay}</span>
                 </h1>
               </div>

@@ -22,7 +22,6 @@ export async function chatRoute(app: FastifyInstance) {
         filters?: Record<string, any>; // Optional metadata filters (e.g. { page_number: 5 })
       };
       const mode = body.mode || "pdf";
-      console.log(`[DEBUG CHAT] Mode: ${mode}, Request Body:`, typeof body, body);
 
       if (!body || !body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
         reply.status(400).send({ error: "Messages array required" });
@@ -84,16 +83,10 @@ export async function chatRoute(app: FastifyInstance) {
       let optimizedQuery: string;
 
       if (hasPdfContext) {
-        console.log(
-          hasPdfText
-            ? `[RAG Search] PDF text context (${body.pdfContext!.length} chars) — using enriched query generator.`
-            : `[RAG Search] PDF filename only ("${body.pdfFilename}") — using filename as context hint.`
-        );
         optimizedQuery = await generatePdfAwareSearchQuery(currentInput, pdfContextForQuery);
       } else {
         optimizedQuery = await generateSearchQuery(history);
       }
-      console.log(`[RAG Search] Optimized Query: "${optimizedQuery}"`);
 
       if (optimizedQuery === "OUT_OF_DOMAIN") {
         if (mode === "web" && hasPdfContext) {
@@ -103,9 +96,7 @@ export async function chatRoute(app: FastifyInstance) {
             ? body.pdfFilename.replace(/\.pdf$/i, "").replace(/[-_]/g, " ")
             : "college information";
           optimizedQuery = `${nameHint} admissions courses programs`;
-          console.log(`[RAG Search] OUT_OF_DOMAIN overridden (PDF attached) — fallback query: "${optimizedQuery}"`);
         } else if (mode === "web") {
-          console.log(`[RAG Search] Query rejected as out of domain (WEB MODE).`);
           reply.raw.writeHead(200, {
             "Content-Type": "text/event-stream",
             "Cache-Control": "no-cache",
@@ -119,12 +110,10 @@ export async function chatRoute(app: FastifyInstance) {
           return;
         } else {
           // PDF mode: fall back to raw input
-          console.log(`[RAG Search] Query flagged as OUT_OF_DOMAIN in PDF mode. Falling back to raw input.`);
           optimizedQuery = currentInput;
         }
       }
 
-      console.log(`[RAG Search] Vectorizing optimized query...`);
 
       // 2. Extract active document context from history
       let activeDocument: string | null = null;
@@ -139,10 +128,6 @@ export async function chatRoute(app: FastifyInstance) {
         }
       }
 
-      if (activeDocument) {
-        console.log(`[RAG Search] Scoping search to active document: ${activeDocument}`);
-      }
-
       // Build additional metadata filters if provided
       const customFilters = body.filters ? Object.entries(body.filters).map(([key, value]) => ({
         key,
@@ -152,7 +137,6 @@ export async function chatRoute(app: FastifyInstance) {
       // 3. Retrieve relevant chunks from Qdrant (Local PDFs)
       let qdrantResults: any[] = [];
       if (mode === "pdf") {
-        console.log(`[RAG Search] Starting Hybrid Search (Vector + Keyword)...`);
         const queryEmbedding = await getEmbedding(optimizedQuery);
         
         // 1. Vector Similarity Search
@@ -171,7 +155,6 @@ export async function chatRoute(app: FastifyInstance) {
         }
 
         const vectorResults = (await qdrant.search("college_docs", vectorSearchOptions)) || [];
-        console.log(`[RAG Search] Vector search returned ${vectorResults.length} candidates.`);
 
         // 2. Keyword Match Search (Full-text)
         // This helps find specific terms/codes that embeddings might miss
@@ -192,7 +175,6 @@ export async function chatRoute(app: FastifyInstance) {
         };
 
         const keywordResults = (await qdrant.scroll("college_docs", keywordSearchOptions)) || { points: [] };
-        console.log(`[RAG Search] Keyword search (scroll) found ${keywordResults.points.length} candidates.`);
 
         // 3. Merge and Deduplicate
         const seenIds = new Set(vectorResults.map((r: any) => r.id));
@@ -204,7 +186,6 @@ export async function chatRoute(app: FastifyInstance) {
             seenIds.add(point.id);
           }
         }
-        console.log(`[RAG Search] Total unique candidates for re-ranking: ${combinedCandidates.length}`);
 
         // 4. Re-ranking Step
         // Use LLM to intelligently rank the combined candidates
@@ -212,15 +193,12 @@ export async function chatRoute(app: FastifyInstance) {
         
         // Take top 8 highly relevant chunks for the final context
         qdrantResults = rankedResults.slice(0, 8);
-        console.log(`[RAG Search] Final top ${qdrantResults.length} chunks selected after re-ranking.`);
       }
 
       // 4. Retrieve relevant info from Web (Live Search)
       let webResults: any[] = [];
       if (mode === "web" || mode === "compare") {
-        console.log(`[RAG Search] Retrieving context from Live Web Search...`);
         webResults = (await searchWeb(optimizedQuery)) || [];
-        console.log(`[RAG Search] WEB RESULTS FOUND: ${webResults.length}`);
       }
 
       // ── Rankings Context Injection ──────────────────────────────────

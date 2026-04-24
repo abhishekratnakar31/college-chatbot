@@ -72,7 +72,7 @@ function FilterSection({
   const [isOpen, setIsOpen] = useState(true);
   const [search, setSearch] = useState("");
 
-  const filtered = options.filter(opt => opt.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = (options || []).filter(opt => opt.name?.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="border-b border-zinc-100 py-6 last:border-0">

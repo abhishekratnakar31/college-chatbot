@@ -31,7 +31,6 @@ export async function uploadRoute(app: FastifyInstance) {
       }
 
       const buffer = await data.toBuffer();
-      console.log(`[ExtractText] Extracting text from: ${data.filename}`);
 
       let text = "";
       let usedOcr = false;
@@ -40,7 +39,6 @@ export async function uploadRoute(app: FastifyInstance) {
       try {
         const parsed = await pdfParse(buffer);
         text = (parsed.text || "").replace(/\s+/g, " ").trim();
-        console.log(`[ExtractText] pdf-parse returned ${text.length} chars`);
       } catch (err) {
         console.warn(`[ExtractText] pdf-parse threw — will try OCR:`, err);
       }
@@ -60,7 +58,6 @@ export async function uploadRoute(app: FastifyInstance) {
 
       // Allow up to ~15,000 chars (approx 3-4k tokens) for Web Mode context
       const snippet = text.slice(0, 15000);
-      console.log(`[ExtractText] Final snippet length: ${snippet.length} chars (OCR: ${usedOcr})`);
 
       return reply.send({
         text: snippet,
@@ -169,11 +166,8 @@ export async function uploadRoute(app: FastifyInstance) {
           },
         }));
 
-        // 3. Single bulk upsert
         await qdrant.upsert("college_docs", { wait: true, points });
-
         totalIndexed += batch.length;
-        console.log(`[RAG Upload] Batch upserted chunks ${batchStart + 1}–${totalIndexed}/${chunks.length}`);
         reply.raw.write(`data: ${JSON.stringify({ status: "embedding", progress: totalIndexed, total: chunks.length })}\n\n`);
       }
       // ──────────────────────────────────────────────────────────────

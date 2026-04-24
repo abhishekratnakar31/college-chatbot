@@ -40,6 +40,6 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-  },
+  }, 
   "exclude": ["node_modules", "dist", "test-llm.ts", "vitest.config.ts", "test_og.ts", "test_scraper.ts"]
 }
