@@ -33,8 +33,8 @@ interface College {
 
 export default function CityCollegesPage() {
   const { city: cityParam } = useParams();
-  const city = Array.isArray(cityParam) ? cityParam[0] : cityParam;
-  const decodedCity = decodeURIComponent(city.replace(/-/g, " "));
+  const city = cityParam ? (Array.isArray(cityParam) ? cityParam[0] : cityParam) : "";
+  const decodedCity = city ? decodeURIComponent(city.replace(/-/g, " ")) : "";
   const [colleges, setColleges] = useState<College[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("nirf_rank");
@@ -56,7 +56,9 @@ export default function CityCollegesPage() {
     fetchColleges();
   }, [fetchColleges]);
 
-  const cityNameDisplay = decodedCity.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const cityNameDisplay = decodedCity 
+    ? decodedCity.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') 
+    : "City";
 
   return (
     <div className="flex h-screen bg-white text-black font-sans selection:bg-blue-50 overflow-hidden">
