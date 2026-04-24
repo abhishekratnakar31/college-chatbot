@@ -8,13 +8,15 @@ import { searchWeb } from "../lib/search.js";
 import { runInputGuardrails, runOutputGuardrails } from "../guardrails/index.js";
 import { generatePdfAwareSearchQuery } from "../llm/queryEnricher.js";
 import { reRankChunks } from "../llm/reranker.js";
+import { detectColleges, computeInnovationScore } from "./rankings.js";
+import { sql } from "../lib/db.js";
 
 export async function chatRoute(app: FastifyInstance) {
   app.post("/chat", async (request, reply) => {
     try {
       const body = request.body as {
         messages?: ChatMessage[];
-        mode?: "pdf" | "web";
+        mode?: "pdf" | "web" | "compare";
         pdfContext?: string;    // Extracted PDF text (may be empty for scanned PDFs)
         pdfFilename?: string;   // PDF filename — used as fallback when text is empty
         filters?: Record<string, any>; // Optional metadata filters (e.g. { page_number: 5 })
@@ -215,16 +217,83 @@ export async function chatRoute(app: FastifyInstance) {
 
       // 4. Retrieve relevant info from Web (Live Search)
       let webResults: any[] = [];
-      if (mode === "web") {
+      if (mode === "web" || mode === "compare") {
         console.log(`[RAG Search] Retrieving context from Live Web Search...`);
         webResults = (await searchWeb(optimizedQuery)) || [];
         console.log(`[RAG Search] WEB RESULTS FOUND: ${webResults.length}`);
-        if (webResults.length > 0 && webResults[0]) {
-          console.log(`[RAG Search] Top Web Snippet: ${webResults[0].content.slice(0, 100)}...`);
-        }
       }
-      
-      console.log(`[RAG Search] Building context prompt and sending to LLM (OpenRouter)...`);
+
+      // ── Rankings Context Injection ──────────────────────────────────
+      // Detect college mentions in the user query and inject verified stats
+      let rankingsContext = "";
+      try {
+        const mentioned = detectColleges(currentInput);
+        if (mentioned.length >= 2) {
+          // Comparison mode
+          const rows: any[] = [];
+          for (const name of mentioned.slice(0, 2)) {
+            const res = await sql<any[]>`
+              SELECT * FROM college_achievements
+              WHERE college ILIKE ${"%" + name + "%"}  OR ${name} = ANY(aliases)
+              LIMIT 1
+            `;
+            if (res[0]) rows.push({ ...res[0], innovation_score: computeInnovationScore(res[0] as any) });
+          }
+          if (rows.length === 2) {
+            const [a, b] = rows as any[];
+            rankingsContext = `
+## VERIFIED COLLEGE COMPARISON (from NIRF 2024 database)
+
+| Metric | ${a.college} | ${b.college} |
+|---|---|---|
+| Location | ${a.city}, ${a.state} | ${b.city}, ${b.state} |
+| NIRF Rank (${a.nirf_category}) | #${a.nirf_rank ?? 'N/A'} | #${b.nirf_rank ?? 'N/A'} |
+| QS Global Rank | ${a.global_rank ? '#' + a.global_rank : 'N/A'} | ${b.global_rank ? '#' + b.global_rank : 'N/A'} |
+| Avg Package | ₹${a.avg_package}L | ₹${b.avg_package}L |
+| Highest Package | ₹${a.highest_package}L | ₹${b.highest_package}L |
+| Fees Range | ${a.fees_range ?? 'N/A'} | ${b.fees_range ?? 'N/A'} |
+| User Rating | ${a.user_rating}/5 | ${b.user_rating}/5 |
+| Patents Filed | ${a.patents ?? 0}+ | ${b.patents ?? 0}+ |
+| Research Papers | ${a.research_papers ?? 0}+ | ${b.research_papers ?? 0}+ |
+| Startups Incubated | ${a.startups_incubated ?? 0}+ | ${b.startups_incubated ?? 0}+ |
+| Innovation Score | ${a.innovation_score} | ${b.innovation_score} |
+
+Awards — ${a.college}: ${(a.awards as string[]).join(', ') || 'N/A'}
+Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
+`;
+          }
+        } else if (mentioned.length === 1) {
+          // Single college profile
+          const name = mentioned[0]!;
+          const res = await sql<any[]>`
+            SELECT * FROM college_achievements
+            WHERE college ILIKE ${"%" + name + "%"} OR ${name} = ANY(aliases)
+            LIMIT 1
+          `;
+          if (res[0]) {
+            const c = res[0] as any;
+            const score = computeInnovationScore(c);
+            rankingsContext = `
+## VERIFIED COLLEGE PROFILE — ${c.college} (from NIRF 2024 database)
+- **Location**: ${c.city}, ${c.state}
+- **NIRF Rank**: #${c.nirf_rank ?? 'N/A'} (${c.nirf_category})
+- **QS Global Rank**: ${c.global_rank ? '#' + c.global_rank : 'Not ranked globally'}
+- **Innovation Score**: ${score}/100
+- **Placements**: Avg ₹${c.avg_package}L, Highest ₹${c.highest_package}L
+- **Fees**: ${c.fees_range ?? 'N/A'}
+- **User Satisfaction**: ${c.user_rating}/5 (${c.total_reviews} reviews)
+- **Patents Filed**: ${c.patents ?? 0}+
+- **Research Papers**: ${c.research_papers ?? 0}+
+- **Startups Incubated**: ${c.startups_incubated ?? 0}+
+- **Awards & Recognition**: ${(c.awards as string[]).join(' | ') || 'N/A'}
+`;
+          }
+        }
+      } catch (e) {
+        console.warn("[Rankings] Context injection failed:", e);
+      }
+      // ── End Rankings Context Injection ─────────────────────────────
+
 
       // 4. Build Context & Sources
       let sourceCounter = 1;
@@ -268,7 +337,7 @@ export async function chatRoute(app: FastifyInstance) {
         {
           role: "system",
           content: `
-You are a especializado College Assistant chatbot operating in **${mode.toUpperCase()} MODE${hasPdfContext ? " + PDF CONTEXT" : ""}**. 
+You are a specialized College Assistant chatbot operating in **${mode.toUpperCase()} MODE${hasPdfContext ? " + PDF CONTEXT" : ""}**. 
 
 ${mode === "pdf" ? `
 REASONING PROTOCOLS (PDF MODE):
@@ -291,9 +360,19 @@ CORE RULES:
 4. ALWAYS NAME THE COLLEGE. Specifically mention the institution name.
 5. DO NOT use your internal training data for specific facts. In PDF Mode, if it's not in the PDF, it's not available.
 6. YOU ARE CURRENTLY IN ${mode.toUpperCase()} MODE.
+${mode === "compare" ? `
+7. COMPARE MODE RULES:
+   - Your primary mission is to provide objective, data-driven comparisons.
+   - Use the [Verified Data] table below as your primary source of truth.
+   - If the user asks for a comparison but you don't have [Verified Data] for one of the colleges, use the Web search results but CLEARLY state which data is verified and which is from the web.
+   - Highlight winners in specific categories (e.g., "IIT Delhi leads in patents, while IIT Bombay has more startups").` : ""}
 
 SOURCE CITATIONS:
 1. Every factual claim MUST cite its source using the [Source ID: X] format.
+${rankingsContext ? `
+COLLEGE RANKINGS & ACHIEVEMENTS (VERIFIED — NIRF 2024 Official Data):
+${rankingsContext}
+When answering ranking or achievement questions, always use this verified data and label it as [Verified Data].` : ""}
 Context:
 ${context}
 `,

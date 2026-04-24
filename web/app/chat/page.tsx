@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import Link from "next/link";
 import {
   FileText,
   Check,
@@ -18,13 +19,18 @@ import {
   Search,
   Lightbulb,
   Telescope,
+  GraduationCap,
+  Newspaper,
+  House,
+  GitCompare,
+  Trophy,
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-function cn(...inputs: ClassValue[]) {
+const cn = (...inputs: ClassValue[]) => {
   return twMerge(clsx(inputs));
-}
+};
 
 type Message = {
   role: "user" | "assistant";
@@ -41,22 +47,43 @@ const SUGGESTED_QUESTIONS = [
 function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q");
+  const initialFile = searchParams.get("file");      // filename from hero upload
+  const initialFileUrl = searchParams.get("fileUrl"); // server path from hero upload
+  const initialMode = (searchParams.get("mode") as "pdf" | "web" | "compare") ?? "pdf";
   const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4000";
   const API_BASE_URL = rawApiUrl.replace("localhost", "127.0.0.1");
   const resolveUrl = (path: string) =>
     path.startsWith("http") ? path : `${API_BASE_URL}${path}`;
+
+  // Seed initial messages: if a file was uploaded from the hero page, show the
+  // attachment card + bot confirmation right away.
+  const buildInitialMessages = (): Message[] => {
+    const base: Message[] = [
+      {
+        role: "assistant",
+        content: "Hello! I'm your College Assistant. How can I help you today?",
+      },
+    ];
+    if (initialFile) {
+      base.push({
+        role: "user",
+        content: `ATTACHMENT|${initialFile}|${initialFileUrl ?? ""}`,
+      });
+      base.push({
+        role: "assistant",
+        content: `I've finished indexing **${initialFile}**. You can now ask me questions about its content!`,
+      });
+    }
+    return base;
+  };
+
   // --- States ---
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "Hello! I'm your College Assistant. How can I help you today?",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(buildInitialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [chatMode, setChatMode] = useState<"pdf" | "web">("pdf");
+  const [chatMode, setChatMode] = useState<"pdf" | "web" | "compare">(initialMode);
 
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -389,9 +416,11 @@ function ChatContent() {
     }
   };
 
-  // Handle initial query from URL
+  // Handle initial query from URL (works whether messages were seeded or not)
+  const didFireInitial = useRef(false);
   useEffect(() => {
-    if (initialQuery && messages.length === 1 && !isLoading) {
+    if (initialQuery && !didFireInitial.current && !isLoading) {
+      didFireInitial.current = true;
       handleSend(initialQuery);
     }
   }, [initialQuery]);
@@ -514,14 +543,65 @@ function ChatContent() {
   }, [messages, isLoading]);
 
   return (
-    <div className="flex h-screen bg-black text-[#ececec] font-sans selection:bg-zinc-800 overflow-hidden">
+    <div className="flex h-screen bg-white text-black font-sans selection:bg-blue-50 overflow-hidden">
+
+      {/* ── Sidebar ──────────────────────────────────────────────────── */}
+      <aside className="flex-shrink-0 w-14 h-full bg-white border-r border-zinc-100 flex flex-col items-center py-4 gap-1 z-50">
+        {/* Logo */}
+        <Link
+          href="/"
+          className="w-9 h-9 bg-white rounded-xl flex items-center justify-center mb-4 hover:scale-110 transition-transform shadow shadow-white/10"
+          title="Home"
+        >
+          <GraduationCap className="text-black w-5 h-5" />
+        </Link>
+
+        <div className="w-6 h-px bg-zinc-100 mb-2" />
+
+        {/* Chat */}
+        <Link
+          href="/chat"
+          title="Chat"
+          className="group relative w-10 h-10 flex items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition-all hover:bg-blue-100 hover:scale-105"
+        >
+          <Brain className="w-5 h-5" />
+          <span className="absolute left-full ml-3 px-2.5 py-1 bg-black text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all translate-x-1 group-hover:translate-x-0 shadow-lg">
+            Chat
+          </span>
+        </Link>
+
+        {/* News */}
+        <Link
+          href="/news"
+          title="News"
+          className="group relative w-10 h-10 flex items-center justify-center rounded-xl text-zinc-400 hover:bg-zinc-50 hover:text-black transition-all hover:scale-105"
+        >
+          <Newspaper className="w-5 h-5" />
+          <span className="absolute left-full ml-3 px-2.5 py-1 bg-black text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all translate-x-1 group-hover:translate-x-0 shadow-lg">
+            News
+          </span>
+        </Link>
+
+        {/* Rankings */}
+        <Link
+          href="/rankings"
+          title="Rankings"
+          className="group relative w-10 h-10 flex items-center justify-center rounded-xl text-zinc-400 hover:bg-zinc-50 hover:text-black transition-all hover:scale-105"
+        >
+          <Trophy className="w-5 h-5" />
+          <span className="absolute left-full ml-3 px-2.5 py-1 bg-black text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all translate-x-1 group-hover:translate-x-0 shadow-lg">
+            Rankings
+          </span>
+        </Link>
+      </aside>
+
       {/* Main Content */}
-      <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-black transition-colors">
+      <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-white transition-colors">
         {/* Modern GPT Header */}
         <header className="absolute top-0 w-full z-20 bg-transparent">
           <div className="px-4 h-14 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button className="flex items-center gap-2 px-3 py-2 rounded-xl text-[15px] font-semibold text-[#0d0d0d] dark:text-[#ececec] hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+              <button className="flex items-center gap-2 px-3 py-2 rounded-xl text-[15px] font-semibold text-black hover:bg-black/5 transition-colors">
                 College Assistant
               </button>
             </div>
@@ -534,7 +614,7 @@ function ChatContent() {
             !isLoading &&
             !isUploading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
-                <h1 className="text-2xl md:text-3xl tracking-tight font-medium text-center text-[#ececec] mb-64 px-4">
+                <h1 className="text-2xl md:text-3xl tracking-tight font-medium text-center text-zinc-300 mb-64 px-4">
                   Which college are you exploring today?
                 </h1>
               </div>
@@ -563,8 +643,8 @@ function ChatContent() {
                         msg.role === "user"
                           ? msg.content.startsWith("ATTACHMENT|")
                             ? "" // No background for the card itseld
-                            : "bg-zinc-900 px-3 md:px-4 py-2 rounded-2xl max-w-[90%] md:max-w-[85%] text-[#ececec] border border-zinc-800"
-                          : "text-[#0d0d0d] dark:text-[#ececec] w-full",
+                            : "bg-zinc-50 px-3 md:px-4 py-2 rounded-2xl max-w-[90%] md:max-w-[85%] text-black border border-zinc-100"
+                          : "text-black w-full",
                       )}
                     >
                       {msg.content.startsWith("ATTACHMENT|") ? (
@@ -573,20 +653,20 @@ function ChatContent() {
                           return (
                             <div
                               onClick={() => setPreviewUrl(resolveUrl(url))}
-                              className="bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 rounded-xl p-2.5 flex items-center gap-3 w-full max-w-[280px] cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all group active:scale-[0.98] shadow-sm ml-auto"
+                              className="bg-zinc-50 border border-zinc-100 rounded-xl p-2.5 flex items-center gap-3 w-full max-w-[280px] cursor-pointer hover:bg-zinc-100 transition-all group active:scale-[0.98] shadow-sm ml-auto"
                             >
                               <div className="w-10 h-10 bg-[#ef4444] rounded-lg flex items-center justify-center text-white font-bold shadow-sm">
                                 <FileText size={20} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 flex items-center justify-between">
+                                <div className="text-[13px] font-semibold text-zinc-900 flex items-center justify-between">
                                   <span className="truncate pr-2">{name}</span>
                                   <ExternalLink
                                     size={12}
                                     className="text-zinc-400 opacity-50 group-hover:opacity-100"
                                   />
                                 </div>
-                                <div className="text-zinc-500 dark:text-zinc-400 text-[10px] font-medium uppercase tracking-widest mt-0.5">
+                                <div className="text-zinc-400 text-[10px] font-medium uppercase tracking-widest mt-0.5">
                                   PDF Document
                                 </div>
                               </div>
@@ -602,17 +682,17 @@ function ChatContent() {
                       ) : msg.content.includes("\n\n---\n**Sources:**") ? (
                         <div className="space-y-4 md:space-y-6">
                           <div
-                            className="prose dark:prose-invert prose-base md:prose-lg max-w-none 
-                          prose-headings:text-[#0d0d0d] dark:prose-headings:text-[#ececec] 
+                            className="prose prose-base md:prose-lg max-w-none 
+                          prose-headings:text-black 
                           prose-h1:text-3xl md:prose-h1:text-4xl prose-h1:font-extrabold prose-h1:tracking-tight prose-h1:mt-8 md:prose-h1:mt-12 prose-h1:mb-6 md:prose-h1:mb-8
-                          prose-h2:text-2xl md:prose-h2:text-3xl prose-h2:font-bold prose-h2:tracking-tight prose-h2:mt-8 md:prose-h2:mt-10 prose-h2:mb-4 md:prose-h2:mb-6 prose-h2:border-b prose-h2:border-gray-100 dark:prose-h2:border-gray-800 prose-h2:pb-2 md:prose-h2:pb-3
+                          prose-h2:text-2xl md:prose-h2:text-3xl prose-h2:font-bold prose-h2:tracking-tight prose-h2:mt-8 md:prose-h2:mt-10 prose-h2:mb-4 md:prose-h2:mb-6 prose-h2:border-b prose-h2:border-zinc-100 prose-h2:pb-2 md:prose-h2:pb-3
                           prose-h3:text-xl md:prose-h3:text-2xl prose-h3:font-semibold prose-h3:tracking-tight prose-h3:mt-6 md:prose-h3:mt-8 prose-h3:mb-3 md:prose-h3:mb-4
-                          prose-p:text-[15px] md:prose-p:text-[16px] prose-p:leading-7 md:prose-p:leading-8 prose-p:text-[#374151] dark:prose-p:text-[#d1d5db] prose-p:mb-4 md:prose-p:mb-6
-                          prose-li:text-[15px] md:prose-li:text-[16px] prose-li:leading-7 md:prose-li:leading-8 prose-li:text-[#374151] dark:prose-li:text-[#d1d5db] prose-li:mb-1.5 md:prose-li:mb-2
-                          prose-strong:text-[#0d0d0d] dark:prose-strong:text-[#ececec] prose-strong:font-bold
-                          prose-table:w-full prose-table:my-6 md:prose-table:my-10 prose-table:border prose-table:border-gray-300 dark:prose-table:border-gray-700 prose-table:rounded-xl md:prose-table:rounded-2xl prose-table:block prose-table:overflow-x-auto md:prose-table:table
-                          prose-th:bg-gray-100 dark:prose-th:bg-zinc-900 prose-th:px-3 md:prose-th:px-5 prose-th:py-3 md:prose-th:py-4 prose-th:font-bold prose-th:text-left prose-th:text-sm md:prose-th:text-base
-                          prose-td:px-3 md:prose-td:px-5 prose-td:py-3 md:prose-td:py-4 prose-td:border-t prose-td:border-gray-200 dark:prose-td:border-gray-700 prose-td:text-sm md:prose-td:text-base
+                          prose-p:text-[15px] md:prose-p:text-[16px] prose-p:leading-7 md:prose-p:leading-8 prose-p:text-zinc-700 prose-p:mb-4 md:prose-p:mb-6
+                          prose-li:text-[15px] md:prose-li:text-[16px] prose-li:leading-7 md:prose-li:leading-8 prose-li:text-zinc-700 prose-li:mb-1.5 md:prose-li:mb-2
+                          prose-strong:text-black prose-strong:font-bold
+                          prose-table:w-full prose-table:my-6 md:prose-table:my-10 prose-table:border prose-table:border-zinc-100 prose-table:rounded-xl md:prose-table:rounded-2xl prose-table:block prose-table:overflow-x-auto md:prose-table:table
+                          prose-th:bg-zinc-50 prose-th:px-3 md:prose-th:px-5 prose-th:py-3 md:prose-th:py-4 prose-th:font-bold prose-th:text-left prose-th:text-sm md:prose-th:text-base
+                          prose-td:px-3 md:prose-td:px-5 prose-td:py-3 md:prose-td:py-4 prose-td:border-t prose-td:border-zinc-100 prose-td:text-sm md:prose-td:text-base
                         "
                           >
                             <ReactMarkdown
@@ -645,7 +725,7 @@ function ChatContent() {
                           </div>
                         </div>
                       ) : (
-                        <div className="prose dark:prose-invert prose-sm md:prose-base max-w-none prose-p:text-[15px] md:prose-p:text-[16px] prose-p:leading-7 md:prose-p:leading-8 prose-p:text-[#374151] dark:prose-p:text-[#d1d5db] prose-li:text-[15px] md:prose-li:text-[16px] prose-li:leading-7 md:prose-li:leading-8 prose-li:text-[#374151] dark:prose-li:text-[#d1d5db] shadow-none border-none">
+                        <div className="prose prose-sm md:prose-base max-w-none prose-p:text-[15px] md:prose-p:text-[16px] prose-p:leading-7 md:prose-p:leading-8 prose-p:text-zinc-700 prose-li:text-[15px] md:prose-li:text-[16px] prose-li:leading-7 md:prose-li:leading-8 prose-li:text-zinc-700 shadow-none border-none">
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
@@ -696,7 +776,7 @@ function ChatContent() {
             : "bottom-0 translate-y-0"
         )}>
           <div className="max-w-3xl mx-auto w-full pointer-events-auto">
-                    <div className="relative rounded-[30px] bg-zinc-900 focus-within:ring-0 transition-all shadow-none flex flex-col">
+                    <div className="relative rounded-[30px] bg-zinc-50 border border-zinc-200 focus-within:ring-0 transition-all shadow-none flex flex-col">
               {/* Plus Menu Dropdown (Moved outside overflow-hidden) */}
               <AnimatePresence>
                 {isMenuOpen && (
@@ -706,18 +786,18 @@ function ChatContent() {
                     animate={{ opacity: 1, y: -8, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="absolute bottom-full left-1 md:left-4 mb-2 w-60 md:w-64 bg-white dark:bg-[#2f2f2f] rounded-[24px] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-zinc-700/50 p-2 z-50 flex flex-col gap-0.5 overflow-hidden"
+                    className="absolute bottom-full left-1 md:left-4 mb-2 w-60 md:w-64 bg-white rounded-[24px] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-zinc-100 p-2 z-50 flex flex-col gap-0.5 overflow-hidden"
                   >
                     <button
                       onClick={() => {
                         fileInputRef.current?.click();
                         setIsMenuOpen(false);
                       }}
-                      className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left"
+                      className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-zinc-50 transition-colors text-left"
                     >
                       <Paperclip size={18} className="text-zinc-500" />
                       <div>
-                        <span className="text-[14px] font-medium text-zinc-900 dark:text-zinc-100 block">
+                        <span className="text-[14px] font-medium text-zinc-900 block">
                           {chatMode === "web" ? "Add PDF for context" : "Upload PDF"}
                         </span>
                         {chatMode === "web" && (
@@ -726,7 +806,7 @@ function ChatContent() {
                       </div>
                     </button>
                     
-                    <div className="h-px bg-gray-100 dark:bg-zinc-700/50 my-1 mx-2" />
+                    <div className="h-px bg-zinc-100 my-1 mx-2" />
 
                     <button
                       onClick={() => {
@@ -735,11 +815,11 @@ function ChatContent() {
                       }}
                       className={cn(
                         "flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors text-left",
-                        chatMode === "pdf" ? "bg-red-50 dark:bg-red-900/20" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        chatMode === "pdf" ? "bg-red-50" : "hover:bg-zinc-50"
                       )}
                     >
                       <FileText size={18} className={chatMode === "pdf" ? "text-red-500" : "text-zinc-500"} />
-                      <span className="text-[14px] font-medium text-zinc-900 dark:text-zinc-100">PDF Mode</span>
+                      <span className="text-[14px] font-medium text-zinc-900">PDF Mode</span>
                     </button>
 
                     <button
@@ -749,11 +829,25 @@ function ChatContent() {
                       }}
                       className={cn(
                         "flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors text-left",
-                        chatMode === "web" ? "bg-blue-50 dark:bg-blue-900/20" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        chatMode === "web" ? "bg-blue-50" : "hover:bg-zinc-50"
                       )}
                     >
                       <Globe size={18} className={chatMode === "web" ? "text-blue-500" : "text-zinc-500"} />
-                      <span className="text-[14px] font-medium text-zinc-900 dark:text-zinc-100">Web Search Mode</span>
+                      <span className="text-[14px] font-medium text-zinc-900">Web Search Mode</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setChatMode("compare");
+                        setIsMenuOpen(false);
+                      }}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors text-left",
+                        chatMode === "compare" ? "bg-amber-50" : "hover:bg-zinc-50"
+                      )}
+                    >
+                      <GitCompare size={18} className={chatMode === "compare" ? "text-amber-500" : "text-zinc-500"} />
+                      <span className="text-[14px] font-medium text-zinc-900">Compare Mode</span>
                     </button>
                   </motion.div>
                 )}
@@ -921,7 +1015,9 @@ function ChatContent() {
                         : chatMode === "pdf"
                           ? "Ask about your uploaded PDFs..."
                           : webPdfContext
-                            ? "Ask anything — I’ll search the web using your PDF as context..."
+                          ? "Ask anything — I’ll search the web using your PDF as context..."
+                          : chatMode === "compare"
+                            ? "Compare colleges (e.g. IIT Delhi vs NIT Trichy)..."
                             : "Search the web for college info..."
                   }
                   value={input}

@@ -45,17 +45,20 @@ export function checkRateLimit(ip: string): {
   allowed: boolean;
   retryAfterSeconds: number;
   remaining: number;
+  resetAt: number;
 } {
   const now = Date.now();
   const entry = store.get(ip);
 
   if (!entry || now - entry.windowStart > WINDOW_MS) {
     // New window
-    store.set(ip, { count: 1, windowStart: now });
+    const newEntry = { count: 1, windowStart: now };
+    store.set(ip, newEntry);
     return {
       allowed: true,
       retryAfterSeconds: 0,
       remaining: MAX_REQUESTS_PER_WINDOW - 1,
+      resetAt: Math.ceil((now + WINDOW_MS) / 1000),
     };
   }
 
@@ -71,6 +74,7 @@ export function checkRateLimit(ip: string): {
       allowed: false,
       retryAfterSeconds,
       remaining: 0,
+      resetAt: Math.ceil((entry.windowStart + WINDOW_MS) / 1000),
     };
   }
 
@@ -78,6 +82,7 @@ export function checkRateLimit(ip: string): {
     allowed: true,
     retryAfterSeconds: 0,
     remaining: MAX_REQUESTS_PER_WINDOW - entry.count,
+    resetAt: Math.ceil((entry.windowStart + WINDOW_MS) / 1000),
   };
 }
 
@@ -97,15 +102,12 @@ export function registerRateLimiter(app: FastifyInstance): void {
         request.ip ||
         "unknown";
 
-      const { allowed, retryAfterSeconds, remaining } = checkRateLimit(ip);
+      const { allowed, retryAfterSeconds, remaining, resetAt } = checkRateLimit(ip);
 
       // Always set rate-limit headers on successful requests
       void reply.header("X-RateLimit-Limit", MAX_REQUESTS_PER_WINDOW);
       void reply.header("X-RateLimit-Remaining", remaining);
-      void reply.header(
-        "X-RateLimit-Reset",
-        Math.ceil(Date.now() / 1000) + (retryAfterSeconds || WINDOW_MS / 1000)
-      );
+      void reply.header("X-RateLimit-Reset", resetAt);
 
       if (!allowed) {
         void reply.header("Retry-After", retryAfterSeconds);

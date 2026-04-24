@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+*.log
+uploads/
+scratch/
+test-llm.ts
+test_og.ts
+test_scraper.ts
+tracemonkey.pdf
+sample.pdf
+large.pdf
+test2.pdf
+eng.traineddata

@@ -39,6 +39,13 @@ describe("First Request (New Window)", () => {
     const { remaining } = checkRateLimit(uniqueIp());
     expect(remaining).toBe(MAX - 1);
   });
+
+  it("returns a valid resetAt timestamp (seconds) on the first request", () => {
+    const { resetAt } = checkRateLimit(uniqueIp());
+    const nowSec = Math.floor(Date.now() / 1000);
+    expect(resetAt).toBeGreaterThanOrEqual(nowSec + 59);
+    expect(resetAt).toBeLessThanOrEqual(nowSec + 61);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -121,6 +128,13 @@ describe("Exceeding the Limit", () => {
       const { allowed } = checkRateLimit(ip);
       expect(allowed).toBe(false);
     }
+  });
+
+  it("returns the same resetAt for subsequent requests in the same window", () => {
+    const ip = uniqueIp();
+    const { resetAt: r1 } = checkRateLimit(ip);
+    const { resetAt: r2 } = checkRateLimit(ip);
+    expect(r1).toBe(r2);
   });
 });
 

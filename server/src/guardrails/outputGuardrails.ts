@@ -15,8 +15,8 @@ export interface OutputGuardrailOptions {
   response: string;
   /** Number of RAG context chunks that were found (0 = no context) */
   contextChunksFound: number;
-  /** The active mode ("pdf" | "web") */
-  mode: "pdf" | "web";
+  /** The active mode ("pdf" | "web" | "compare") */
+  mode: "pdf" | "web" | "compare";
 }
 
 export interface OutputGuardrailResult {

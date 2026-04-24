@@ -2,9 +2,13 @@ import "dotenv/config";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { chatRoute } from "./routes/chat.js";
+import { newsRoute } from "./routes/news.js";
+import { rankingsRoute } from "./routes/rankings.js";
 import multipart from "@fastify/multipart";
 import { uploadRoute } from "./routes/upload.js";
 import { registerRateLimiter } from "./guardrails/index.js";
+import { startNewsCron } from "./jobs/newsCron.js";
+import { seedCollegeAchievements } from "./lib/collegeSeeds.js";
 
 import { qdrant } from "./lib/qdrant.js";
 import { initDB } from "./lib/db.js";
@@ -50,19 +54,25 @@ await app.register(multipart, {
 await app.register(uploadRoute);
 async function initVectorDB() {
   const collections = await qdrant.getCollections();
-  const exists = collections.collections.some((c) => c.name === "college_docs");
+  const existingNames = collections.collections.map((c) => c.name);
 
-  if (!exists) {
+  // ── college_docs (PDF uploads) ──────────────────────────────────────
+  if (!existingNames.includes("college_docs")) {
     await qdrant.createCollection("college_docs", {
-      vectors: {
-        size: 1536,
-        distance: "Cosine",
-      },
+      vectors: { size: 1536, distance: "Cosine" },
     });
-    console.log("Vector DB Initialized: Collection created.");
+    console.log("Vector DB: 'college_docs' collection created.");
   }
 
-  // Ensure indexes exist (safe to call even if they already exist)
+  // ── college_news (RSS news articles) ───────────────────────────────
+  if (!existingNames.includes("college_news")) {
+    await qdrant.createCollection("college_news", {
+      vectors: { size: 1536, distance: "Cosine" },
+    });
+    console.log("Vector DB: 'college_news' collection created.");
+  }
+
+  // Ensure payload indexes exist (safe to call even if they already exist)
   try {
     await qdrant.createPayloadIndex("college_docs", {
       field_name: "document",
@@ -74,6 +84,11 @@ async function initVectorDB() {
       field_schema: "text",
       wait: true,
     });
+    await qdrant.createPayloadIndex("college_news", {
+      field_name: "source",
+      field_schema: "keyword",
+      wait: true,
+    });
     console.log("Vector DB Initialized: Payload indexes ensured.");
   } catch (e) {
     console.warn("Notice: One or more payload indexes could not be created (they may already exist).");
@@ -82,6 +97,14 @@ async function initVectorDB() {
 
 await initDB();
 await initVectorDB();
+await seedCollegeAchievements();
+
+// Register news & rankings routes
+await app.register(newsRoute);
+await app.register(rankingsRoute);
+
+// Start news cron job (runs immediately + every 6h)
+startNewsCron();
 
 const PORT = Number(process.env.PORT) || 4000;
 
