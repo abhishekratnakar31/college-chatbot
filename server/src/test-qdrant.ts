@@ -1,28 +1,17 @@
 import { QdrantClient } from "@qdrant/js-client-rest";
-import "dotenv/config";
 
 const qdrant = new QdrantClient({
-  url: process.env.QDRANT_URL,
-  apiKey: process.env.QDRANT_API_KEY,
-});
+  url: process.env.QDRANT_URL || "http://localhost:6333",
+  apiKey: process.env.QDRANT_API_KEY || undefined,
+} as any);
 
 async function test() {
   try {
-    const res = await qdrant.search("college_docs", {
-      vector: new Array(1536).fill(0),
-      limit: 1,
-      filter: {
-        must: [
-          {
-            key: "document",
-            match: { value: "list-of-available-programs.pdf" }
-          }
-        ]
-      }
-    });
-    console.log("SUCCESS", res.length);
-  } catch (e: any) {
-    console.error("ERROR", e.message);
+    const collections = await qdrant.getCollections();
+    console.log("Qdrant Collections:", collections);
+  } catch (err) {
+    console.error("Qdrant connection failed:", err);
   }
 }
+
 test();

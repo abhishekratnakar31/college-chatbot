@@ -49,9 +49,8 @@ export async function uploadRoute(app: FastifyInstance) {
       if (!text) {
         console.log(`[ExtractText] Empty text from pdf-parse — trying OCR fallback...`);
         try {
-          text = (await extractTextFromPDF(buffer, data.filename, () => {}))
-            .replace(/\s+/g, " ")
-            .trim();
+          const pages = await extractTextFromPDF(buffer, data.filename, () => {});
+          text = pages.map(p => p.text).join(" ").replace(/\s+/g, " ").trim();
           usedOcr = true;
           console.log(`[ExtractText] OCR returned ${text.length} chars`);
         } catch (ocrErr) {
@@ -99,24 +98,27 @@ export async function uploadRoute(app: FastifyInstance) {
       reply.hijack();
 
       // Extract text using OCR pipeline with progress reporting
-      const text = await extractTextFromPDF(buffer, data.filename, (prog) => {
+      const pages = await extractTextFromPDF(buffer, data.filename, (prog) => {
          reply.raw.write(`data: ${JSON.stringify(prog)}\n\n`);
       });
 
-      console.log(`[RAG Upload] Extracted Text Length: ${text.length} characters`);
-      console.log(`[RAG Upload] Chunking text into chunks of size 4000 with 500 overlap...`);
+      const totalChars = pages.reduce((acc, p) => acc + p.text.length, 0);
+      console.log(`[RAG Upload] Extracted Text Length: ${totalChars} characters across ${pages.length} pages.`);
 
-      // Chunk text
-      const chunkSize = 4000;
-      const overlap = 500;
+      // Chunk text (per page to preserve page boundaries)
+      const chunkSize = 3000;
+      const overlap = 400;
+      const chunks: { text: string; page: number }[] = [];
 
-      const chunks: string[] = [];
+      for (const page of pages) {
+        if (page.text.length < 50) continue;
 
-      for (let i = 0; i < text.length; i += chunkSize - overlap) {
-        const chunk = text.slice(i, i + chunkSize).trim();
-
-        if (chunk.length > 100) {
-          chunks.push(chunk);
+        // Simple sliding window within the page
+        for (let i = 0; i < page.text.length; i += chunkSize - overlap) {
+          const textChunk = page.text.slice(i, i + chunkSize).trim();
+          if (textChunk.length > 100) {
+            chunks.push({ text: textChunk, page: page.page });
+          }
         }
       }
 
@@ -152,21 +154,22 @@ export async function uploadRoute(app: FastifyInstance) {
 
         const batch = chunks.slice(batchStart, Math.min(batchStart + BATCH_SIZE, chunks.length));
 
-        // 1. Embed all chunks in this batch using a single bulk network request
-        const embeddings = await getEmbeddings(batch);
+        // 1. Embed all chunks in this batch
+        const embeddings = await getEmbeddings(batch.map(c => c.text));
 
         // 2. Build all Qdrant points for this batch
-        const points = batch.map((chunk, j) => ({
+        const points = batch.map((chunkObj, j) => ({
           id: crypto.randomUUID(),
           vector: embeddings[j]!,
           payload: {
-            text: chunk,
+            text: chunkObj.text,
             document: data.filename,
+            page_number: chunkObj.page,
             chunk_index: batchStart + j,
           },
         }));
 
-        // 3. Single bulk upsert (one network roundtrip for all BATCH_SIZE points)
+        // 3. Single bulk upsert
         await qdrant.upsert("college_docs", { wait: true, points });
 
         totalIndexed += batch.length;

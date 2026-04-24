@@ -45,7 +45,7 @@ export async function generateSearchQuery(
           {
             role: "system",
             content:
-              "You are a domain classifier and search query optimizer for a College Assistant. Evaluate the user's question in the context of the conversation, especially if documents have been uploaded. If the question is completely unrelated to colleges, universities, admissions, academic programs, courses, degrees, campus life, fees, or campuses (e.g., recipes, movies, weather), reply EXACTLY with 'OUT_OF_DOMAIN'. If the question is about 'courses', 'degrees', 'programs', 'subjects', or 'departments', it is ALWAYS in-domain. Otherwise, output ONLY a single search query optimized for finding factual information. Be specific. No preamble.",
+              "You are a search query optimizer for a College Assistant chatbot. Your ONLY job is to rewrite the user's question into a clean, specific web search query. RULES: (1) ALWAYS output a search query — never refuse. (2) Only reply OUT_OF_DOMAIN if the question is COMPLETELY unrelated to education, universities, colleges, academic programs, scholarships, admissions, student life, or careers (e.g., cooking recipes, sports betting, weather). (3) Any question mentioning a university name, college name, course name, degree, or academic topic is IN-DOMAIN. (4) Output ONLY the search query — no preamble, no explanation.",
           },
           ...messages.slice(-5), // increased context window to 5 messages
         ],
@@ -55,7 +55,11 @@ export async function generateSearchQuery(
   );
 
   if (!response.ok) {
-    console.error("generateSearchQuery API Error:", response.status, await response.text().catch(() => ""));
+    console.error(
+      "generateSearchQuery API Error:",
+      response.status,
+      await response.text().catch(() => ""),
+    );
     return lastMessage;
   }
 

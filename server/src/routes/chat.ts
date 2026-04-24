@@ -180,13 +180,19 @@ export async function chatRoute(app: FastifyInstance) {
 
       // 4. Build Context & Sources
       let sourceCounter = 1;
-      const sources: { id: number; type: "pdf" | "web"; name: string; url?: string; chunk?: number }[] = [];
+      const sources: { id: number; type: "pdf" | "web"; name: string; url?: string; chunk?: number; page?: number }[] = [];
 
       const localContext = qdrantResults
         .map((r: any) => {
           const id = sourceCounter++;
-          sources.push({ id, type: "pdf", name: r.payload?.document, chunk: r.payload?.chunk_index });
-          return `[Source ID: ${id}] (Document: ${r.payload?.document}) ${r.payload?.text}`;
+          sources.push({ 
+            id, 
+            type: "pdf", 
+            name: r.payload?.document, 
+            chunk: r.payload?.chunk_index,
+            page: r.payload?.page_number 
+          });
+          return `[Source ID: ${id}] (Document: ${r.payload?.document}, Page: ${r.payload?.page_number || "N/A"}) ${r.payload?.text}`;
         })
         .filter(Boolean)
         .join("\n\n");
@@ -199,14 +205,15 @@ export async function chatRoute(app: FastifyInstance) {
         })
         .join("\n\n");
 
-      // When PDF context is present in web mode, build a hybrid context block
+      // When PDF context is present in web mode, build a hybrid context block.
+      // Web results come FIRST — they are the primary source in web mode.
       const pdfSnippetSection = hasPdfContext
-        ? `\nDOCUMENT CONTEXT (from user-uploaded PDF):\n${body.pdfContext!}\n`
+        ? `\nBACKGROUND CONTEXT (from user-uploaded PDF — use for college name/program identification only):\n${body.pdfContext!.slice(0, 3000)}\n`
         : "";
 
       const context = mode === "pdf"
         ? `INTERNAL_PDF_BASE (EXCLUSIVE):\n${localContext || "EMPTY (No documents uploaded or no relevant info found in PDFs)"}`
-        : `${pdfSnippetSection}LIVE_WEB_SEARCH:\n${webContext || "EMPTY (No relevant web search results found)"}`;
+        : `LIVE_WEB_SEARCH_RESULTS (PRIMARY SOURCE — cite these):\n${webContext || "EMPTY (No relevant web search results found)"}${pdfSnippetSection}`;
 
       // 5. LLM messages (Pure Retrieval & Anti-Hallucination)
       const messages: ChatMessage[] = [
@@ -221,12 +228,12 @@ REASONING PROTOCOLS (PDF MODE):
 2. IF INTERNAL_PDF_BASE is empty or doesn't contain the answer, you MUST state: **"The asked information is not available in the uploaded documents."**
 3. DO NOT use external knowledge or web search.
 ` : `
-REASONING PROTOCOLS (WEB MODE${hasPdfContext ? " + PDF CONTEXT" : ""}):
-1. You have access to LIVE_WEB_SEARCH results${hasPdfContext ? " AND a DOCUMENT CONTEXT section from the user's uploaded PDF" : ""}.
-2. ${hasPdfContext ? "Use DOCUMENT CONTEXT to understand the specific college/program. Use LIVE_WEB_SEARCH to find supplementary, up-to-date information. Synthesize both into a comprehensive answer." : "IF LIVE_WEB_SEARCH is empty or doesn't contain the answer, tell the user you couldn't find official information via web search."}
-3. **STRICT DOMAIN ENFORCEMENT**: You are ONLY allowed to answer questions about colleges, universities, higher education, academic programs, campus life, admissions, entry tests (SAT, GRE, etc.), and scholarships.
-4. If a user asks about anything else, politely decline.
-5. ${hasPdfContext ? "Always highlight when web search confirms, contradicts, or supplements information from the PDF." : ""}
+REASONING PROTOCOLS (WEB MODE${hasPdfContext ? " + PDF BACKGROUND" : ""}):
+1. Your PRIMARY source is LIVE_WEB_SEARCH_RESULTS. Always lead with live web data.
+2. ${hasPdfContext ? "Use BACKGROUND CONTEXT ONLY to identify the college name, program, or topic. Then use LIVE_WEB_SEARCH_RESULTS to find up-to-date, specific answers from the college's official website." : "IF LIVE_WEB_SEARCH_RESULTS is empty, tell the user you couldn't find official information via web search."}
+3. **NEVER answer from PDF content alone in WEB MODE** — always find and cite a live web source.
+4. **STRICT DOMAIN ENFORCEMENT**: Only answer questions about colleges, universities, admissions, programs, campus life, scholarships, and entry tests.
+5. If no web results exist, say: "I couldn't find up-to-date information from the web for this query."
 `}
 
 CORE RULES:
@@ -331,19 +338,42 @@ ${context}
       });
       
       if (usedSources.length > 0 && !outputCheck.wasBlocked) {
-        let sourcesText = "\n\n---\n**Sources:**\n"; // marker must match frontend split
+        let sourcesText = "\n\n---\n**Sources:**\n";
         const seen = new Set<string>();
+        const metadata: any[] = [];
+
         for (const s of usedSources) {
-          const identifier = s.type === "pdf" ? `${s.name}-${s.chunk}` : s.url;
+          const identifier = s.type === "pdf" ? `${s.name}-${s.chunk}-${s.page}` : s.url;
           if (!identifier || seen.has(identifier)) continue;
           seen.add(identifier);
+
+          // Find the snippet from qdrantResults or webResults
+          let snippet = "";
           if (s.type === "pdf") {
-            sourcesText += `• ${s.name} (section ${((s.chunk || 0) + 1)})\n`;
+            const result = qdrantResults.find(r => r.payload?.document === s.name && r.payload?.chunk_index === s.chunk);
+            snippet = result?.payload?.text || "";
+            const pageInfo = s.page ? `, page ${s.page}` : "";
+            sourcesText += `• ${s.name}${pageInfo}\n`;
           } else {
+            const result = webResults.find(r => r.url === s.url);
+            snippet = result?.content || "";
             sourcesText += `• ${s.url}\n`;
           }
+
+          metadata.push({
+            id: s.id,
+            name: s.name,
+            type: s.type,
+            page: s.page,
+            url: s.url,
+            snippet: snippet.slice(0, 500) // limit size
+          });
         }
         
+        // Append hidden metadata for frontend intelligence (base64 to avoid breaking JSON/SSE)
+        const encodedMeta = Buffer.from(JSON.stringify(metadata)).toString("base64");
+        sourcesText += `\n[SOURCE_META:${encodedMeta}]`;
+
         assistantReply += sourcesText;
         reply.raw.write(`data: ${JSON.stringify({ choices: [{ delta: { content: sourcesText } }] })}\n\n`);
       }

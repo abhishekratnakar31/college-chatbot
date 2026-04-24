@@ -419,26 +419,43 @@ function ChatContent() {
     // Extract sources from the full content block
     const parts_meta = fullContent.split("\n\n---\n**Sources:**");
     const sourceBlock = parts_meta[1] || "";
-    const sourceLines = sourceBlock
-      .split("\n")
-      .filter((l) => l.trim().startsWith("•") || l.trim().startsWith("-"));
-    const sourceMap = new Map();
+    
+    // Parse intelligent metadata if present (base64-encoded)
+    let sourceMap = new Map();
+    const metadataMatch = sourceBlock.match(/\[SOURCE_META:([A-Za-z0-9+/=]+)\]/);
+    if (metadataMatch) {
+      try {
+        const decoded = atob(metadataMatch[1]);
+        const metadata = JSON.parse(decoded);
+        metadata.forEach((m: any) => {
+          sourceMap.set(m.id.toString(), m);
+        });
+      } catch (e) {
+        console.error("Failed to parse source metadata", e);
+      }
+    }
 
-    // Build a map of index -> source metadata
-    sourceLines.forEach((line, idx) => {
-      const content = line.replace(/^[•-]\s*/, "").trim();
-      const isUrl = content.startsWith("http");
-      sourceMap.set((idx + 1).toString(), {
-        name: isUrl ? new URL(content).hostname : content,
-        url: isUrl ? content : null,
-        type: isUrl ? "web" : "pdf",
+    // Fallback to basic parsing if no metadata or metadata failed
+    if (sourceMap.size === 0) {
+      const sourceLines = sourceBlock
+        .split("\n")
+        .filter((l) => l.trim().startsWith("•") || l.trim().startsWith("-"));
+      
+      sourceLines.forEach((line, idx) => {
+        const content = line.replace(/^[•-]\s*/, "").trim();
+        const isUrl = content.startsWith("http");
+        sourceMap.set((idx + 1).toString(), {
+          id: idx + 1,
+          name: isUrl ? new URL(content).hostname : content,
+          url: isUrl ? content : null,
+          type: isUrl ? "web" : "pdf",
+        });
       });
-    });
+    }
 
-    // Replace [Source ID: X] or [X] with chips (case-insensitive)
-    const parts = children.split(
-      /(\[Source ID:\s*\d+\]|\[\s*\d+\s*\]|\[\d+\])/gi,
-    );
+    // Replace [Source ID: X] or [X] with chips
+    const parts = children.split(/(\[Source ID:\s*\d+\]|\[\s*\d+\s*\]|\[\d+\])/gi);
+    
     return parts.map((part, i) => {
       const match = part.match(/\[(?:Source ID:\s*)?(\s*\d+\s*)\]/i);
       if (match) {
@@ -446,31 +463,47 @@ function ChatContent() {
         const source = sourceMap.get(id);
         if (source) {
           return (
-            <span
-              key={i}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (source.url) {
-                  window.open(source.url, "_blank");
-                } else {
-                  const fileName = source.name.split(" (section")[0].trim();
-                  setPreviewUrl(
-                    resolveUrl(`/uploads/${encodeURIComponent(fileName)}`),
-                  );
-                }
-              }}
-              className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/30 rounded-md text-[11px] font-bold text-red-700 dark:text-red-400 mx-1 cursor-pointer transition-all active:scale-95 shadow-sm align-middle leading-none"
-            >
-              {source.type === "web" ? (
-                <Globe size={11} className="text-blue-500" />
-              ) : (
-                <FileText size={11} className="text-red-500" />
+            <span key={i} className="relative group inline-block">
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (source.url) {
+                    window.open(source.url, "_blank");
+                  } else {
+                    const fileName = source.name.split(", page")[0].split(" (section")[0].trim();
+                    setPreviewUrl(resolveUrl(`/uploads/${encodeURIComponent(fileName)}`));
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/30 rounded-md text-[11px] font-bold text-red-700 dark:text-red-400 mx-0.5 cursor-pointer transition-all active:scale-95 shadow-sm align-middle leading-none"
+              >
+                {source.type === "web" ? (
+                  <Globe size={11} className="text-blue-500" />
+                ) : (
+                  <FileText size={11} className="text-red-500" />
+                )}
+                {source.page ? `Page ${source.page}` : id}
+              </span>
+              
+              {/* Tooltip / Highlight Preview */}
+              {source.snippet && (
+                <span style={{display:"block"}} className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 text-[12px] leading-relaxed text-zinc-600 dark:text-zinc-300 backdrop-blur-sm">
+                  <span style={{display:"flex"}} className="font-bold text-zinc-900 dark:text-zinc-100 mb-1 items-center gap-2">
+                    {source.type === "pdf" ? <FileText size={12} /> : <Globe size={12} />}
+                    {source.name.split(",")[0].slice(0, 30)}
+                  </span>
+                  <span style={{display:"block"}} className="line-clamp-4 italic">
+                    &ldquo;{source.snippet}...&rdquo;
+                  </span>
+                  <span style={{display:"block"}} className="mt-2 text-[10px] text-red-500 font-bold uppercase tracking-wider">
+                    Click to view {source.type === "pdf" ? "document" : "source"}
+                  </span>
+                  <span style={{display:"block"}} className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-white dark:border-t-[#1a1a1a]" />
+                </span>
               )}
-              {source.name.split(" (section")[0]}
             </span>
           );
         }
-        return part; // Return as text if not found in map
+        return part;
       }
       return part;
     });

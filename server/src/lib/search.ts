@@ -24,7 +24,8 @@ export async function searchWeb(query: string): Promise<SearchResult[]> {
         query: query,
         search_depth: "advanced",
         include_answer: false,
-        max_results: 6,
+        include_raw_content: false,
+        max_results: 8,
       }),
     });
 
