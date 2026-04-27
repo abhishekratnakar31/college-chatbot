@@ -9,6 +9,7 @@ import { newsRoute } from "./routes/news.js";
 import { rankingsRoute } from "./routes/rankings.js";
 import multipart from "@fastify/multipart";
 import { uploadRoute } from "./routes/upload.js";
+import { contactRoute } from "./routes/contact.js";
 import { registerRateLimiter } from "./guardrails/index.js";
 import { startNewsCron } from "./jobs/newsCron.js";
 import { seedCollegeAchievements } from "./lib/collegeSeeds.js";
@@ -114,6 +115,7 @@ await seedCollegeAchievements();
 // Register news & rankings routes
 await app.register(newsRoute);
 await app.register(rankingsRoute);
+await app.register(contactRoute);
 
 // ── Health Check ────────────────────────────────────────────────────
 app.get("/health", async () => {

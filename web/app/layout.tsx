@@ -14,15 +14,15 @@ const playfair = Playfair_Display({
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "CampusAI | Academic Intelligence",
+  title: "AcademiaAI | Academic Intelligence",
   description: "The intelligent platform for exploring Indian academia, research, and institutional rankings.",
   keywords: ["college", "rankings", "NIRF", "India", "admissions", "chatbot", "education", "placements"],
-  authors: [{ name: "CampusAI Team" }],
+  authors: [{ name: "AcademiaAI Team" }],
   openGraph: {
-    title: "CampusAI | Academic Intelligence",
+    title: "AcademiaAI | Academic Intelligence",
     description: "The intelligent platform for exploring Indian academia, research, and institutional rankings.",
-    url: "https://campus-ai.example.com", // Replace with real URL
-    siteName: "CampusAI",
+    url: "https://academia-ai.example.com", // Replace with real URL
+    siteName: "AcademiaAI",
     images: [
       {
         url: "/og-image.png", // Ensure this exists in public/
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "CampusAI | Academic Intelligence",
+    title: "AcademiaAI | Academic Intelligence",
     description: "The intelligent platform for exploring Indian academia, research, and institutional rankings.",
     images: ["/og-image.png"],
   },

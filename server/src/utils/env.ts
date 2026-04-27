@@ -2,7 +2,7 @@ import { z } from "zod";
 import "dotenv/config";
 
 const envSchema = z.object({
-  PORT: z.string().transform(Number).default(4000),
+  PORT: z.string().transform(Number).default(4005),
   DATABASE_URL: z.string().url(),
   QDRANT_URL: z.string().url().optional().default("http://localhost:6333"),
   QDRANT_API_KEY: z.string().optional(),

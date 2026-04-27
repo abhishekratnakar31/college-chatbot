@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --primary: #000000;
-  --primary-hover: #18181b;
-  --bg-main: #ffffff;
-  --bg-chat: #ffffff;
-  --text-main: #000000;
-  --text-muted: #71717a;
-  --glass: rgba(255, 255, 255, 0.7);
-  --border-subtle: #f4f4f5;
+  --primary: #ffffff;
+  --primary-hover: #e4e4e7;
+  --bg-main: #0a0a0a;
+  --bg-chat: #0a0a0a;
+  --text-main: #ffffff;
+  --text-muted: #a1a1aa;
+  --glass: rgba(0, 0, 0, 0.5);
+  --border-subtle: #18181b;
   --transition-smooth: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -48,10 +48,10 @@ body {
 
 /* Premium Utilities */
 .glass-morphism {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .dark-glass {
@@ -100,5 +100,38 @@ body {
 
 .prose-premium :where(p) {
   line-height: 1.625;
-  color: #52525b; /* zinc-600 */
+  color: #a1a1aa; /* zinc-400 */
+}
+/* Liquid Glass Card */
+.liquid-glass-card {
+  border-radius: 28px;
+  isolation: isolate;
+  box-shadow: 0px 0px 21px -8px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.liquid-glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 28px;
+  box-shadow: inset 0 0 14px -4px rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0);
+  pointer-events: none;
+}
+
+.liquid-glass-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 28px;
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  filter: url(#glass-distortion);
+  -webkit-filter: url(#glass-distortion);
+  isolation: isolate;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.4);
 }

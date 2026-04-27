@@ -42,13 +42,11 @@ function ChatContent() {
   const initialFile = searchParams.get("file");
   const initialFileUrl = searchParams.get("fileUrl");
   const initialMode = (searchParams.get("mode") as "pdf" | "web" | "compare") ?? "web";
-  const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4000";
+  const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4005";
   const API_BASE_URL = rawApiUrl.replace("localhost", "127.0.0.1");
 
   const buildInitialMessages = (): Message[] => {
-    const base: Message[] = [
-      { role: "assistant", content: "Hello! I'm your College Intelligence Assistant. How can I help you today?" },
-    ];
+    const base: Message[] = [];
     if (initialFile) {
       base.push({ role: "user", content: `ATTACHMENT|${initialFile}|${initialFileUrl ?? ""}` });
       base.push({ role: "assistant", content: `I've finished indexing **${initialFile}**. You can now ask me questions about its content!` });
@@ -169,122 +167,167 @@ function ChatContent() {
     }
   };
 
+  const ChatInput = ({ 
+    input, 
+    setInput, 
+    handleSend, 
+    isLoading, 
+    isUploading, 
+    chatMode, 
+    setChatMode, 
+    isMenuOpen, 
+    setIsMenuOpen,
+    fileInputRef,
+    abortControllerRef
+  }: any) => (
+    <div className="relative group">
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }} className="absolute top-full left-0 mt-6 liquid-glass-card p-4 shadow-2xl shadow-black w-64 z-[110]">
+            <h3 className="px-4 pt-2 pb-4 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700">Switch Mode</h3>
+            <div className="space-y-1">
+              {[
+                { id: "web", label: "Web Search", icon: Globe, desc: "Live internet intelligence" },
+                { id: "pdf", label: "PDF Analysis", icon: FileSearch, desc: "Study uploaded documents" },
+                { id: "compare", label: "Compare", icon: GitCompare, desc: "Side-by-side analysis" }
+              ].map(mode => (
+                <button key={mode.id} onClick={() => { setChatMode(mode.id as any); setIsMenuOpen(false); }} className={cn("w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left group", chatMode === mode.id ? "bg-white text-black" : "hover:bg-zinc-800")}>
+                  <mode.icon size={18} className={cn(chatMode === mode.id ? "text-black" : "text-zinc-500 group-hover:text-white")} />
+                  <div>
+                    <p className="text-xs font-bold">{mode.label}</p>
+                    <p className={cn("text-[9px] font-medium", chatMode === mode.id ? "text-black/60" : "text-zinc-500")}>{mode.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 pt-4 border-t border-zinc-800">
+              <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-zinc-800 transition-all text-left">
+                <Plus size={18} className="text-zinc-500" />
+                <div>
+                  <p className="text-xs font-bold text-white">Upload PDF</p>
+                  <p className="text-[9px] font-medium text-zinc-500">Analyze a new document</p>
+                </div>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="bg-zinc-900 border-2 border-zinc-800 group-focus-within:border-white group-focus-within:bg-black rounded-[2.5rem] transition-all duration-500 shadow-2xl shadow-black/5 overflow-hidden">
+        {(isLoading || isUploading) && (
+          <div className="absolute top-0 left-0 right-0 h-1 overflow-hidden">
+            <motion.div className="h-full bg-white w-1/3" animate={{ x: ["-100%", "300%"] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }} />
+          </div>
+        )}
+        <div className="flex items-center p-3">
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className={cn("p-4 transition-all rounded-2xl", isMenuOpen ? "bg-white text-black" : "text-zinc-600 hover:text-white hover:bg-zinc-800")}>
+            <LayoutGrid size={24} />
+          </button>
+          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} placeholder={isUploading ? "Indexing document..." : `Ask in ${chatMode} mode...`} className="flex-1 bg-transparent py-4 text-lg font-medium text-white placeholder:text-zinc-700 outline-none" disabled={isUploading} />
+          {isLoading ? (
+            <button onClick={() => abortControllerRef.current?.abort()} className="p-4 text-white hover:scale-110 transition-transform"><StopCircle size={24} /></button>
+          ) : (
+            <button onClick={() => handleSend()} disabled={!input.trim() || isUploading} className="w-12 h-12 bg-white text-black rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-20 transition-all"><ArrowUp size={20} /></button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex h-screen bg-white text-black selection:bg-black selection:text-white overflow-hidden font-sans">
-      <aside className="w-20 border-r border-zinc-100 flex flex-col items-center py-8 gap-8 z-[100] bg-white">
-        <Link href="/" className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center hover:scale-110 transition-transform"><GraduationCap className="text-white w-6 h-6" /></Link>
+    <div className="flex h-screen bg-[#0a0a0a] text-white selection:bg-white selection:text-black overflow-hidden font-sans">
+      <svg width="0" height="0" style={{ position: "absolute" }}>
+        <defs>
+          <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.02 0.02" numOctaves="2" seed="92" result="noise" />
+            <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
+            <feDisplacementMap in="SourceGraphic" in2="blurred" scale="200" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
+      <aside className="w-20 border-r border-zinc-900 flex flex-col items-center py-8 gap-8 z-[100] bg-black">
+        <Link href="/" className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center hover:scale-110 transition-transform"><GraduationCap className="text-black w-6 h-6" /></Link>
         <div className="flex flex-col gap-4">
           {[{ icon: Brain, href: "/chat", active: true }, { icon: Newspaper, href: "/news" }, { icon: Trophy, href: "/rankings" }].map((item, i) => (
-            <Link key={i} href={item.href} className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-all", item.active ? "bg-black text-white shadow-xl shadow-black/10" : "text-zinc-400 hover:bg-zinc-50 hover:text-black")}><item.icon size={20} /></Link>
+            <Link key={i} href={item.href} className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-all", item.active ? "bg-white text-black shadow-xl shadow-white/10" : "text-zinc-600 hover:bg-zinc-900 hover:text-white")}><item.icon size={20} /></Link>
           ))}
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col relative bg-white">
-        <header className="h-20 flex items-center justify-between px-10 border-b border-zinc-50 bg-white/80 backdrop-blur-xl sticky top-0 z-50">
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300">Campus Intelligence Engine</span>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-zinc-50 rounded-full border border-zinc-100">
-              <div className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
-              <span className="text-[9px] font-black uppercase tracking-widest text-black">{chatMode} mode</span>
-            </div>
-          </div>
-        </header>
+      <main className="flex-1 flex flex-col relative bg-[#0a0a0a]">
 
-        <div className="flex-1 overflow-y-auto pt-12 pb-48 custom-scrollbar">
-          <div className="max-w-3xl mx-auto px-6 space-y-12">
-            {messages.length <= 1 && !isLoading && (
-              <div className="py-32 text-center space-y-6">
-                <h1 className="text-5xl md:text-6xl font-serif font-bold tracking-tight text-zinc-200">What shall we analyze today?</h1>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {["IIT Bombay placements", "JEE Advanced dates", "Best MBA colleges"].map(q => (
-                    <button key={q} onClick={() => handleSend(q)} className="px-4 py-2 rounded-xl border border-zinc-100 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-black hover:border-black transition-all">{q}</button>
-                  ))}
-                </div>
+        <div className={cn("flex-1 overflow-y-auto custom-scrollbar flex flex-col", messages.length === 0 && "items-center justify-center pb-20")}>
+          <div className={cn("max-w-3xl w-full mx-auto px-6", messages.length === 0 ? "space-y-16" : "space-y-12 pt-12 pb-48")}>
+            {messages.length === 0 && !isLoading && (
+              <div className="text-center space-y-6">
+                <h1 className="text-5xl md:text-7xl font-serif font-bold tracking-tight text-zinc-500">What shall we analyze today?</h1>
               </div>
             )}
-            <AnimatePresence initial={false}>
-              {messages.map((msg, i) => (
-                msg.content.startsWith("ATTACHMENT") ? null : (
-                  <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={cn("flex flex-col", msg.role === "user" ? "items-end" : "items-start")}>
-                    <div className={cn("max-w-[85%] rounded-3xl text-[15px] leading-relaxed", msg.role === "user" ? "bg-zinc-50 border border-zinc-100 px-6 py-4 text-black font-medium" : "w-full text-zinc-800")}>
-                      <div className="prose prose-zinc max-w-none prose-premium">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+            
+            {messages.length > 0 && (
+              <AnimatePresence initial={false}>
+                {messages.map((msg, i) => (
+                  msg.content.startsWith("ATTACHMENT") ? null : (
+                    <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={cn("flex flex-col", msg.role === "user" ? "items-end" : "items-start")}>
+                      <div className={cn("max-w-[85%] rounded-3xl text-[15px] leading-relaxed", msg.role === "user" ? "bg-zinc-900 border border-zinc-800 px-6 py-4 text-white font-medium" : "w-full text-zinc-300")}>
+                        <div className="prose prose-invert max-w-none prose-premium">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                )
-              ))}
-            </AnimatePresence>
+                    </motion.div>
+                  )
+                ))}
+              </AnimatePresence>
+            )}
+
+            {messages.length === 0 && (
+              <div className="w-full relative">
+                <ChatInput 
+                  input={input} 
+                  setInput={setInput} 
+                  handleSend={handleSend} 
+                  isLoading={isLoading} 
+                  isUploading={isUploading} 
+                  chatMode={chatMode} 
+                  setChatMode={setChatMode}
+                  isMenuOpen={isMenuOpen}
+                  setIsMenuOpen={setIsMenuOpen}
+                  fileInputRef={fileInputRef}
+                  abortControllerRef={abortControllerRef}
+                />
+              </div>
+            )}
             <div ref={bottomRef} className="h-4" />
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-white via-white to-transparent pt-20">
-          <div className="max-w-3xl mx-auto relative">
-            <AnimatePresence>
-              {isMenuOpen && (
-                <motion.div initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }} className="absolute bottom-full left-0 mb-6 bg-white border-2 border-zinc-100 rounded-[2rem] p-4 shadow-2xl shadow-black/10 w-64 z-[110]">
-                  <h3 className="px-4 pt-2 pb-4 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-300">Switch Mode</h3>
-                  <div className="space-y-1">
-                    {[
-                      { id: "web", label: "Web Search", icon: Globe, desc: "Live internet intelligence" },
-                      { id: "pdf", label: "PDF Analysis", icon: FileSearch, desc: "Study uploaded documents" },
-                      { id: "compare", label: "Compare", icon: GitCompare, desc: "Side-by-side analysis" }
-                    ].map(mode => (
-                      <button key={mode.id} onClick={() => { setChatMode(mode.id as any); setIsMenuOpen(false); }} className={cn("w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left group", chatMode === mode.id ? "bg-black text-white" : "hover:bg-zinc-50")}>
-                        <mode.icon size={18} className={cn(chatMode === mode.id ? "text-white" : "text-zinc-400 group-hover:text-black")} />
-                        <div>
-                          <p className="text-xs font-bold">{mode.label}</p>
-                          <p className={cn("text-[9px] font-medium", chatMode === mode.id ? "text-white/60" : "text-zinc-400")}>{mode.desc}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-zinc-100">
-                    <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-zinc-50 transition-all text-left">
-                      <Plus size={18} className="text-zinc-400" />
-                      <div>
-                        <p className="text-xs font-bold">Upload PDF</p>
-                        <p className="text-[9px] font-medium text-zinc-400">Analyze a new document</p>
-                      </div>
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div className="relative group">
-              <div className="bg-zinc-50 border-2 border-zinc-100 group-focus-within:border-black group-focus-within:bg-white rounded-[2.5rem] transition-all duration-500 shadow-2xl shadow-black/5 overflow-hidden">
-                {(isLoading || isUploading) && (
-                  <div className="absolute top-0 left-0 right-0 h-1 overflow-hidden">
-                    <motion.div className="h-full bg-black w-1/3" animate={{ x: ["-100%", "300%"] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }} />
-                  </div>
-                )}
-                <div className="flex items-center p-3">
-                  <button onClick={() => setIsMenuOpen(!isMenuOpen)} className={cn("p-4 transition-all rounded-2xl", isMenuOpen ? "bg-black text-white" : "text-zinc-400 hover:text-black hover:bg-zinc-100")}>
-                    <LayoutGrid size={24} />
-                  </button>
-                  <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} placeholder={isUploading ? "Indexing document..." : `Ask in ${chatMode} mode...`} className="flex-1 bg-transparent py-4 text-lg font-medium text-black placeholder:text-zinc-300 outline-none" disabled={isUploading} />
-                  {isLoading ? (
-                    <button onClick={() => abortControllerRef.current?.abort()} className="p-4 text-black hover:scale-110 transition-transform"><StopCircle size={24} /></button>
-                  ) : (
-                    <button onClick={() => handleSend()} disabled={!input.trim() || isUploading} className="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-20 transition-all"><ArrowUp size={20} /></button>
-                  )}
-                </div>
-              </div>
+        {messages.length > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a] to-transparent pt-20 z-50">
+            <div className="max-w-3xl mx-auto relative">
+              <ChatInput 
+                input={input} 
+                setInput={setInput} 
+                handleSend={handleSend} 
+                isLoading={isLoading} 
+                isUploading={isUploading} 
+                chatMode={chatMode} 
+                setChatMode={setChatMode}
+                isMenuOpen={isMenuOpen}
+                setIsMenuOpen={setIsMenuOpen}
+                fileInputRef={fileInputRef}
+                abortControllerRef={abortControllerRef}
+              />
             </div>
-            <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf" />
-            <p className="mt-4 text-[10px] text-center font-black uppercase tracking-[0.3em] text-zinc-300">CampusAI Intelligence Engine • {chatMode.toUpperCase()} MODE ACTIVE</p>
           </div>
-        </div>
+        )}
+        <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} accept=".pdf" />
       </main>
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #f4f4f5; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #000; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #18181b; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #fff; }
       `}</style>
     </div>
   );
