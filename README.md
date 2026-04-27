@@ -110,17 +110,50 @@ graph TD
 ---
 
 ## 🌍 Deployment
-
-### Frontend (Vercel)
-- **Framework**: Next.js
+ 
+ ### Frontend (Vercel)
+- **Framework**: Next.js (App Router)
 - **Root Directory**: `web`
-- **Build Command**: `npm run build`
+- **Build Command**: `next build`
+- **Environment Variables**: Set `NEXT_PUBLIC_API_URL` to your Render backend URL.
+ 
+ ### Backend (Render)
+- **Option A: Web Service (Node)**
+  - **Environment**: Node.js
+  - **Root Directory**: `server`
+  - **Build Command**: `npm install && npm run build`
+  - **Start Command**: `npm run start`
+  - **Health Check Path**: `/health`
+- **Option B: Docker (Recommended)**
+  - **Environment**: Docker
+  - **Dockerfile Path**: `server/Dockerfile`
+  - **Health Check Path**: `/health`
 
-### Backend (Render)
-- **Environment**: Node
-- **Root Directory**: `server`
-- **Build Command**: `npm install && npm run build`
-- **Start Command**: `npm run start`
+---
+
+## 🐳 Docker Setup
+
+For a full-stack local production environment:
+
+1. **Configure Environment**: Create a root `.env` file based on `example.env`.
+2. **Launch Services**:
+   ```bash
+   docker-compose up --build
+   ```
+   This will start:
+   - **Frontend**: `http://localhost:3000`
+   - **Backend**: `http://localhost:4000`
+   - **Health API**: `http://localhost:4000/health`
+
+---
+
+## 🛡️ Production Readiness
+
+The application is reinforced with:
+- **Security**: `fastify-helmet` headers and Zod-based environment validation.
+- **Observability**: Structured JSON logging via `pino` (standard in backend).
+- **Stability**: Graceful shutdown handling and React Error Boundaries.
+- **Performance**: Multi-stage Docker builds for minimal footprint.
 
 ---
 

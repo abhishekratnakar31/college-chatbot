@@ -102,6 +102,9 @@ export async function initAchievementsTable() {
   console.log("PostgreSQL Achievements Table Initialized.");
 }
 
+
+
+
 export async function initDB() {
   try {
     // Core Facts table (Structured data)
@@ -119,6 +122,9 @@ export async function initDB() {
 
     // College achievements & rankings table
     await initAchievementsTable();
+
+    // Scholarships table removal (feature decommissioned)
+
 
     console.log("PostgreSQL Database Initialized.");
   } catch (err) {

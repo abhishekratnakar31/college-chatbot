@@ -1,6 +1,9 @@
-import "dotenv/config";
+import { validateEnv, env } from "./utils/env.js";
+validateEnv();
+
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
 import { chatRoute } from "./routes/chat.js";
 import { newsRoute } from "./routes/news.js";
 import { rankingsRoute } from "./routes/rankings.js";
@@ -25,13 +28,20 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-const app = Fastify();
+const app = Fastify({
+  logger: {
+    level: env.NODE_ENV === "development" ? "info" : "warn",
+    transport: env.NODE_ENV === "development" ? { target: "pino-pretty" } : undefined,
+  },
+});
+
+// ── Security Headers ────────────────────────────────────────────────
+await app.register(helmet, {
+  contentSecurityPolicy: false, // Disable CSP if it interferes with the frontend, or configure it properly
+});
 
 await app.register(cors, {
-  origin:
-    process.env.ALLOWED_ORIGIN === "*"
-      ? true
-      : process.env.ALLOWED_ORIGIN || true,
+  origin: env.ALLOWED_ORIGIN === "*" ? true : env.ALLOWED_ORIGIN,
   methods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
 });
 
@@ -103,11 +113,45 @@ await seedCollegeAchievements();
 await app.register(newsRoute);
 await app.register(rankingsRoute);
 
+// ── Health Check ────────────────────────────────────────────────────
+app.get("/health", async () => {
+  return { status: "ok", timestamp: new Date().toISOString() };
+});
+
+// ── Global Error Handler ────────────────────────────────────────────
+app.setErrorHandler((error, request, reply) => {
+  request.log.error(error);
+  reply.status(error.statusCode || 500).send({
+    error: "Internal Server Error",
+    message: env.NODE_ENV === "development" ? error.message : undefined,
+  });
+});
+
 // Start news cron job (runs immediately + every 6h)
 startNewsCron();
 
-const PORT = Number(process.env.PORT) || 4000;
+const PORT = env.PORT;
 
-app.listen({ port: PORT, host: "0.0.0.0" }, () => {
-  console.log(`Server running on port ${PORT}`);
+// ── Graceful Shutdown ───────────────────────────────────────────────
+const shutdown = async (signal: string) => {
+  app.log.info(`Received ${signal}. Shutting down...`);
+  try {
+    await app.close();
+    app.log.info("Server closed successfully.");
+    process.exit(0);
+  } catch (err) {
+    app.log.error("Error during shutdown:", err);
+    process.exit(1);
+  }
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+
+app.listen({ port: PORT, host: "0.0.0.0" }, (err) => {
+  if (err) {
+    app.log.error(err);
+    process.exit(1);
+  }
+  app.log.info(`Server running on port ${PORT}`);
 });

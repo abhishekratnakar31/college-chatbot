@@ -26,6 +26,35 @@ export async function generateStream(messages: ChatMessage[]) {
   return response.body;
 }
 
+/**
+ * Standard non-streaming chat completion
+ */
+export async function generateChatCompletion(messages: ChatMessage[], model = "openai/gpt-4o-mini") {
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        max_tokens: 500,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`OpenRouter Error: ${errText}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
 export async function generateSearchQuery(
   messages: ChatMessage[],
 ): Promise<string> {
@@ -45,7 +74,7 @@ export async function generateSearchQuery(
           {
             role: "system",
             content:
-              "You are a search query optimizer for a College Assistant chatbot. Your ONLY job is to rewrite the user's question into a clean, specific web search query. RULES: (1) ALWAYS output a search query — never refuse. (2) Only reply OUT_OF_DOMAIN if the question is COMPLETELY unrelated to education, universities, colleges, academic programs, scholarships, admissions, student life, or careers (e.g., cooking recipes, sports betting, weather). (3) Any question mentioning a university name, college name, course name, degree, or academic topic is IN-DOMAIN. (4) Output ONLY the search query — no preamble, no explanation.",
+              "You are a search query optimizer for a College Assistant chatbot. Your ONLY job is to rewrite the user's question into a clean, specific web search query. RULES: (1) ALWAYS output a search query — never refuse. (2) Only reply OUT_OF_DOMAIN if the question is COMPLETELY unrelated to education, universities, colleges, academic programs, admissions, student life, or careers (e.g., cooking recipes, sports betting, weather). (3) Any question mentioning a university name, college name, course name, degree, or academic topic is IN-DOMAIN. (4) Output ONLY the search query — no preamble, no explanation.",
           },
           ...messages.slice(-5), // increased context window to 5 messages
         ],

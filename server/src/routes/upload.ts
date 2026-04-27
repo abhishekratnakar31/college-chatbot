@@ -3,6 +3,7 @@ import { createRequire } from "module";
 import { qdrant } from "../lib/qdrant.js";
 import { getEmbeddings } from "../llm/embedding.js";
 import { extractTextFromPDF } from "../utils/ocr.js";
+import { verifyCollegeContent } from "../lib/guardrails.js";
 import crypto from "node:crypto";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
@@ -100,7 +101,21 @@ export async function uploadRoute(app: FastifyInstance) {
       });
 
       const totalChars = pages.reduce((acc, p) => acc + p.text.length, 0);
+      const fullText = pages.map(p => p.text).join("\n");
       console.log(`[RAG Upload] Extracted Text Length: ${totalChars} characters across ${pages.length} pages.`);
+
+      // ── Step 2: Guardrail Check ─────────────────────────────────────
+      reply.raw.write(`data: ${JSON.stringify({ status: "verifying", message: "Verifying document relevance..." })}\n\n`);
+      const { isAllowed, reason } = await verifyCollegeContent(fullText);
+      
+      if (!isAllowed) {
+        console.warn(`[RAG Upload] REJECTED: ${data.filename}. Reason: ${reason}`);
+        reply.raw.write(`data: ${JSON.stringify({ status: "error", message: reason })}\n\n`);
+        reply.raw.end();
+        return;
+      }
+      console.log(`[RAG Upload] ALLOWED: ${data.filename}`);
+      // ──────────────────────────────────────────────────────────────
 
       // Chunk text (per page to preserve page boundaries)
       const chunkSize = 3000;

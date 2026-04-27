@@ -148,7 +148,5 @@ export const RSS_FEEDS: FeedSource[] = [
   GN("Indian college university admission placements 2025", "Indian Colleges"),
   GN("UGC AICTE India higher education policy 2025", "UGC AICTE"),
   GN("NIRF India college ranking 2025", "NIRF Rankings"),
-  GN("India scholarship students fellowship 2025", "Scholarships"),
   GN("college campus placements salary package India 2025", "Campus Placements"),
-  GN("India study abroad scholarship international 2025", "Study Abroad"),
 ];
