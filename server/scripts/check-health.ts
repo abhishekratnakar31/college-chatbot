@@ -5,7 +5,7 @@ async function checkHealth() {
     const res = await fetch('http://localhost:4000/health');
     const data = await res.json();
     console.log('Health Check Response:', data);
-  } catch (err) {
+  } catch (err: any) {
     console.error('Health Check Failed:', err.message);
   }
 }

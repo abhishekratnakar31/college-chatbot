@@ -2,7 +2,7 @@ import { z } from "zod";
 import "dotenv/config";
 
 const envSchema = z.object({
-  PORT: z.string().transform(Number).default("4000"),
+  PORT: z.string().transform(Number).default(4000),
   DATABASE_URL: z.string().url(),
   QDRANT_URL: z.string().url().optional().default("http://localhost:6333"),
   QDRANT_API_KEY: z.string().optional(),
@@ -20,7 +20,7 @@ export function validateEnv() {
     console.log("✅ Environment variables validated.");
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error("❌ Environment validation failed:", error.errors);
+      console.error("❌ Environment validation failed:", JSON.stringify(error.format(), null, 2));
     }
     process.exit(1);
   }

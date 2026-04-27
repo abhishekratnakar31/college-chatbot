@@ -29,10 +29,12 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 const app = Fastify({
-  logger: {
-    level: env.NODE_ENV === "development" ? "info" : "warn",
-    transport: env.NODE_ENV === "development" ? { target: "pino-pretty" } : undefined,
-  },
+  logger: env.NODE_ENV === "development" ? {
+    level: "info",
+    transport: { target: "pino-pretty" }
+  } : {
+    level: "warn"
+  }
 });
 
 // ── Security Headers ────────────────────────────────────────────────
@@ -120,10 +122,12 @@ app.get("/health", async () => {
 
 // ── Global Error Handler ────────────────────────────────────────────
 app.setErrorHandler((error, request, reply) => {
-  request.log.error(error);
-  reply.status(error.statusCode || 500).send({
+  const err = error as any;
+  request.log.error(err);
+  const statusCode = err.statusCode || 500;
+  reply.status(statusCode).send({
     error: "Internal Server Error",
-    message: env.NODE_ENV === "development" ? error.message : undefined,
+    message: env.NODE_ENV === "development" ? err.message : undefined,
   });
 });
 
@@ -140,7 +144,7 @@ const shutdown = async (signal: string) => {
     app.log.info("Server closed successfully.");
     process.exit(0);
   } catch (err) {
-    app.log.error("Error during shutdown:", err);
+    app.log.error(err, "Error during shutdown");
     process.exit(1);
   }
 };
@@ -148,10 +152,10 @@ const shutdown = async (signal: string) => {
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
 
-app.listen({ port: PORT, host: "0.0.0.0" }, (err) => {
-  if (err) {
-    app.log.error(err);
-    process.exit(1);
-  }
-  app.log.info(`Server running on port ${PORT}`);
-});
+try {
+  const address = await app.listen({ port: PORT, host: "0.0.0.0" });
+  app.log.info(`Server running on ${address}`);
+} catch (err) {
+  app.log.error(err);
+  process.exit(1);
+}
