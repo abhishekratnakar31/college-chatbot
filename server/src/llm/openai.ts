@@ -59,6 +59,8 @@ export async function generateSearchQuery(
   messages: ChatMessage[],
 ): Promise<string> {
   const lastMessage = messages[messages.length - 1]?.content || "";
+  // Strip out any internal SYSTEM: blocks from the query optimizer input
+  const sanitizedInput = lastMessage.replace(/SYSTEM:[\s\S]*?\n\n/g, "").trim();
 
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
@@ -74,9 +76,9 @@ export async function generateSearchQuery(
           {
             role: "system",
             content:
-              "You are a search query optimizer for a College Assistant chatbot. Your ONLY job is to rewrite the user's question into a clean, specific web search query. RULES: (1) ALWAYS output a search query — never refuse. (2) Only reply OUT_OF_DOMAIN if the question is COMPLETELY unrelated to education, universities, colleges, academic programs, admissions, student life, or careers (e.g., cooking recipes, sports betting, weather). (3) Any question mentioning a university name, college name, course name, degree, or academic topic is IN-DOMAIN. (4) Output ONLY the search query — no preamble, no explanation.",
+              "You are a search query optimizer for a College Assistant chatbot. Your ONLY job is to rewrite the user's question into a clean, specific web search query. RULES: (1) ALWAYS output a search query — never refuse. (2) Only reply OUT_OF_DOMAIN if the question is COMPLETELY unrelated to education. (3) Output ONLY the search query.",
           },
-          ...messages.slice(-5), // increased context window to 5 messages
+          ...messages.slice(-5).map(m => m === messages[messages.length-1] ? { ...m, content: sanitizedInput } : m),
         ],
         max_tokens: 50,
       }),

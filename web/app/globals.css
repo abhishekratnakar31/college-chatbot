@@ -135,3 +135,47 @@ body {
   pointer-events: none;
   background: rgba(0, 0, 0, 0.4);
 }
+
+.premium-input {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s var(--transition-smooth);
+}
+
+.premium-input:focus-within {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+}
+
+.vs-badge {
+  background: white;
+  color: black;
+  font-weight: 900;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 4px 10px;
+  border-radius: 100px;
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+}
+
+.liquid-glass-container {
+
+  isolation: isolate;
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-glass-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  filter: url(#glass-distortion);
+  -webkit-filter: url(#glass-distortion);
+  background: rgba(0, 0, 0, 0.2);
+}
+

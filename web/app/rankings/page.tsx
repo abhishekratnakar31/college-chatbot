@@ -98,60 +98,38 @@ function FilterSection({ title, options, selected, onChange, icon }: any) {
 function CollegeCard({ college, index }: { college: College; index: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: index * 0.05, ease: [0.16, 1, 0.3, 1] }}
-      className="group bg-zinc-900/40 border border-zinc-900 p-8 rounded-[2.5rem] hover:bg-zinc-900 transition-all duration-500 relative flex flex-col md:flex-row items-center gap-10"
+      transition={{ duration: 0.4, delay: index * 0.03 }}
+      className="group flex flex-row items-center gap-4 py-4 border-b border-zinc-900/30 hover:bg-zinc-900/10 transition-all px-4 -mx-4"
     >
-      <div className="flex items-center gap-8 flex-shrink-0">
-        <div className="flex flex-col items-center">
-          <span className="text-[9px] font-black text-zinc-700 uppercase tracking-[0.2em] mb-2">Rank</span>
-          <span className="text-4xl font-serif font-bold text-white italic leading-none">
-            #{college.rank_2024 || college.nirf_rank || "--"}
-          </span>
-        </div>
-        <div className="w-px h-12 bg-zinc-800" />
+      <div className="flex items-center justify-center shrink-0 w-12">
+        <span className="text-xl font-serif font-bold text-zinc-800 italic group-hover:text-white transition-colors">
+          #{college.rank_2024 || college.nirf_rank || "--"}
+        </span>
       </div>
 
-      <div className="flex-grow min-w-0 space-y-3">
-        <h3 className="text-xl md:text-2xl font-serif font-bold text-white group-hover:text-zinc-200 transition-colors leading-tight">
-          {college.name || college.college}
-        </h3>
-        <div className="flex flex-wrap items-center gap-4">
-          <span className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] border border-zinc-800 text-zinc-500 bg-black">
-            {college.category || college.nirf_category}
-          </span>
-          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-600">
-            <Landmark size={14} />
-            {college.state}
+      <div className="flex-grow min-w-0 flex items-center justify-between gap-4">
+        <div className="flex-grow min-w-0">
+          <h3 className="text-sm md:text-lg font-serif font-bold text-white group-hover:text-zinc-200 transition-colors py-1">
+            {college.name || college.college}
+          </h3>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-[7px] font-black uppercase tracking-widest text-zinc-600 truncate">{college.state}</span>
           </div>
         </div>
-      </div>
 
-      <div className="flex items-center gap-12 flex-shrink-0 w-full md:w-auto pt-8 md:pt-0 border-t md:border-0 border-zinc-800">
-        <div className="flex flex-col items-end gap-2">
-          <span className="text-[9px] font-black text-zinc-700 uppercase tracking-[0.2em]">Quality Score</span>
-          <div className="flex items-center gap-4">
-            <div className="w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min(100, Number(college.score || college.innovation_score || 0))}%` }}
-                transition={{ duration: 1, delay: 0.5 }}
-                className="h-full bg-white" 
-              />
-            </div>
-            <span className="text-xs font-black text-white">{college.score || college.innovation_score || "--"}</span>
+        <div className="flex items-center gap-4 md:gap-8 shrink-0">
+          <div className="hidden sm:flex flex-col items-end">
+            <span className="text-[7px] font-black text-zinc-800 uppercase tracking-[0.2em]">Package</span>
+            <span className="text-xs font-black text-zinc-500 italic">₹{college.avg_package || "12.5"}L</span>
           </div>
+          <div className="flex flex-col items-end">
+            <span className="text-[7px] font-black text-zinc-800 uppercase tracking-[0.2em]">NIRF</span>
+            <span className="text-xs font-black text-zinc-500">{college.rank_2024 || college.nirf_rank || "--"}</span>
+          </div>
+          <ChevronRight size={14} className="text-zinc-800 group-hover:text-white transition-colors" />
         </div>
- 
-        <div className="flex flex-col items-end">
-          <span className="text-[9px] font-black text-zinc-700 uppercase tracking-[0.2em] mb-1">Avg Package</span>
-          <span className="text-lg font-black text-white italic">₹{college.avg_package || "12.5"}L</span>
-        </div>
- 
-        <button className="w-14 h-14 bg-white text-black rounded-2xl flex items-center justify-center hover:scale-105 transition-transform shadow-xl shadow-white/10">
-          <ChevronRight size={20} />
-        </button>
       </div>
     </motion.div>
   );
@@ -189,7 +167,7 @@ export default function RankingsPage() {
   return (
     <div className="flex h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden">
       
-      <aside className="w-20 border-r border-zinc-900 flex flex-col items-center py-8 gap-8 z-[100] bg-black">
+      <aside className="hidden md:flex w-20 border-r border-zinc-900 flex-col items-center py-8 gap-8 z-[100] bg-black">
         <Link href="/" className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center hover:scale-110 transition-transform">
           <GraduationCap className="text-black w-6 h-6" />
         </Link>
@@ -206,6 +184,20 @@ export default function RankingsPage() {
         </div>
       </aside>
 
+      {/* Mobile Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-lg border-t border-zinc-900 flex items-center justify-around z-[200] px-6">
+        {[
+          { icon: GraduationCap, href: "/" },
+          { icon: Brain, href: "/chat" },
+          { icon: Newspaper, href: "/news" },
+          { icon: Trophy, href: "/rankings", active: true }
+        ].map((item, i) => (
+          <Link key={i} href={item.href} className={cn("p-3 rounded-xl transition-all", item.active ? "bg-white text-black" : "text-zinc-600")}>
+            <item.icon size={20} />
+          </Link>
+        ))}
+      </nav>
+
       <div className="flex-1 flex overflow-hidden">
         <div className="w-80 flex-shrink-0 border-r border-zinc-900/50 bg-black overflow-y-auto hidden xl:block p-10">
           <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-700 mb-10 flex items-center gap-3">
@@ -215,8 +207,22 @@ export default function RankingsPage() {
           <FilterSection title="Specialization" options={filterOptions.categories} selected={selectedCategories} onChange={(c: any) => setSelectedCategories(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])} icon={<Microscope size={14} className="text-zinc-700" />} />
         </div>
 
-        <main className="flex-1 overflow-y-auto custom-scrollbar bg-[#0a0a0a]">
-          <div className="max-w-5xl mx-auto px-12 py-20">
+        <main className="flex-1 flex flex-col relative bg-[#0a0a0a]">
+          <header className="h-20 border-b border-zinc-900 flex items-center justify-between px-6 md:px-10 z-[100] bg-black/50 backdrop-blur-xl shrink-0">
+            <Link href="/" className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0">
+                <GraduationCap className="text-black w-6 h-6" />
+              </div>
+              <span className="text-xl font-serif font-bold text-white tracking-tight whitespace-nowrap">Academia<span className="text-zinc-500">AI</span></span>
+            </Link>
+            <div className="flex items-center gap-4 md:gap-10">
+              <Link href="/news" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors">News</Link>
+              <Link href="/rankings" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors">Rankings</Link>
+            </div>
+          </header>
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div className="max-w-5xl mx-auto px-6 md:px-12 py-12 md:py-20 pb-32 md:pb-20">
             <header className="mb-24 space-y-8">
               <h1 className="text-6xl md:text-7xl font-serif font-bold tracking-tight text-white">
                 Top <span className="text-zinc-800 italic">Institutions</span>
@@ -250,6 +256,7 @@ export default function RankingsPage() {
                 ))}
               </div>
             )}
+            </div>
           </div>
         </main>
       </div>

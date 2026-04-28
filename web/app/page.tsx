@@ -79,7 +79,7 @@ function HeroBackground() {
   const y = useTransform(scrollY, [0, 1000], [0, 200]);
 
   return (
-    <div className="absolute inset-0 overflow-hidden">
+    <div className="absolute inset-0 overflow-hidden hidden md:block">
       <motion.div
         style={{ y }}
         initial={{ scale: 1.1, opacity: 0 }}
@@ -186,9 +186,9 @@ function TopStudyPlaces() {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto py-32 px-6">
+    <div className="w-full max-w-6xl mx-auto py-16 md:py-32 px-6">
       <Reveal>
-        <div className="flex items-end justify-between mb-16">
+        <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-8 md:gap-0 mb-12 md:mb-16">
           <div className="max-w-xl">
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-white tracking-tight mb-4">
               Top Study Places
@@ -264,7 +264,7 @@ function SectionCard({
           </div>
         </Reveal>
         <Reveal delay={0.1}>
-          <h2 className="text-5xl md:text-6xl lg:text-7xl font-serif font-bold text-white leading-[1.05] tracking-tighter">
+          <h2 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-white leading-[1.05] tracking-tighter">
             {title}
           </h2>
         </Reveal>
@@ -309,8 +309,8 @@ function SectionCard({
 // ── News Dashboard Component ────────────────────────────────────────────────
 function NewsDashboard({ articles }: { articles: any[] }) {
   return (
-    <div className="relative aspect-[4/3] rounded-[3.5rem] overflow-hidden border border-zinc-800 bg-black/40 backdrop-blur-3xl p-8 flex flex-col gap-6 shadow-2xl shadow-black">
-      <div className="grid grid-cols-2 gap-6 flex-1 min-h-0">
+    <div className="relative aspect-auto md:aspect-[4/3] min-h-[400px] md:min-h-0 rounded-[2rem] md:rounded-[3.5rem] overflow-hidden border border-zinc-800 bg-black/40 backdrop-blur-3xl p-6 md:p-8 flex flex-col gap-6 shadow-2xl shadow-black">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
         {/* Current News */}
         <div className="bg-zinc-900/40 rounded-3xl p-6 border border-zinc-800/50 flex flex-col gap-4 overflow-hidden h-full">
           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2">Current News</h3>
@@ -390,17 +390,11 @@ function NewsDashboard({ articles }: { articles: any[] }) {
 // ── Intelligence Section ───────────────────────────────────────────────────
 function IntelligenceSection({ news }: { news: any[] }) {
   return (
-    <div className="w-full py-48 px-6 bg-[#0a0a0a] relative overflow-hidden">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center relative z-10">
+    <div className="w-full py-20 md:py-48 px-6 bg-[#0a0a0a] relative overflow-hidden">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center relative z-10">
         <div className="space-y-12">
-          <Reveal>
-            <div className="inline-flex items-center gap-2.5 px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
-              <Newspaper size={14} />
-              University Advantage
-            </div>
-          </Reveal>
           <Reveal delay={0.1}>
-            <h2 className="text-6xl md:text-8xl font-serif font-bold text-white tracking-tighter leading-[0.95]">
+            <h2 className="text-4xl sm:text-5xl md:text-8xl font-serif font-bold text-white tracking-tighter leading-[0.95]">
               Stay ahead with the <br />
               <span className="text-zinc-600 italic">latest buzz.</span>
             </h2>
@@ -413,7 +407,7 @@ function IntelligenceSection({ news }: { news: any[] }) {
           <Reveal delay={0.3}>
             <Link
               href="/news"
-              className="inline-flex items-center gap-4 px-12 py-6 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all hover:scale-105 shadow-2xl shadow-white/10 group/btn"
+              className="inline-flex items-center gap-4 px-8 py-5 md:px-12 md:py-6 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all hover:scale-105 shadow-2xl shadow-white/10 group/btn"
             >
               Explore Full Feed
               <ArrowRight
@@ -425,7 +419,7 @@ function IntelligenceSection({ news }: { news: any[] }) {
         </div>
 
         <Reveal delay={0.4}>
-          <div className="relative group">
+          <div className="relative group hidden md:block">
             <NewsDashboard articles={news} />
             {/* Ambient Glow behind dashboard */}
             <div className="absolute -inset-10 bg-white/[0.02] rounded-full blur-[80px] pointer-events-none -z-10" />
@@ -442,7 +436,7 @@ function IntelligenceSection({ news }: { news: any[] }) {
 // ── Rankings Dashboard Component ─────────────────────────────────────────────
 function RankingsDashboard({ colleges }: { colleges: any[] }) {
   return (
-    <div className="relative aspect-[4/3] rounded-[3.5rem] overflow-hidden border border-zinc-800 bg-black/40 backdrop-blur-3xl p-10 flex flex-col gap-8 shadow-2xl shadow-black">
+    <div className="relative aspect-auto md:aspect-[4/3] min-h-[400px] md:min-h-0 rounded-[2rem] md:rounded-[3.5rem] overflow-hidden border border-zinc-800 bg-black/40 backdrop-blur-3xl p-6 md:p-10 flex flex-col gap-8 shadow-2xl shadow-black">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Live Leaderboard</h3>
@@ -509,9 +503,9 @@ function RankingsDashboard({ colleges }: { colleges: any[] }) {
 function RankingsSection({ rankings }: { rankings: any[] }) {
   return (
     <div className="w-full py-48 px-6 bg-[#0a0a0a] relative overflow-hidden">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center relative z-10">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center relative z-10">
         <Reveal delay={0.4}>
-          <div className="relative group lg:order-1">
+          <div className="relative group lg:order-1 hidden md:block">
             <RankingsDashboard colleges={rankings} />
             {/* Ambient Glow behind dashboard */}
             <div className="absolute -inset-10 bg-white/[0.015] rounded-full blur-[80px] pointer-events-none -z-10" />
@@ -519,14 +513,8 @@ function RankingsSection({ rankings }: { rankings: any[] }) {
         </Reveal>
 
         <div className="space-y-12 lg:order-2">
-          <Reveal>
-            <div className="inline-flex items-center gap-2.5 px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
-              <Trophy size={14} />
-              Excellence Leaderboard
-            </div>
-          </Reveal>
           <Reveal delay={0.1}>
-            <h2 className="text-6xl md:text-8xl font-serif font-bold text-white tracking-tighter leading-[0.95]">
+            <h2 className="text-4xl sm:text-5xl md:text-8xl font-serif font-bold text-white tracking-tighter leading-[0.95]">
               Discover your <br />
               <span className="text-zinc-600 italic">perfect match.</span>
             </h2>
@@ -539,7 +527,7 @@ function RankingsSection({ rankings }: { rankings: any[] }) {
           <Reveal delay={0.3}>
             <Link
               href="/rankings"
-              className="inline-flex items-center gap-4 px-12 py-6 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all hover:scale-105 shadow-2xl shadow-white/10 group/btn"
+              className="inline-flex items-center gap-4 px-8 py-5 md:px-12 md:py-6 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all hover:scale-105 shadow-2xl shadow-white/10 group/btn"
             >
               View Rankings
               <ArrowRight
@@ -560,7 +548,7 @@ function RankingsSection({ rankings }: { rankings: any[] }) {
 // ── Quick Actions ────────────────────────────────────────────────────────────
 function QuickActions({ news, rankings }: { news: any[], rankings: any[] }) {
   return (
-    <div className="w-full space-y-48 py-48 px-6 overflow-hidden">
+    <div className="w-full space-y-20 md:space-y-48 py-20 md:py-48 px-6 overflow-hidden">
       <IntelligenceSection news={news} />
       <RankingsSection rankings={rankings} />
 
@@ -586,9 +574,9 @@ function QuickActions({ news, rankings }: { news: any[], rankings: any[] }) {
 // ── Footer ───────────────────────────────────────────────────────────────────
 function Footer() {
   return (
-    <footer className="bg-black border-t border-zinc-900 pt-32 pb-16 px-8">
+    <footer className="bg-black border-t border-zinc-900 pt-20 md:pt-32 pb-16 px-6 md:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-16 mb-24">
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center gap-3 mb-8">
               <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
@@ -794,34 +782,34 @@ export default function HeroPage() {
         </defs>
       </svg>
 
-      <div className="absolute top-8 left-8 z-[100]">
-        <Link 
-          href="/" 
-          className="flex items-center gap-3 group"
-        >
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.1)] group-hover:scale-105 transition-all">
+      <header className="fixed top-0 left-0 right-0 h-20 border-b border-transparent md:border-zinc-900/10 flex items-center justify-between px-6 md:px-10 z-[100] bg-black/50 backdrop-blur-xl md:backdrop-blur-none md:bg-transparent transition-all">
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.1)] group-hover:scale-105 transition-all shrink-0">
             <GraduationCap className="text-black w-6 h-6" />
           </div>
-          <span className="text-sm font-serif font-bold text-white tracking-tighter group-hover:text-zinc-400 transition-colors">
-            Academia<span className="italic text-zinc-600">AI</span>
+          <span className="text-xl font-serif font-bold text-white tracking-tighter whitespace-nowrap">
+            Academia<span className="text-zinc-500">AI</span>
           </span>
         </Link>
-      </div>
+        <div className="flex items-center gap-4 md:gap-10">
+          <Link href="/news" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors">News</Link>
+          <Link href="/rankings" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors">Rankings</Link>
+        </div>
+      </header>
 
-      <div className="absolute top-8 right-8 z-[100] flex items-center gap-8">
-        <Link 
-          href="/news" 
-          className="text-zinc-500 hover:text-white text-[10px] md:text-xs font-black uppercase tracking-[0.3em] transition-all hover:translate-y-[-1px]"
-        >
-          News
-        </Link>
-        <Link 
-          href="/rankings" 
-          className="text-zinc-500 hover:text-white text-[10px] md:text-xs font-black uppercase tracking-[0.3em] transition-all hover:translate-y-[-1px]"
-        >
-          Rankings
-        </Link>
-      </div>
+      {/* Mobile Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-lg border-t border-zinc-900 flex items-center justify-around z-[200] px-6">
+        {[
+          { icon: GraduationCap, href: "/", active: true },
+          { icon: Brain, href: "/chat" },
+          { icon: Newspaper, href: "/news" },
+          { icon: Trophy, href: "/rankings" }
+        ].map((item, i) => (
+          <Link key={i} href={item.href} className={cn("p-3 rounded-xl transition-all", item.active ? "bg-white text-black" : "text-zinc-600")}>
+            <item.icon size={20} />
+          </Link>
+        ))}
+      </nav>
 
       <section className="relative flex items-center justify-center min-h-screen px-4 overflow-hidden pt-20">
         <HeroBackground />
@@ -834,13 +822,13 @@ export default function HeroPage() {
           {/* Hero Text - Moved Above Search */}
           <div className="mb-10 md:mb-16">
             <Reveal>
-              <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-tighter leading-tight mb-4 text-white">
+              <h1 className="text-4xl md:text-6xl font-serif font-bold tracking-tighter leading-tight mb-4 text-white">
                 <CycleWord />{" "}
                 <span className="text-zinc-700">Every College.</span>
               </h1>
             </Reveal>
             <Reveal delay={0.2}>
-              <p className="text-xs md:text-lg text-zinc-400 leading-relaxed font-medium max-w-2xl mx-auto opacity-80">
+              <p className="text-sm md:text-lg text-zinc-400 leading-relaxed font-medium max-w-2xl mx-auto opacity-80">
                 Live admissions, placements, and academic intelligence across
                 India's top institutions.
               </p>
@@ -849,20 +837,20 @@ export default function HeroPage() {
 
           <Reveal delay={0.4}>
             <form onSubmit={handleSubmit} className="relative group">
-              <div className="relative flex items-center liquid-glass-container rounded-full transition-all duration-500 shadow-2xl shadow-black/5 p-1.5 md:p-2 border-2 border-transparent group-focus-within:border-white/10">
+              <div className="relative flex items-center liquid-glass-container rounded-full transition-all duration-500 shadow-2xl shadow-black/5 p-1 md:p-2 border-2 border-transparent group-focus-within:border-white/10">
                 <Search className="absolute left-6 md:left-8 w-5 h-5 md:w-8 md:h-8 text-zinc-300 pointer-events-none" />
                 <input
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Ask anything about colleges..."
-                  className="w-full bg-transparent pl-14 md:pl-20 pr-4 py-6 md:py-10 text-lg md:text-4xl text-white placeholder:text-zinc-600 outline-none font-serif font-medium"
+                  className="w-full bg-transparent pl-12 md:pl-20 pr-4 py-4 md:py-10 text-xl md:text-4xl text-white placeholder:text-zinc-600 outline-none font-serif font-medium"
                 />
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className={cn(
-                    "p-4 md:p-10 mr-1 md:mr-2 text-zinc-300 hover:text-white transition-colors",
+                    "p-3 md:p-10 mr-1 md:mr-2 text-zinc-300 hover:text-white transition-colors",
                     attachedFile && "text-white",
                   )}
                 >
@@ -871,7 +859,7 @@ export default function HeroPage() {
                 <button
                   type="submit"
                   disabled={isUploading}
-                  className="px-6 md:px-14 py-4 md:py-6 mr-7 bg-white text-black font-bold text-sm md:text-xl rounded-full hover:bg-zinc-200 transition-all active:scale-95 shadow-xl disabled:opacity-50"
+                  className="px-5 md:px-14 py-3 md:py-6 mr-7 bg-white text-black font-bold text-xs md:text-xl rounded-full hover:bg-zinc-200 transition-all active:scale-95 shadow-xl disabled:opacity-50"
                 >
                   {isUploading ? "Indexing..." : "Search"}
                 </button>
@@ -918,18 +906,14 @@ export default function HeroPage() {
       <div className="w-full py-64 px-6 bg-[#0a0a0a] relative overflow-hidden">
         <Reveal>
           <div className="max-w-6xl mx-auto relative text-center space-y-16">
-            <div className="flex justify-center">
-              <motion.div 
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="w-24 h-24 bg-white rounded-[2rem] flex items-center justify-center shadow-[0_0_70px_rgba(255,255,255,0.15)] mb-4"
-              >
-                <Sparkles className="text-black w-12 h-12" />
-              </motion.div>
+            <div className="flex justify-center items-center gap-8 mb-12">
+              <h3 className="text-white text-5xl md:text-7xl font-bold tracking-tighter">
+                Academia<span className="text-zinc-600 italic">AI</span>
+              </h3>
             </div>
 
             <div className="space-y-8">
-              <h2 className="text-7xl md:text-[12rem] font-serif font-bold text-white tracking-tighter leading-[0.85]">
+              <h2 className="text-6xl md:text-[12rem] font-serif font-bold text-white tracking-tighter leading-[0.85]">
                 Join <span className="text-zinc-700 italic">&</span> <br />
                 Get Started
               </h2>
@@ -942,7 +926,7 @@ export default function HeroPage() {
             <div className="flex flex-col items-center gap-16">
               <Link 
                 href="/chat" 
-                className="px-20 py-10 bg-white text-black font-black uppercase tracking-[0.4em] text-sm rounded-2xl hover:bg-zinc-200 transition-all inline-flex items-center gap-8 group/btn shadow-[0_30px_70px_rgba(255,255,255,0.15)] hover:scale-105 active:scale-95"
+                className="px-12 py-8 md:px-20 md:py-10 bg-white text-black font-black uppercase tracking-[0.4em] text-sm rounded-2xl hover:bg-zinc-200 transition-all inline-flex items-center gap-8 group/btn shadow-[0_30px_70px_rgba(255,255,255,0.15)] hover:scale-105 active:scale-95"
               >
                 Enter Platform
                 <ArrowRight size={24} className="group-hover/btn:translate-x-3 transition-transform" />

@@ -97,43 +97,36 @@ function FilterSection({ title, options, selected, onChange, icon }: any) {
 
 function NewsRow({ article, index }: { article: Article; index: number }) {
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 20 }}
+    <motion.a
+      href={article.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: index * 0.05, ease: [0.16, 1, 0.3, 1] }}
-      className="group flex flex-col md:flex-row items-start gap-10 py-16 border-b border-zinc-900/50 hover:bg-zinc-900/20 transition-all duration-500 rounded-[2rem] px-8 -mx-8"
+      transition={{ duration: 0.3, delay: index * 0.02 }}
+      className="group flex flex-row items-center gap-4 py-4 border-b border-zinc-900/30 hover:bg-zinc-900/5 transition-all px-4 -mx-4 cursor-pointer no-underline"
     >
-      <div className="flex-grow min-w-0 space-y-6">
-        <div className="flex items-center gap-4">
-          <span className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] border border-zinc-800 text-zinc-500 bg-black">
+      <div className="flex-grow min-w-0 flex items-center gap-4">
+        <div className="hidden sm:flex shrink-0">
+          <span className="px-1.5 py-0.5 rounded bg-zinc-900 text-[7px] font-black text-zinc-600 uppercase tracking-tighter">
             {article.source}
           </span>
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700">
-            {article.category}
-          </span>
         </div>
-        <h2 className="text-white font-serif font-bold text-2xl md:text-3xl leading-tight group-hover:text-zinc-200 transition-colors">
+        
+        <h2 className="text-white font-medium text-sm md:text-base leading-tight group-hover:text-zinc-200 transition-colors flex-grow py-1">
           {article.title}
         </h2>
-        <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-widest text-zinc-600">
-          <div className="flex items-center gap-2">
-            <Calendar size={14} />
-            <span>{new Date(article.published_at || article.created_at).toLocaleDateString()}</span>
+
+        <div className="flex items-center gap-4 shrink-0">
+          <span className="text-[8px] font-black text-zinc-800 uppercase tracking-tighter hidden md:inline">
+            {new Date(article.published_at || article.created_at).toLocaleDateString()}
+          </span>
+          <div className="p-2 text-zinc-800 group-hover:text-white transition-colors">
+            <ExternalLink size={12} />
           </div>
-          <div className="w-1 h-1 rounded-full bg-zinc-800" />
-          <span>{Math.floor(Math.random() * 10 + 1)} min read</span>
         </div>
-        <p className="text-zinc-400 text-base leading-relaxed line-clamp-3 font-medium max-w-2xl">
-          {article.summary}
-        </p>
-        <a href={article.url} target="_blank" className="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-all group/link">
-          Read Full Article <ExternalLink size={14} className="group-hover/link:translate-x-1 transition-transform" />
-        </a>
       </div>
-      <div className="flex-shrink-0 w-full md:w-56 aspect-square rounded-[2.5rem] overflow-hidden border border-zinc-900 bg-zinc-900 group-hover:shadow-2xl group-hover:shadow-black transition-all duration-700">
-        <img src={article.image || "/news_hero.png"} alt="" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
-      </div>
-    </motion.article>
+    </motion.a>
   );
 }
 
@@ -162,7 +155,7 @@ export default function NewsPage() {
   return (
     <div className="flex h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden">
       
-      <aside className="w-20 border-r border-zinc-900 flex flex-col items-center py-8 gap-8 z-[100] bg-black">
+      <aside className="hidden md:flex w-20 border-r border-zinc-900 flex-col items-center py-8 gap-8 z-[100] bg-black">
         <Link href="/" className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center hover:scale-110 transition-transform">
           <GraduationCap className="text-black w-6 h-6" />
         </Link>
@@ -179,6 +172,20 @@ export default function NewsPage() {
         </div>
       </aside>
 
+      {/* Mobile Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-lg border-t border-zinc-900 flex items-center justify-around z-[200] px-6">
+        {[
+          { icon: GraduationCap, href: "/" },
+          { icon: Brain, href: "/chat" },
+          { icon: Newspaper, href: "/news", active: true },
+          { icon: Trophy, href: "/rankings" }
+        ].map((item, i) => (
+          <Link key={i} href={item.href} className={cn("p-3 rounded-xl transition-all", item.active ? "bg-white text-black" : "text-zinc-600")}>
+            <item.icon size={20} />
+          </Link>
+        ))}
+      </nav>
+
       <div className="flex-1 flex overflow-hidden">
         <div className="w-80 flex-shrink-0 border-r border-zinc-900/50 bg-black overflow-y-auto hidden xl:block p-10">
           <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-700 mb-10 flex items-center gap-3">
@@ -188,8 +195,22 @@ export default function NewsPage() {
           <FilterSection title="Categories" options={filterOptions.categories} selected={selectedCategories} onChange={(c: any) => setSelectedCategories(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])} icon={<Tag size={14} className="text-zinc-700" />} />
         </div>
 
-        <main className="flex-1 overflow-y-auto custom-scrollbar bg-[#0a0a0a]">
-          <div className="max-w-5xl mx-auto px-12 py-20">
+        <main className="flex-1 flex flex-col relative bg-[#0a0a0a]">
+          <header className="h-20 border-b border-zinc-900 flex items-center justify-between px-6 md:px-10 z-[100] bg-black/50 backdrop-blur-xl shrink-0">
+            <Link href="/" className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0">
+                <GraduationCap className="text-black w-6 h-6" />
+              </div>
+              <span className="text-xl font-serif font-bold text-white tracking-tight whitespace-nowrap">Academia<span className="text-zinc-500">AI</span></span>
+            </Link>
+            <div className="flex items-center gap-4 md:gap-10">
+              <Link href="/news" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors">News</Link>
+              <Link href="/rankings" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors">Rankings</Link>
+            </div>
+          </header>
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div className="max-w-5xl mx-auto px-6 md:px-12 py-12 md:py-20 pb-32 md:pb-20">
             <header className="mb-24 space-y-8">
               <h1 className="text-6xl md:text-7xl font-serif font-bold tracking-tight text-white">
                 Latest <span className="text-zinc-800 italic">Insights</span>
@@ -222,6 +243,7 @@ export default function NewsPage() {
                 ))}
               </div>
             )}
+            </div>
           </div>
         </main>
       </div>
