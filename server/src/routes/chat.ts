@@ -66,160 +66,27 @@ export async function chatRoute(app: FastifyInstance) {
       console.log(`[RAG Search] User question received: "${currentInput}"`);
       console.log(`[RAG Search] Optimizing query for vector search...`);
 
-      // 1. Optimize Search Query for Retrieval
-      // In web mode with PDF context (or filename as fallback), use the enriched query generator
-      const hasPdfText = mode === "web" && !!body.pdfContext?.trim();
-      const hasPdfFilename = mode === "web" && !!body.pdfFilename?.trim();
-      const hasPdfContext = hasPdfText || hasPdfFilename;
-
-      // Build the context string for the query enricher:
-      // Prefer extracted text; fall back to just the filename as a hint
-      const pdfContextForQuery = hasPdfText
-        ? body.pdfContext!
-        : hasPdfFilename
-          ? `Document: ${body.pdfFilename} (text could not be extracted — use the filename as a college/document name hint)`
-          : "";
-
-      let optimizedQuery: string;
-
-      if (hasPdfContext) {
-        optimizedQuery = await generatePdfAwareSearchQuery(currentInput, pdfContextForQuery);
-      } else {
-        optimizedQuery = await generateSearchQuery(history);
-      }
-
-      if (optimizedQuery === "OUT_OF_DOMAIN") {
-        if (mode === "web" && hasPdfContext) {
-          // User has a PDF attached — their vague question likely refers to the document.
-          // Build a fallback query from the filename instead of refusing.
-          const nameHint = body.pdfFilename
-            ? body.pdfFilename.replace(/\.pdf$/i, "").replace(/[-_]/g, " ")
-            : "college information";
-          optimizedQuery = `${nameHint} admissions courses programs`;
-        } else if (mode === "web") {
-          reply.raw.writeHead(200, {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "Access-Control-Allow-Origin": "*",
-          });
-          const refusalMsg = "I am a College Assistant and can only answer questions related to colleges, admissions, academic programs, and campus life. Please ask me a college-related question!";
-          reply.raw.write(`data: ${JSON.stringify({ choices: [{ delta: { content: refusalMsg } }] })}\n\n`);
-          reply.raw.write("data: [DONE]\n\n");
-          reply.raw.end();
-          return;
-        } else {
-          // PDF mode: fall back to raw input
-          optimizedQuery = currentInput;
-        }
-      }
-
-
-      // 2. Extract active document context from history
-      let activeDocument: string | null = null;
-      for (let i = history.length - 1; i >= 0; i--) {
-        const msg = history[i];
-        if (msg && msg.content.startsWith("ATTACHMENT|")) {
-          const parts = msg.content.split("|");
-          if (parts.length > 1) {
-            activeDocument = parts[1] || null;
-            break;
-          }
-        }
-      }
-
-      // Build additional metadata filters if provided
-      const customFilters = body.filters ? Object.entries(body.filters).map(([key, value]) => ({
-        key,
-        match: { value }
-      })) : [];
-
-      // 3. Retrieve relevant chunks from Qdrant (Local PDFs)
-      let qdrantResults: any[] = [];
-      if (mode === "pdf") {
-        const queryEmbedding = await getEmbedding(optimizedQuery);
-        
-        // 1. Vector Similarity Search
-        const vectorSearchOptions: any = {
-          vector: queryEmbedding,
-          limit: 25, // Get more candidates for re-ranking
-        };
-
-        if (activeDocument || customFilters.length > 0) {
-          vectorSearchOptions.filter = {
-            must: [
-              ...(activeDocument ? [{ key: "document", match: { value: activeDocument } }] : []),
-              ...customFilters
-            ],
-          };
-        }
-
-        const vectorResults = (await qdrant.search("college_docs", vectorSearchOptions)) || [];
-
-        // 2. Keyword Match Search (Full-text)
-        // This helps find specific terms/codes that embeddings might miss
-        const keywordSearchOptions: any = {
-          limit: 15,
-          filter: {
-            must: [
-              ...(activeDocument ? [{ key: "document", match: { value: activeDocument } }] : []),
-              ...customFilters,
-              {
-                key: "text",
-                match: {
-                  text: optimizedQuery,
-                },
-              },
-            ],
-          },
-        };
-
-        const keywordResults = (await qdrant.scroll("college_docs", keywordSearchOptions)) || { points: [] };
-
-        // 3. Merge and Deduplicate
-        const seenIds = new Set(vectorResults.map((r: any) => r.id));
-        const combinedCandidates = [...vectorResults];
-        
-        for (const point of keywordResults.points) {
-          if (!seenIds.has(point.id)) {
-            combinedCandidates.push(point as any);
-            seenIds.add(point.id);
-          }
-        }
-
-        // 4. Re-ranking Step
-        // Use LLM to intelligently rank the combined candidates
-        const rankedResults = await reRankChunks(optimizedQuery, combinedCandidates);
-        
-        // Take top 8 highly relevant chunks for the final context
-        qdrantResults = rankedResults.slice(0, 8);
-      }
-
-      // 4. Retrieve relevant info from Web (Live Search)
-      let webResults: any[] = [];
-      if (mode === "web" || mode === "compare") {
-        webResults = (await searchWeb(optimizedQuery)) || [];
-      }
-
-      // ── Rankings Context Injection ──────────────────────────────────
-      // Detect college mentions in the user query and inject verified stats
-      let rankingsContext = "";
-      try {
-        const mentioned = detectColleges(currentInput);
-        if (mentioned.length >= 2) {
-          // Comparison mode
-          const rows: any[] = [];
-          for (const name of mentioned.slice(0, 2)) {
-            const res = await sql<any[]>`
-              SELECT * FROM college_achievements
-              WHERE college ILIKE ${"%" + name + "%"}  OR ${name} = ANY(aliases)
-              LIMIT 1
-            `;
-            if (res[0]) rows.push({ ...res[0], innovation_score: computeInnovationScore(res[0] as any) });
-          }
-          if (rows.length === 2) {
-            const [a, b] = rows as any[];
-            rankingsContext = `
+      // ── Rankings Context Injection (Parallel) ───────────────────────
+      const rankingsPromise = (async () => {
+        let context = "";
+        try {
+          const mentioned = detectColleges(currentInput);
+          if (mentioned.length >= 2) {
+            const rows = await Promise.all(
+              mentioned.slice(0, 2).map(async (name) => {
+                const res = await sql<any[]>`
+                  SELECT * FROM college_achievements
+                  WHERE college ILIKE ${"%" + name + "%"}  OR ${name} = ANY(aliases)
+                  LIMIT 1
+                `;
+                if (res[0]) return { ...res[0], innovation_score: computeInnovationScore(res[0] as any) };
+                return null;
+              })
+            );
+            const validRows = rows.filter(Boolean);
+            if (validRows.length === 2) {
+              const [a, b] = validRows as any[];
+              context = `
 ## VERIFIED COLLEGE COMPARISON (from NIRF 2024 database)
 
 | Metric | ${a.college} | ${b.college} |
@@ -239,19 +106,18 @@ export async function chatRoute(app: FastifyInstance) {
 Awards — ${a.college}: ${(a.awards as string[]).join(', ') || 'N/A'}
 Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
 `;
-          }
-        } else if (mentioned.length === 1) {
-          // Single college profile
-          const name = mentioned[0]!;
-          const res = await sql<any[]>`
-            SELECT * FROM college_achievements
-            WHERE college ILIKE ${"%" + name + "%"} OR ${name} = ANY(aliases)
-            LIMIT 1
-          `;
-          if (res[0]) {
-            const c = res[0] as any;
-            const score = computeInnovationScore(c);
-            rankingsContext = `
+            }
+          } else if (mentioned.length === 1) {
+            const name = mentioned[0]!;
+            const res = await sql<any[]>`
+              SELECT * FROM college_achievements
+              WHERE college ILIKE ${"%" + name + "%"} OR ${name} = ANY(aliases)
+              LIMIT 1
+            `;
+            if (res[0]) {
+              const c = res[0] as any;
+              const score = computeInnovationScore(c);
+              context = `
 ## VERIFIED COLLEGE PROFILE — ${c.college} (from NIRF 2024 database)
 - **Location**: ${c.city}, ${c.state}
 - **NIRF Rank**: #${c.nirf_rank ?? 'N/A'} (${c.nirf_category})
@@ -265,12 +131,133 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
 - **Startups Incubated**: ${c.startups_incubated ?? 0}+
 - **Awards & Recognition**: ${(c.awards as string[]).join(' | ') || 'N/A'}
 `;
+            }
+          }
+        } catch (e) {
+          console.warn("[Rankings] Context injection failed:", e);
+        }
+        return context;
+      })();
+
+      // 1. Optimize Search Query for Retrieval
+      // In web mode with PDF context (or filename as fallback), use the enriched query generator
+      const hasPdfText = mode === "web" && !!body.pdfContext?.trim();
+      const hasPdfFilename = mode === "web" && !!body.pdfFilename?.trim();
+      const hasPdfContext = hasPdfText || hasPdfFilename;
+
+      const pdfContextForQuery = hasPdfText
+        ? body.pdfContext!
+        : hasPdfFilename
+          ? `Document: ${body.pdfFilename} (text could not be extracted — use the filename as a college/document name hint)`
+          : "";
+
+      let optimizedQuery: string;
+
+      if (hasPdfContext) {
+        optimizedQuery = await generatePdfAwareSearchQuery(currentInput, pdfContextForQuery);
+      } else {
+        optimizedQuery = await generateSearchQuery(history);
+      }
+
+      if (optimizedQuery === "OUT_OF_DOMAIN") {
+        if (mode === "web" && hasPdfContext) {
+          const nameHint = body.pdfFilename
+            ? body.pdfFilename.replace(/\.pdf$/i, "").replace(/[-_]/g, " ")
+            : "college information";
+          optimizedQuery = `${nameHint} admissions courses programs`;
+        } else if (mode === "web") {
+          reply.raw.writeHead(200, {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+          });
+          const refusalMsg = "I am a College Assistant and can only answer questions related to colleges, admissions, academic programs, and campus life. Please ask me a college-related question!";
+          reply.raw.write(`data: ${JSON.stringify({ choices: [{ delta: { content: refusalMsg } }] })}\n\n`);
+          reply.raw.write("data: [DONE]\n\n");
+          reply.raw.end();
+          return;
+        } else {
+          optimizedQuery = currentInput;
+        }
+      }
+
+      // 2. Extract active document context from history
+      let activeDocument: string | null = null;
+      for (let i = history.length - 1; i >= 0; i--) {
+        const msg = history[i];
+        if (msg && msg.content.startsWith("ATTACHMENT|")) {
+          const parts = msg.content.split("|");
+          if (parts.length > 1) {
+            activeDocument = parts[1] || null;
+            break;
           }
         }
-      } catch (e) {
-        console.warn("[Rankings] Context injection failed:", e);
       }
-      // ── End Rankings Context Injection ─────────────────────────────
+
+      const customFilters = body.filters ? Object.entries(body.filters).map(([key, value]) => ({
+        key,
+        match: { value }
+      })) : [];
+
+      // 3. & 4. Retrieve relevant chunks from Qdrant (Local PDFs) or Web
+      let qdrantResults: any[] = [];
+      let webResults: any[] = [];
+
+      if (mode === "pdf") {
+        const vectorSearchOptions: any = {
+          limit: 25,
+        };
+        const keywordSearchOptions: any = {
+          limit: 15,
+          filter: {
+            must: [
+              ...(activeDocument ? [{ key: "document", match: { value: activeDocument } }] : []),
+              ...customFilters,
+              {
+                key: "text",
+                match: {
+                  text: optimizedQuery,
+                },
+              },
+            ],
+          },
+        };
+
+        if (activeDocument || customFilters.length > 0) {
+          vectorSearchOptions.filter = {
+            must: [
+              ...(activeDocument ? [{ key: "document", match: { value: activeDocument } }] : []),
+              ...customFilters
+            ],
+          };
+        }
+
+        const keywordSearchPromise = qdrant.scroll("college_docs", keywordSearchOptions).then(res => res || { points: [] });
+        const vectorSearchPromise = getEmbedding(optimizedQuery).then(queryEmbedding => {
+          vectorSearchOptions.vector = queryEmbedding;
+          return qdrant.search("college_docs", vectorSearchOptions).then(res => res || []);
+        });
+
+        const [keywordResults, vectorResults] = await Promise.all([keywordSearchPromise, vectorSearchPromise]);
+
+        const seenIds = new Set(vectorResults.map((r: any) => r.id));
+        const combinedCandidates = [...vectorResults];
+        
+        for (const point of keywordResults.points) {
+          if (!seenIds.has(point.id)) {
+            combinedCandidates.push(point as any);
+            seenIds.add(point.id);
+          }
+        }
+
+        const rankedResults = await reRankChunks(optimizedQuery, combinedCandidates);
+        qdrantResults = rankedResults.slice(0, 8);
+      } else if (mode === "web" || mode === "compare") {
+        webResults = (await searchWeb(optimizedQuery)) || [];
+      }
+
+      const rankingsContext = await rankingsPromise;
 
 
       // 4. Build Context & Sources

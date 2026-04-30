@@ -27,7 +27,9 @@ import {
   StopCircle,
   FileSearch,
   LayoutGrid,
-  FileUp
+  FileUp,
+  Loader2,
+  SlidersHorizontal
 } from "lucide-react";
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
@@ -61,6 +63,8 @@ const ChatInput = ({
   setOtherCriteria,
   showOtherInput,
   setShowOtherInput,
+  isFocusMenuOpen,
+  setIsFocusMenuOpen,
   menuSide = "top",
   hasMessages = false,
   showCompareInputs = true,
@@ -102,214 +106,184 @@ const ChatInput = ({
   return (
     <div className="w-full">
 
-    {chatMode === "compare" ? (
-      <div className="space-y-8 px-2 sm:px-0 max-w-4xl mx-auto">
-        <div className="flex items-center justify-between px-1.5 sm:px-3 mb-4">
-          <div className="flex gap-3 relative">
-            <button 
-              onClick={() => setIsMenuOpen(!isMenuOpen)} 
-              className={cn(
-                "w-12 h-12 transition-all rounded-2xl border border-zinc-900 flex items-center justify-center", 
-                isMenuOpen ? "bg-white text-black border-white shadow-[0_0_30px_rgba(255,255,255,0.2)]" : "bg-zinc-900/50 text-zinc-500 hover:text-white"
-              )}
-            >
-              <LayoutGrid size={20} />
-            </button>
-            <MenuContent />
-            <button 
-              onClick={() => fileInputRef.current?.click()} 
-              className="w-12 h-12 bg-zinc-900/50 text-zinc-500 hover:text-white transition-all rounded-2xl border border-zinc-900 flex items-center justify-center"
-            >
-              <FileUp size={20} />
-            </button>
-          </div>
+    <div className="w-full relative group">
+      <MenuContent />
 
-          {hasMessages && !showCompareInputs ? (
-            <button 
-              onClick={() => setShowCompareInputs(true)}
-              className="px-6 py-3 bg-zinc-900 border border-zinc-800 text-white rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all flex items-center gap-2"
-            >
-              <Plus size={14} /> Compare New
-            </button>
-          ) : (
-            !hasMessages && (
-              <div className="flex flex-col items-end">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Intelligent Comparison</span>
-                </div>
-                <span className="text-[9px] font-medium text-zinc-700 mt-1">v2.4 Engine Active</span>
-              </div>
-            )
-          )}
-        </div>
-
-        {(!hasMessages || showCompareInputs) && (
-          <div className="relative grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
-            <div className="premium-input rounded-[2.5rem] p-3 flex items-center gap-5 group/input ring-1 ring-white/5 focus-within:ring-white/20">
-              <div className="w-12 h-12 rounded-[1.5rem] bg-white/5 flex items-center justify-center text-xs font-black text-zinc-700 group-focus-within/input:bg-white group-focus-within/input:text-black transition-all">01</div>
-              <input 
-                value={comp1} 
-                onChange={(e) => setComp1(e.target.value)}
-                placeholder="First Institution..."
-                className="bg-transparent flex-1 outline-none text-white text-base font-medium py-4 placeholder:text-zinc-800"
-              />
-            </div>
-
-            <div className="premium-input rounded-[2.5rem] p-3 flex items-center gap-5 group/input ring-1 ring-white/5 focus-within:ring-white/20">
-              <div className="w-12 h-12 rounded-[1.5rem] bg-white/5 flex items-center justify-center text-xs font-black text-zinc-700 group-focus-within/input:bg-white group-focus-within/input:text-black transition-all">02</div>
-              <input 
-                value={comp2} 
-                onChange={(e) => setComp2(e.target.value)}
-                placeholder="Second Institution..."
-                className="bg-transparent flex-1 outline-none text-white text-base font-medium py-4 placeholder:text-zinc-800"
-              />
-            </div>
-          </div>
-        )}
-        
-        <div className="space-y-10">
-          {hasMessages && !showCompareInputs ? (
-            <div className="relative group">
-              <div className="bg-zinc-900 border-2 border-zinc-800 group-focus-within:border-white group-focus-within:bg-black rounded-[2rem] transition-all duration-500 shadow-2xl shadow-black/5 overflow-hidden">
-                <div className="flex items-center p-2 relative">
-                  <div className="p-3 text-zinc-500">
-                    <Search size={18} />
-                  </div>
-                  <input 
-                    value={input} 
-                    onChange={(e) => setInput(e.target.value)} 
-                    onKeyDown={(e) => e.key === "Enter" && handleSend()} 
-                    placeholder="Ask more about these colleges..." 
-                    className="flex-1 bg-transparent py-4 text-base font-medium text-white placeholder:text-zinc-700 outline-none" 
-                  />
-                  {isLoading ? (
-                    <button onClick={() => abortControllerRef.current?.abort()} className="p-4 text-white hover:scale-110 transition-transform">
-                      <StopCircle size={20} />
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => handleSend()} 
-                      disabled={!input.trim()} 
-                      className="w-12 h-12 bg-white text-black rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-20 transition-all mr-1"
-                    >
-                      <ArrowUp size={20} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <button 
-              onClick={() => {
-                if (comp1.trim() && comp2.trim()) {
-                  const combined = [...selectedCriteria];
-                  if (showOtherInput && otherCriteria.trim()) combined.push(otherCriteria.trim());
-                  
-                  const criteriaStr = combined.length > 0 
-                    ? `Focus specifically on these areas: ${combined.join(", ")}.`
-                    : "Provide a comprehensive general comparison including all standard academic metrics.";
-                  
-                  const systemInstructions = `SYSTEM: YOU ARE AN ACADEMIC INTELLIGENCE ENGINE. You must ONLY compare educational institutions. Be permissive. Provide a high-fidelity side-by-side comparison. ${criteriaStr}`;
-                  
-                  handleSend(`Please compare ${comp1} and ${comp2}.`, systemInstructions);
-                  setShowCompareInputs(false);
-                }
-              }}
-              disabled={!comp1.trim() || !comp2.trim() || isLoading}
-              className="w-full bg-white text-black rounded-[2.5rem] font-black text-[10px] sm:text-xs uppercase tracking-[0.3em] hover:bg-zinc-200 transition-all active:scale-[0.98] disabled:opacity-20 flex items-center justify-center gap-4 py-6 shadow-[0_30px_60px_rgba(255,255,255,0.15)] group"
-            >
-              <GitCompare size={20} className="group-hover:rotate-180 transition-transform duration-500" />
-              Generate Intelligence Report
-            </button>
-          )}
-
-          {(!hasMessages || showCompareInputs) && (
-            <div className="bg-zinc-900/10 rounded-[3rem] p-8 border border-white/[0.03] hidden md:block">
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <div className="w-full flex items-center justify-center gap-4 mb-6">
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent to-zinc-900" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-800 whitespace-nowrap">Focus Parameters</span>
-                  <div className="h-px flex-1 bg-gradient-to-l from-transparent to-zinc-900" />
-                </div>
-                {COMPARISON_CRITERIA.map(c => {
-                  const isSelected = selectedCriteria.includes(c);
-                  return (
-                    <button
-                      key={c}
-                      onClick={() => {
-                        setSelectedCriteria((prev: string[]) => 
-                          isSelected ? prev.filter(x => x !== c) : [...prev, c]
-                        );
-                      }}
-                      className={cn(
-                        "px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
-                        isSelected 
-                          ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.1)] scale-110 z-10" 
-                          : "bg-white/5 text-zinc-600 hover:text-white border border-transparent hover:border-white/10"
-                      )}
-                    >
-                      {c}
-                    </button>
-                  );
-                })}
-                <button
-                  onClick={() => setShowOtherInput(!showOtherInput)}
-                  className={cn(
-                    "px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
-                    showOtherInput 
-                      ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.1)] scale-110 z-10" 
-                      : "bg-white/5 text-zinc-600 hover:text-white border border-transparent hover:border-white/10"
-                  )}
-                >
-                  Other
-                </button>
-              </div>
+      <AnimatePresence>
+        {chatMode === 'compare' && isFocusMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className={cn(
+              "absolute right-0 w-64 p-4 bg-zinc-900 border border-zinc-800 rounded-3xl z-50 shadow-2xl",
+              menuSide === "top" ? "bottom-full mb-4" : "top-full mt-4"
+            )}
+          >
+            <div className="flex flex-col gap-1 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
+              <h3 className="px-2 pt-1 pb-3 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">Focus Parameters</h3>
+              {COMPARISON_CRITERIA.map(c => {
+                const isSelected = selectedCriteria.includes(c);
+                return (
+                  <button
+                    key={c}
+                    onClick={() => {
+                      setSelectedCriteria((prev: string[]) => 
+                        isSelected ? prev.filter(x => x !== c) : [...prev, c]
+                      );
+                    }}
+                    className={cn(
+                      "flex items-center gap-3 w-full p-3 rounded-2xl transition-all text-left group",
+                      isSelected ? "bg-white/10 text-white" : "hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-200"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-5 h-5 rounded flex items-center justify-center border transition-colors shrink-0",
+                      isSelected ? "bg-white border-white text-black" : "border-zinc-600 group-hover:border-zinc-400 text-transparent"
+                    )}>
+                      <Check className="w-3 h-3" />
+                    </div>
+                    <span className="text-sm font-medium">{c}</span>
+                  </button>
+                );
+              })}
               
+              <button
+                onClick={() => setShowOtherInput(!showOtherInput)}
+                className={cn(
+                  "flex items-center gap-3 w-full p-3 rounded-2xl transition-all text-left group",
+                  showOtherInput ? "bg-white/10 text-white" : "hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-200"
+                )}
+              >
+                <div className={cn(
+                  "w-5 h-5 rounded flex items-center justify-center border transition-colors shrink-0",
+                  showOtherInput ? "bg-white border-white text-black" : "border-zinc-600 group-hover:border-zinc-400 text-transparent"
+                )}>
+                  <Check className="w-3 h-3" />
+                </div>
+                <span className="text-sm font-medium">Other (Custom)</span>
+              </button>
+
               {showOtherInput && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-8 max-w-lg mx-auto">
+                <div className="p-3 mt-1">
                   <input 
                     value={otherCriteria}
                     onChange={(e) => setOtherCriteria(e.target.value)}
-                    placeholder="Enter custom focus (e.g. Research facilities)..."
-                    className="w-full bg-black/40 border border-zinc-900 rounded-3xl px-8 py-5 text-sm font-medium text-white outline-none focus:border-white/20 transition-all text-center placeholder:text-zinc-800"
+                    placeholder="Enter custom focus..."
+                    className="w-full bg-black/40 border border-zinc-800 rounded-xl px-4 py-3 text-sm font-medium text-white outline-none focus:border-white/20 transition-all placeholder:text-zinc-600"
                   />
-                </motion.div>
+                </div>
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="bg-zinc-900 border-2 border-zinc-800 group-focus-within:border-white group-focus-within:bg-black rounded-3xl sm:rounded-[2.5rem] transition-all duration-500 shadow-2xl shadow-black/5 overflow-hidden">
+        <div className="flex items-center p-1.5 sm:p-3 relative">
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className={cn("p-3 sm:p-4 transition-all rounded-xl sm:rounded-2xl", isMenuOpen ? "bg-white text-black" : "text-zinc-600 hover:text-white hover:bg-zinc-800")}>
+            <LayoutGrid size={20} className="sm:w-6 sm:h-6" />
+          </button>
+          <button onClick={() => fileInputRef.current?.click()} className="p-3 sm:p-4 text-zinc-600 hover:text-white hover:bg-zinc-800 transition-all rounded-xl sm:rounded-2xl flex items-center justify-center">
+            <FileUp size={20} className="sm:w-6 sm:h-6" />
+          </button>
+          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} placeholder={isUploading ? "Indexing..." : `Ask in ${chatMode}...`} className="flex-1 bg-transparent py-3 sm:py-4 text-sm sm:text-lg font-medium text-white placeholder:text-zinc-700 outline-none" disabled={isUploading} />
+          
+          {chatMode === "compare" && (
+            <button 
+              onClick={() => setIsFocusMenuOpen(!isFocusMenuOpen)} 
+              className={cn(
+                "p-3 sm:p-4 transition-all rounded-xl sm:rounded-2xl mr-1 sm:mr-2",
+                isFocusMenuOpen || selectedCriteria.length > 0 || otherCriteria ? "bg-white text-black" : "text-zinc-600 hover:text-white hover:bg-zinc-800"
+              )}
+            >
+              <SlidersHorizontal size={20} className="sm:w-6 sm:h-6" />
+            </button>
+          )}
+
+          {isLoading ? (
+            <button onClick={() => abortControllerRef.current?.abort()} className="p-3 sm:p-4 text-white hover:scale-110 transition-transform"><StopCircle size={20} className="sm:w-6 sm:h-6" /></button>
+          ) : (
+            <button onClick={() => handleSend()} disabled={!input.trim() || isUploading} className="w-10 h-10 sm:w-12 sm:h-12 bg-white text-black rounded-xl sm:rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-20 transition-all"><ArrowUp size={18} className="sm:w-5 sm:h-5" /></button>
           )}
         </div>
       </div>
-
-
-    ) : (
-      <div className="relative group">
-        <MenuContent />
-        <div className="bg-zinc-900 border-2 border-zinc-800 group-focus-within:border-white group-focus-within:bg-black rounded-3xl sm:rounded-[2.5rem] transition-all duration-500 shadow-2xl shadow-black/5 overflow-hidden">
-          {(isLoading || isUploading) && (
-            <div className="absolute top-0 left-0 right-0 h-1 overflow-hidden z-10">
-              <motion.div className="h-full bg-white w-1/3" animate={{ x: ["-100%", "300%"] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }} />
-            </div>
-          )}
-          <div className="flex items-center p-1.5 sm:p-3 relative">
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className={cn("p-3 sm:p-4 transition-all rounded-xl sm:rounded-2xl", isMenuOpen ? "bg-white text-black" : "text-zinc-600 hover:text-white hover:bg-zinc-800")}>
-              <LayoutGrid size={20} className="sm:w-6 sm:h-6" />
-            </button>
-            <button onClick={() => fileInputRef.current?.click()} className="p-3 sm:p-4 text-zinc-600 hover:text-white hover:bg-zinc-800 transition-all rounded-xl sm:rounded-2xl flex items-center justify-center">
-              <FileUp size={20} className="sm:w-6 sm:h-6" />
-            </button>
-            <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} placeholder={isUploading ? "Indexing..." : `Ask in ${chatMode}...`} className="flex-1 bg-transparent py-3 sm:py-4 text-sm sm:text-lg font-medium text-white placeholder:text-zinc-700 outline-none" disabled={isUploading} />
-            {isLoading ? (
-              <button onClick={() => abortControllerRef.current?.abort()} className="p-3 sm:p-4 text-white hover:scale-110 transition-transform"><StopCircle size={20} className="sm:w-6 sm:h-6" /></button>
-            ) : (
-              <button onClick={() => handleSend()} disabled={!input.trim() || isUploading} className="w-10 h-10 sm:w-12 sm:h-12 bg-white text-black rounded-xl sm:rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-20 transition-all"><ArrowUp size={18} className="sm:w-5 sm:h-5" /></button>
-            )}
-          </div>
-        </div>
-      </div>
-    )}
+    </div>
   </div>
 );
+};
+
+const MessageBubble = ({ msg }: { msg: Message }) => {
+  let mainContent = msg.content;
+  let sourcesMeta: any[] | null = null;
+
+  const metaMatch = mainContent.match(/\[SOURCE_META:(.*?)\]/);
+  if (metaMatch) {
+    try {
+      sourcesMeta = JSON.parse(atob(metaMatch[1]));
+      const splitIdx = mainContent.indexOf("\n\n---\n**Sources:**");
+      if (splitIdx !== -1) {
+        mainContent = mainContent.substring(0, splitIdx);
+      } else {
+        mainContent = mainContent.replace(metaMatch[0], "");
+      }
+    } catch (e) {
+      console.error("Failed to parse sources metadata", e);
+    }
+  }
+
+  return (
+    <div className={cn("max-w-[95%] sm:max-w-[85%] rounded-2xl sm:rounded-3xl text-sm sm:text-[15px] leading-relaxed", msg.role === "user" ? "bg-zinc-900 border border-zinc-800 px-4 sm:px-6 py-3 sm:py-4 text-white font-medium" : "w-full text-zinc-300")}>
+      <div className="flex flex-col gap-4 w-full">
+        <div className="prose prose-invert max-w-none prose-premium prose-sm sm:prose-base">
+          {mainContent ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{mainContent}</ReactMarkdown>
+          ) : (
+            <div className="flex items-center h-6 px-2 text-zinc-400 text-sm font-medium">
+              <div className="flex items-center space-x-1.5 mt-1">
+                <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+              </div>
+              <span className="ml-3 animate-pulse">Retrieving intelligence...</span>
+            </div>
+          )}
+        </div>
+
+        {sourcesMeta && sourcesMeta.length > 0 && (
+          <div className="mt-2 pt-4 border-t border-white/5 flex flex-col gap-3">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+              <Globe className="w-3 h-3" /> 
+              Sources Analyzed
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {sourcesMeta.map((s: any, idx: number) => (
+                <a 
+                  key={idx} 
+                  href={s.url || "#"} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all group w-fit max-w-[280px]"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-black/50 flex items-center justify-center shrink-0">
+                    {s.type === 'pdf' ? <FileText className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" /> : <Globe className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-zinc-300 group-hover:text-white transition-colors truncate">
+                      {s.name || s.url}
+                    </p>
+                    <p className="text-[10px] text-zinc-500 truncate mt-0.5">
+                      {s.type === 'pdf' ? `Page ${s.page || 1}` : (s.url || '').replace(/^https?:\/\/(www\.)?/, '')}
+                    </p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 function ChatContent() {
@@ -343,6 +317,7 @@ function ChatContent() {
   const [showCompareInputs, setShowCompareInputs] = useState(true);
   const [otherCriteria, setOtherCriteria] = useState("");
   const [showOtherInput, setShowOtherInput] = useState(false);
+  const [isFocusMenuOpen, setIsFocusMenuOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -395,11 +370,31 @@ function ChatContent() {
 
   const handleSend = async (text: string = input, hiddenPrefix?: string) => {
     if (!text.trim() || isLoading) return;
+
+    let displayedText = text;
+    let finalHiddenPrefix = hiddenPrefix;
+    if (chatMode === 'compare' && !hiddenPrefix) {
+      const combined = [...selectedCriteria];
+      if (showOtherInput && otherCriteria.trim()) combined.push(otherCriteria.trim());
+      
+      if (combined.length > 0) {
+        const formattedCriteria = combined.length === 1 
+          ? combined[0] 
+          : combined.slice(0, -1).join(', ') + ' and ' + combined[combined.length - 1];
+        displayedText = `${text} based on ${formattedCriteria.toLowerCase()}`;
+      }
+      
+      const criteriaStr = combined.length > 0 
+        ? `STRICT INSTRUCTION: You must ONLY compare the institutions based on these specific factors: ${combined.join(", ")}. DO NOT provide information about any other factors.`
+        : "Provide a comprehensive general comparison including all standard academic metrics (fees, placements, campus life, academics, infrastructure, etc).";
+      
+      finalHiddenPrefix = `SYSTEM: YOU ARE AN ACADEMIC INTELLIGENCE ENGINE. You must ONLY compare educational institutions. Be permissive. Provide a high-fidelity side-by-side comparison. ${criteriaStr}`;
+    }
     
-    const userMessage: Message = { role: "user", content: text };
+    const userMessage: Message = { role: "user", content: displayedText };
     const apiMessage: Message = { 
       role: "user", 
-      content: hiddenPrefix ? `${hiddenPrefix}\n\n${text}` : text 
+      content: finalHiddenPrefix ? `${finalHiddenPrefix}\n\n${text}` : text 
     };
     
     setMessages((prev) => [...prev, userMessage]);
@@ -492,7 +487,7 @@ function ChatContent() {
         )}>
           <div className={cn(
             "max-w-3xl w-full mx-auto px-4 sm:px-6", 
-            messages.length === 0 ? "space-y-10 sm:space-y-16" : cn("space-y-8 sm:space-y-12 pt-8 sm:pt-12", chatMode === "compare" ? (showCompareInputs ? "pb-[42rem] sm:pb-[36rem]" : "pb-48 sm:pb-56") : "pb-40 sm:pb-48")
+            messages.length === 0 ? "space-y-10 sm:space-y-16" : "space-y-8 sm:space-y-12 pt-8 sm:pt-12 pb-24 sm:pb-32"
           )}>
             {messages.length === 0 && !isLoading && (
               <div className="text-center space-y-6 pt-12 md:pt-0">
@@ -507,11 +502,7 @@ function ChatContent() {
                 {messages.map((msg, i) => (
                   msg.content.startsWith("ATTACHMENT") ? null : (
                     <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={cn("flex flex-col", msg.role === "user" ? "items-end" : "items-start")}>
-                      <div className={cn("max-w-[95%] sm:max-w-[85%] rounded-2xl sm:rounded-3xl text-sm sm:text-[15px] leading-relaxed", msg.role === "user" ? "bg-zinc-900 border border-zinc-800 px-4 sm:px-6 py-3 sm:py-4 text-white font-medium" : "w-full text-zinc-300")}>
-                        <div className="prose prose-invert max-w-none prose-premium prose-sm sm:prose-base">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-                        </div>
-                      </div>
+                      <MessageBubble msg={msg} />
                     </motion.div>
                   )
                 ))}
@@ -542,6 +533,8 @@ function ChatContent() {
                   setOtherCriteria={setOtherCriteria}
                   showOtherInput={showOtherInput}
                   setShowOtherInput={setShowOtherInput}
+                  isFocusMenuOpen={isFocusMenuOpen}
+                  setIsFocusMenuOpen={setIsFocusMenuOpen}
                   menuSide="bottom"
                   hasMessages={messages.length > 0}
                   showCompareInputs={showCompareInputs}
@@ -555,7 +548,7 @@ function ChatContent() {
 
         {(messages.length > 0 || chatMode !== "compare") && (
           <div className={cn(
-            "absolute bottom-16 md:bottom-0 left-0 right-0 p-4 sm:p-8 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a] to-transparent pt-10 sm:pt-20 z-50",
+            "absolute bottom-16 md:bottom-0 left-0 right-0 p-2 sm:p-4 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a] to-transparent pt-6 sm:pt-10 z-50",
             (messages.length === 0 && chatMode !== "compare") && "md:hidden",
             (messages.length === 0 && chatMode === "compare") && "hidden"
           )}>
@@ -582,6 +575,8 @@ function ChatContent() {
                 setOtherCriteria={setOtherCriteria}
                 showOtherInput={showOtherInput}
                 setShowOtherInput={setShowOtherInput}
+                isFocusMenuOpen={isFocusMenuOpen}
+                setIsFocusMenuOpen={setIsFocusMenuOpen}
                 menuSide="top"
                 hasMessages={messages.length > 0}
                 showCompareInputs={showCompareInputs}
