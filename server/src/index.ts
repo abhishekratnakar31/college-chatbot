@@ -57,17 +57,17 @@ await app.register(fastifyStatic, {
   prefix: "/uploads/",
 });
 
-await app.register(chatRoute);
-await app.register(newsRoute);
-await app.register(rankingsRoute);
-await app.register(contactRoute);
-await app.register(uploadRoute);
-
 await app.register(multipart, {
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB limit
   },
 });
+
+await app.register(chatRoute);
+await app.register(newsRoute);
+await app.register(rankingsRoute);
+await app.register(contactRoute);
+await app.register(uploadRoute);
 async function initVectorDB() {
   const collections = await qdrant.getCollections();
   const existingNames = collections.collections.map((c) => c.name);
