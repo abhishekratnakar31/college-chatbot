@@ -1,11 +1,12 @@
-# 🎓 CampusAI: The Ultimate College Intelligence Engine
+# 🎓 AcademiaAI: The Intelligent College Intelligence Engine
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://next.js.org)
 [![Fastify](https://img.shields.io/badge/Fastify-5-black?style=flat-square&logo=fastify)](https://fastify.io)
 [![Qdrant](https://img.shields.io/badge/Vector_DB-Qdrant-red?style=flat-square&logo=qdrant)](https://qdrant.tech)
+[![Presentation](https://img.shields.io/badge/Presentation-Chronicle-6366f1?style=flat-square&logo=google-slides)](https://app.chroniclehq.com/share/5f8ecb4d-6a6a-4628-971f-2632976a1b72/afbe722b-aa01-4c71-833a-ff0154100ac8/19d7ac59-f67a-4882-809d-c3e4ac350be1)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
-**CampusAI** is a high-performance, full-stack AI platform designed to revolutionize college research. By combining Retrieval-Augmented Generation (RAG), live web search, real-time news ingestion, and a comprehensive institutional database, CampusAI provides students with instant, accurate, and cited answers to complex academic queries.
+**AcademiaAI** is a high-performance, full-stack AI platform designed to revolutionize college research. By combining Retrieval-Augmented Generation (RAG), live web search, real-time news ingestion, and a comprehensive institutional database, AcademiaAI provides students with instant, accurate, and cited answers to complex academic queries.
 
 ---
 
@@ -86,8 +87,8 @@ graph TD
 
 1. **Clone & Install**
    ```bash
-   git clone https://github.com/yourusername/campus-ai.git
-   cd campus-ai
+   git clone https://github.com/yourusername/academia-ai.git
+   cd academia-ai
    npm install --workspaces
    ```
 
