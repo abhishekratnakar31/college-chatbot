@@ -55,6 +55,7 @@ const ChatInput = ({
   isLoading,
   isUploading,
   uploadProgressText,
+  uploadProgress,
   chatMode,
   setChatMode,
   isMenuOpen,
@@ -248,6 +249,34 @@ const ChatInput = ({
             </motion.div>
           )}
         </AnimatePresence>
+        
+        {isUploading && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 space-y-3"
+          >
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-4 h-4 text-white animate-spin" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">
+                  {uploadProgressText || "Processing Document"}
+                </span>
+              </div>
+              <span className="text-[10px] font-black tabular-nums text-zinc-500">
+                {uploadProgress}%
+              </span>
+            </div>
+            <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/50">
+              <motion.div 
+                className="h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+                initial={{ width: 0 }}
+                animate={{ width: `${uploadProgress}%` }}
+                transition={{ type: "spring", bounce: 0, duration: 0.5 }}
+              />
+            </div>
+          </motion.div>
+        )}
 
         <div className="bg-zinc-900 border-2 border-zinc-800 group-focus-within:border-white group-focus-within:bg-black rounded-3xl sm:rounded-[2.5rem] transition-all duration-500 shadow-2xl shadow-black/5 overflow-hidden">
           <div className="flex items-center p-1.5 sm:p-3 relative">
@@ -449,6 +478,7 @@ function ChatContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgressText, setUploadProgressText] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [chatMode, setChatMode] = useState<"pdf" | "web" | "compare">(
     initialMode,
   );
@@ -503,11 +533,26 @@ function ChatContent() {
           if (line.startsWith("data:")) {
             try {
               const parsed = JSON.parse(line.replace("data: ", "").trim());
-              if (parsed.status === "verifying") setUploadProgressText("Verifying relevance...");
-              else if (parsed.status === "started") setUploadProgressText(`Embedding (0/${parsed.total})...`);
-              else if (parsed.status === "embedding") setUploadProgressText(`Embedding (${parsed.progress}/${parsed.total})...`);
-              else if (parsed.status === "done") {
+              if (parsed.status === "verifying") {
+                setUploadProgressText("Verifying relevance...");
+                setUploadProgress(5);
+              } else if (parsed.status === "started") {
+                setUploadProgressText(`Embedding (0/${parsed.total})...`);
+                setUploadProgress(10);
+              } else if (parsed.status === "embedding") {
+                const pct = Math.floor((parsed.progress / parsed.total) * 90) + 10;
+                setUploadProgressText(`Embedding (${parsed.progress}/${parsed.total})...`);
+                setUploadProgress(pct);
+              } else if (parsed.status === "done") {
                 uploadedUrl = parsed.fileUrl ?? "";
+                setUploadProgress(100);
+              } else if (parsed.status === "ocr_converting") {
+                setUploadProgressText("Preparing document...");
+                setUploadProgress(2);
+              } else if (parsed.status === "ocr_processing") {
+                const pct = Math.floor((parsed.progress / parsed.total) * 50);
+                setUploadProgressText(`Reading page ${parsed.progress}/${parsed.total}...`);
+                setUploadProgress(pct);
               } else if (parsed.page) {
                 setUploadProgressText(`Reading page ${parsed.page}...`);
               }
@@ -530,6 +575,7 @@ function ChatContent() {
     } finally {
       setIsUploading(false);
       setUploadProgressText("");
+      setUploadProgress(0);
     }
   };
 
@@ -797,6 +843,7 @@ function ChatContent() {
                   isLoading={isLoading}
                   isUploading={isUploading}
                   uploadProgressText={uploadProgressText}
+                  uploadProgress={uploadProgress}
                   chatMode={chatMode}
                   setChatMode={setChatMode}
                   isMenuOpen={isMenuOpen}
@@ -842,6 +889,7 @@ function ChatContent() {
                 isLoading={isLoading}
                 isUploading={isUploading}
                 uploadProgressText={uploadProgressText}
+                uploadProgress={uploadProgress}
                 chatMode={chatMode}
                 setChatMode={setChatMode}
                 isMenuOpen={isMenuOpen}
