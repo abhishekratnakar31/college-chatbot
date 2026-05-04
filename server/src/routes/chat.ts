@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { generateStream, generateSearchQuery } from "../llm/openai.js";
+import { generateStream, generateSearchQuery, evaluateIntent } from "../llm/openai.js";
 import type { ChatMessage } from "../types/chat.js";
 import crypto from "node:crypto";
 import { qdrant } from "../lib/qdrant.js";
@@ -159,25 +159,30 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
         optimizedQuery = await generateSearchQuery(history);
       }
 
+      // 1. Evaluate Intent (Domain Enforcement)
+      const intentResult = await evaluateIntent(history);
+      if (intentResult === "OUT_OF_DOMAIN") {
+        reply.raw.writeHead(200, {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+          "Access-Control-Allow-Origin": "*",
+        });
+        const refusalMsg = "I am a College Assistant. Please ask me questions related to colleges, admissions, fees, placements, or rankings!";
+        reply.raw.write(`data: ${JSON.stringify({ choices: [{ delta: { content: refusalMsg } }] })}\n\n`);
+        reply.raw.write("data: [DONE]\n\n");
+        reply.raw.end();
+        return;
+      }
+
       if (optimizedQuery === "OUT_OF_DOMAIN") {
         if (mode === "web" && hasPdfContext) {
           const nameHint = body.pdfFilename
             ? body.pdfFilename.replace(/\.pdf$/i, "").replace(/[-_]/g, " ")
             : "college information";
           optimizedQuery = `${nameHint} admissions courses programs`;
-        } else if (mode === "web") {
-          reply.raw.writeHead(200, {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "Access-Control-Allow-Origin": "*",
-          });
-          const refusalMsg = "I am a College Assistant and can only answer questions related to colleges, admissions, academic programs, and campus life. Please ask me a college-related question!";
-          reply.raw.write(`data: ${JSON.stringify({ choices: [{ delta: { content: refusalMsg } }] })}\n\n`);
-          reply.raw.write("data: [DONE]\n\n");
-          reply.raw.end();
-          return;
         } else {
+          // This should be caught by evaluateIntent above, but kept as a safety net
           optimizedQuery = currentInput;
         }
       }
@@ -307,8 +312,9 @@ You are a specialized College Assistant chatbot operating in **${mode.toUpperCas
 ${mode === "pdf" ? `
 REASONING PROTOCOLS (PDF MODE):
 1. You ONLY have access to INTERNAL_PDF_BASE.
-2. IF INTERNAL_PDF_BASE is empty or doesn't contain the answer, you MUST state: **"The asked information is not available in the uploaded documents."**
-3. DO NOT use external knowledge or web search.
+2. IF INTERNAL_PDF_BASE is empty or doesn't contain the answer, you MUST state: **"I'm sorry, but I couldn't find any information about this in the uploaded document."**
+3. DO NOT use external knowledge, web search, or general facts about the college that are not in the PDF.
+4. If the user asks for "fees" and it is not in the PDF, say you don't have it in the document.
 ` : `
 REASONING PROTOCOLS (WEB/COMPARE MODE${hasPdfContext ? " + PDF BACKGROUND" : ""}):
 1. Your PRIMARY source is LIVE_WEB_SEARCH_RESULTS. Always lead with live web data.
@@ -318,12 +324,13 @@ REASONING PROTOCOLS (WEB/COMPARE MODE${hasPdfContext ? " + PDF BACKGROUND" : ""}
 `}
 
 CORE RULES:
-1. ONLY answer questions related to colleges, admissions, programs, and campus life.
+1. ONLY answer questions related to colleges, admissions, academic programs, and institutional campus life.
 2. ORGANIZE DATA INTO TABLES. If you are listing programs, courses, departments, or fees, you MUST use a Markdown Table.
 3. NEVER make up specific statistics (like exact current year placement % or fees) if you aren't sure. Use ranges or descriptive terms (e.g., "Competitive placement record") when using internal knowledge.
 4. ALWAYS NAME THE COLLEGE. Specifically mention the institution name.
-5. In PDF Mode, if it's not in the PDF, it's not available. In WEB/COMPARE mode, use internal knowledge only as a fallback.
-6. YOU ARE CURRENTLY IN ${mode.toUpperCase()} MODE.
+5. STERN DOMAIN ENFORCEMENT: Refuse to provide medical, dietary, nutrition, or general health advice. If asked about food on campus, focus ONLY on institutional aspects like mess facilities, fees, or operating hours.
+6. In PDF Mode, if it's not in the PDF, it's not available. In WEB/COMPARE mode, use internal knowledge only as a fallback.
+7. YOU ARE CURRENTLY IN ${mode.toUpperCase()} MODE.
 ${mode === "compare" ? `
 7. COMPARE MODE RULES:
    - Your primary mission is to provide objective, data-driven comparisons.

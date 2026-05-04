@@ -127,48 +127,56 @@ const TOP_CITIES = [
     icon: <Landmark className="w-8 h-8 text-zinc-600" />,
     query: "New Delhi",
     state: "Delhi",
+    university: "IIT Delhi",
   },
   {
     name: "Bangalore",
     icon: <Building2 className="w-8 h-8 text-zinc-600" />,
     query: "Bangalore",
     state: "Karnataka",
+    university: "IISc Bangalore",
   },
   {
     name: "Hyderabad",
     icon: <Building className="w-8 h-8 text-zinc-600" />,
     query: "Hyderabad",
     state: "Telangana",
+    university: "IIT Hyderabad",
   },
   {
     name: "Pune",
     icon: <University className="w-8 h-8 text-zinc-600" />,
     query: "Pune",
     state: "Maharashtra",
+    university: "COEP Pune",
   },
   {
     name: "Mumbai",
     icon: <Building2 className="w-8 h-8 text-zinc-600" />,
     query: "Mumbai",
     state: "Maharashtra",
+    university: "IIT Bombay",
   },
   {
     name: "Chennai",
     icon: <School className="w-8 h-8 text-zinc-600" />,
     query: "Chennai",
     state: "Tamil Nadu",
+    university: "IIT Madras",
   },
   {
     name: "Kolkata",
     icon: <Library className="w-8 h-8 text-zinc-600" />,
     query: "Kolkata",
     state: "West Bengal",
+    university: "Jadavpur University",
   },
   {
     name: "Bhopal",
     icon: <Landmark className="w-8 h-8 text-zinc-600" />,
     query: "Bhopal",
     state: "Madhya Pradesh",
+    university: "MANIT Bhopal",
   },
 ];
 
@@ -227,9 +235,14 @@ function TopStudyPlaces() {
               <div className="group-hover:scale-110 group-hover:text-white transition-all duration-500">
                 {city.icon}
               </div>
-              <span className="text-sm font-bold tracking-tight text-zinc-500 group-hover:text-white transition-colors">
-                {city.name}
-              </span>
+              <div className="flex flex-col gap-1 transition-all">
+                <span className="text-sm font-bold tracking-tight text-white">
+                  {city.name}
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-700 group-hover:text-zinc-500 transition-colors">
+                  {city.university}
+                </span>
+              </div>
             </Link>
           </Reveal>
         ))}

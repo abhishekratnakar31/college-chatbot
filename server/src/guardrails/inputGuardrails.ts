@@ -58,6 +58,7 @@ const OFF_TOPIC_KEYWORDS: RegExp[] = [
   /\b(stock\s*market|crypto(currency)?|bitcoin|forex)\b/i,
   /\b(horoscope|astrology|zodiac\s*sign)\b/i,
   /\b(sports?\s*bet|gambling|casino|poker)\b/i,
+  /\b(diet|nutrition|workout|fitness|medical\s*advice|health\s*tips)\b/i,
 ];
 
 /**

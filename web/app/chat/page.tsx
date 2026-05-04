@@ -426,7 +426,7 @@ function ChatContent() {
   const initialFileUrl = searchParams.get("fileUrl");
   const initialMode =
     (searchParams.get("mode") as "pdf" | "web" | "compare") ?? "web";
-  const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4006";
+  const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4005";
   const API_BASE_URL = rawApiUrl.replace("localhost", "127.0.0.1");
 
   const buildInitialMessages = (): Message[] => {
@@ -737,7 +737,9 @@ function ChatContent() {
                     const parts = msg.content.split("|");
                     const filename = parts[1] || "Document.pdf";
                     const url = parts[2] || "";
-                    const fullUrl = url.startsWith("http") ? url : `${API_BASE_URL}${url}`;
+                    const fullUrl = url.startsWith("http")
+                      ? url
+                      : `${API_BASE_URL.replace(/\/$/, "")}/${url.replace(/^\//, "")}`;
                     return (
                       <motion.div
                         key={i}

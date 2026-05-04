@@ -25,6 +25,8 @@ export interface CollegeSeed {
   user_rating?: number;
   total_reviews?: number;
   logo_url?: string;
+  website?: string;
+  last_updated?: Date;
 }
 
 export const COLLEGE_SEEDS: CollegeSeed[] = [
@@ -38,6 +40,7 @@ export const COLLEGE_SEEDS: CollegeSeed[] = [
     user_rating: 4.8, total_reviews: 1250,
     patents: 312, research_papers: 8200, hackathons_won: 42, startups_incubated: 280,
     awards: ["NIRF #1 Engineering 2024", "QS Top 250 World University"],
+    website: "https://www.iitm.ac.in",
   },
   {
     college: "IIT Delhi",
@@ -48,6 +51,7 @@ export const COLLEGE_SEEDS: CollegeSeed[] = [
     user_rating: 4.7, total_reviews: 1100,
     patents: 289, research_papers: 7100, hackathons_won: 38, startups_incubated: 225,
     awards: ["NIRF #2 Engineering 2024", "QS Top 200"],
+    website: "https://home.iitd.ac.in",
   },
   {
     college: "IIT Bombay",
@@ -58,6 +62,7 @@ export const COLLEGE_SEEDS: CollegeSeed[] = [
     user_rating: 4.9, total_reviews: 1400,
     patents: 340, research_papers: 9500, hackathons_won: 50, startups_incubated: 350,
     awards: ["NIRF #3 Engineering 2024", "Best Innovation Ecosystem"],
+    website: "https://www.iitb.ac.in",
   },
   {
     college: "IIT Kanpur",
@@ -68,6 +73,7 @@ export const COLLEGE_SEEDS: CollegeSeed[] = [
     user_rating: 4.6, total_reviews: 950,
     patents: 210, research_papers: 6800, hackathons_won: 30, startups_incubated: 190,
     awards: ["NIRF #4 Engineering 2024"],
+    website: "https://www.iitk.ac.in",
   },
   {
     college: "IIT Roorkee",
@@ -791,6 +797,8 @@ export const COLLEGE_SEEDS: CollegeSeed[] = [
  * Uses ON CONFLICT DO NOTHING — won't overwrite AI-extracted increments.
  */
 export async function seedCollegeAchievements(): Promise<void> {
+  const result = await sql`SELECT count(*) as count FROM college_achievements` as any;
+  const count = result[0]?.count || 0;
   console.log(`[Achievements Seed] Upserting ${COLLEGE_SEEDS.length} colleges...`);
 
   for (const seed of COLLEGE_SEEDS) {
@@ -798,7 +806,7 @@ export async function seedCollegeAchievements(): Promise<void> {
       INSERT INTO college_achievements
         (college, aliases, nirf_rank, nirf_category, global_rank,
          patents, research_papers, hackathons_won, startups_incubated, awards,
-         city, state, fees_range, avg_package, highest_package, user_rating, total_reviews, logo_url)
+         city, state, fees_range, avg_package, highest_package, user_rating, total_reviews, logo_url, website)
       VALUES
         (${seed.college}, ${seed.aliases ?? []}, ${seed.nirf_rank ?? null},
          ${seed.nirf_category}, ${seed.global_rank ?? null},
@@ -806,7 +814,7 @@ export async function seedCollegeAchievements(): Promise<void> {
          ${seed.startups_incubated ?? 0}, ${seed.awards ?? []},
          ${seed.city ?? null}, ${seed.state ?? null}, ${seed.fees_range ?? null},
          ${seed.avg_package ?? 0}, ${seed.highest_package ?? 0},
-         ${seed.user_rating ?? 0}, ${seed.total_reviews ?? 0}, ${seed.logo_url ?? null})
+         ${seed.user_rating ?? 0}, ${seed.total_reviews ?? 0}, ${seed.logo_url ?? null}, ${seed.website ?? null})
       ON CONFLICT (college) DO UPDATE SET
         aliases = EXCLUDED.aliases,
         nirf_rank = EXCLUDED.nirf_rank,
@@ -825,6 +833,7 @@ export async function seedCollegeAchievements(): Promise<void> {
         user_rating = EXCLUDED.user_rating,
         total_reviews = EXCLUDED.total_reviews,
         logo_url = EXCLUDED.logo_url,
+        website = EXCLUDED.website,
         last_updated = NOW()
     `;
   }

@@ -20,45 +20,16 @@ export interface NewsArticle {
 }
 
 const CATEGORY_MAP: Record<string, string[]> = {
-  "Hackathons & Competitions": [
-    "hackathon", "competition", "contest", "challenge", "olympiad", "fest", "techfest",
-    "smart india hackathon", "robocon", "icpc", "acm", "ieee", "formula student",
-    "google summer of code", "microsoft imagine cup", "case study competition",
-    "coding contest", "codeforces", "leetcode contest", "startup competition",
-    "business plan competition", "science olympiad", "research challenge", "kvpy",
-    "inmo", "inpho", "incho", "cfa challenge", "flipkart grid", "amazon ml",
-  ],
-  Engineering: [
-    "engineering", "iit", "nit", "btech", "mtech", "jee", "gate", "bit", "polytechnic",
-    "iiit", "dtu", "nsut", "thapar", "vit", "srm", "manipal", "robotics", "drone",
-    "aeronautics", "civil", "mechanical", "electrical", "computer science", "cse", "ece",
-  ],
-  Medical: [
-    "medical", "neet", "mbbs", "aiims", "doctor", "health", "dental", "pharma", "nursing",
-    "bds", "hospital", "medicine", "clinical", "anm", "gnm", "physiotherapy", "anatomy",
-  ],
-  Design: [
-    "design", "nift", "nid", "fashion", "architecture", "bdes", "mdes", "nata",
-    "graphic design", "ui", "ux", "animation", "interior design", "pearl academy",
-  ],
-  Management: [
-    "mba", "cat", "iim", "business", "management", "bba", "fms", "xlri", "iift",
-    "jbims", "snap", "xat", "b-school", "marketing", "hr", "finance management",
-    "imt", "mdi", "sp jain", "entrepreneurship", "startup",
-  ],
-  Science: [
-    "bsc", "msc", "science", "research", "physics", "chemistry", "biology", "maths",
-    "isro", "drdo", "iiser", "iisc", "jam", "kvpy", "internship research", "zoology",
-    "botany", "statistics", "mathematics", "data science", "ai", "machine learning",
-  ],
-  Commerce: [
-    "bcom", "mcom", "chartered accountant", "ca ", "commerce", "accounting", "economics",
-    "finance", "cma", "cs exam", "icai", "stock market", "banking", "fintech",
-  ],
-  Exams: [
-    "exam", "cutoff", "result", "admit card", "registration", "counselling", "notification",
-    "cuet", "clat", "upsc", "board exam", "cbse", "icse", "scorecard", "rank list",
-  ],
+  "Admissions": ["admission", "enrolment", "apply now", "application form", "registration", "counselling", "intake", "seat allotment", "merit list", "cutoff", "eligibility"],
+  "Results": ["result", "scorecard", "rank", "cutoff", "board result", "entrance result", "merit list", "pass percentage"],
+  "Placements": ["placement", "recruitment", "salary package", "job offer", "hiring", "tpo", "campus drive", "highest package", "average package", "ctc", "mnc recruitment", "placement report"],
+  "Colleges": ["college", "university", "campus", "institute", "iit", "nit", "iim", "aiims", "bits", "vit", "ranking", "infrastructure", "faculty"],
+  "Internships": ["internship", "stipend", "summer intern", "winter intern", "trainee", "industrial training", "vocational training", "intern recruitment"],
+  "Scholarships": ["scholarship", "financial aid", "grant", "fellowship", "stipend", "tuition waiver", "fee concession", "merit scholarship", "nsp", "insPIRE"],
+  "Tech": ["tech", "ai", "software", "hardware", "coding", "programming", "robotics", "data science", "cybersecurity", "engineering", "btech", "mtech"],
+  "Business": ["business", "startup", "economy", "market", "finance", "corporate", "investment", "entrepreneur", "funding", "mba", "iim", "bba", "management"],
+  "Science": ["science", "research", "physics", "chemistry", "biology", "astronomy", "scientific", "isro", "iisc", "iiser", "bsc", "msc"],
+  "Medical": ["medical", "health", "wellness", "medicine", "doctor", "hospital", "disease", "vaccine", "neet medical", "mbbs", "aiims"],
 };
 
 /**

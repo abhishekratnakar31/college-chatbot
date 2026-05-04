@@ -58,13 +58,16 @@ await app.register(fastifyStatic, {
 });
 
 await app.register(chatRoute);
+await app.register(newsRoute);
+await app.register(rankingsRoute);
+await app.register(contactRoute);
+await app.register(uploadRoute);
 
 await app.register(multipart, {
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB limit
   },
 });
-await app.register(uploadRoute);
 async function initVectorDB() {
   const collections = await qdrant.getCollections();
   const existingNames = collections.collections.map((c) => c.name);
@@ -108,14 +111,8 @@ async function initVectorDB() {
   }
 }
 
+// Initialization tasks (Critical ones first)
 await initDB();
-await initVectorDB();
-await seedCollegeAchievements();
-
-// Register news & rankings routes
-await app.register(newsRoute);
-await app.register(rankingsRoute);
-await app.register(contactRoute);
 
 // ── Health Check ────────────────────────────────────────────────────
 app.get("/health", async () => {
@@ -133,11 +130,6 @@ app.setErrorHandler((error, request, reply) => {
   });
 });
 
-// Start news cron job (runs immediately + every 6h)
-startNewsCron();
-
-const PORT = env.PORT;
-
 // ── Graceful Shutdown ───────────────────────────────────────────────
 const shutdown = async (signal: string) => {
   app.log.info(`Received ${signal}. Shutting down...`);
@@ -154,9 +146,25 @@ const shutdown = async (signal: string) => {
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
 
+const PORT = env.PORT;
+
 try {
   const address = await app.listen({ port: PORT, host: "0.0.0.0" });
   app.log.info(`Server running on ${address}`);
+
+  // ── Background Heavy Initialization ────────────────────────────────
+  // These don't block the server from accepting requests
+  (async () => {
+    try {
+      await initVectorDB();
+      await seedCollegeAchievements();
+      startNewsCron();
+      app.log.info("✅ All background services (VectorDB, Seeding, Cron) initialized.");
+    } catch (err) {
+      app.log.error(err, "Background initialization failed");
+    }
+  })();
+  // ──────────────────────────────────────────────────────────────────
 } catch (err) {
   app.log.error(err);
   process.exit(1);

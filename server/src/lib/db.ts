@@ -61,6 +61,7 @@ export async function initAchievementsTable() {
       user_rating         NUMERIC       DEFAULT 0,
       total_reviews       INT           DEFAULT 0,
       logo_url            TEXT,
+      website             TEXT,
       last_updated        TIMESTAMPTZ   DEFAULT NOW()
     )
   `;
@@ -82,6 +83,7 @@ export async function initAchievementsTable() {
   await sql`ALTER TABLE college_achievements ADD COLUMN IF NOT EXISTS user_rating NUMERIC DEFAULT 0`;
   await sql`ALTER TABLE college_achievements ADD COLUMN IF NOT EXISTS total_reviews INT DEFAULT 0`;
   await sql`ALTER TABLE college_achievements ADD COLUMN IF NOT EXISTS logo_url TEXT`;
+  await sql`ALTER TABLE college_achievements ADD COLUMN IF NOT EXISTS website TEXT`;
 
   // Audit log for AI-extracted increments
   await sql`

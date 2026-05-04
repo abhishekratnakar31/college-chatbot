@@ -76,11 +76,14 @@ const PROFANITY_REGEX = new RegExp(
 const HALLUCINATION_DISCLAIMER =
   "\n\n> ⚠️ **Disclaimer**: Some parts of this response may not be fully verified against the source documents. Please cross-check important details with official college sources.";
 
-const LOW_CONFIDENCE_DISCLAIMER =
-  "\n\n> ℹ️ **Note**: No relevant information was found in the uploaded documents or web search for this query. The response above is based on general knowledge and may not be accurate for your specific institution.";
+const LOW_CONFIDENCE_DISCLAIMER_WEB =
+  "\n\n> ℹ️ **Note**: No relevant information was found in the live web search for this query. The response above is based on general knowledge and may not be accurate for your specific institution.";
+
+const LOW_CONFIDENCE_DISCLAIMER_PDF =
+  "\n\n> ℹ️ **Note**: I could not find any information regarding this in the uploaded documents. Please ensure the relevant file is uploaded.";
 
 const FALLBACK_RESPONSE =
-  "I'm sorry, I wasn't able to generate a proper response for that question. Please try rephrasing, or check if a relevant document has been uploaded.";
+  "I'm sorry, I wasn't able to generate a proper response for that question. If you are in PDF mode, please make sure the document contains the information you are looking for.";
 
 // ── Guardrail runner ──────────────────────────────────────────────
 
@@ -138,13 +141,14 @@ export function runOutputGuardrails(
 
   // ── 4. Low-confidence annotation ─────────────────────────────────
   if (opts.contextChunksFound === 0) {
-    const alreadyHasDisclaimer = text.includes(HALLUCINATION_DISCLAIMER);
+    const disclaimer = opts.mode === "pdf" ? LOW_CONFIDENCE_DISCLAIMER_PDF : LOW_CONFIDENCE_DISCLAIMER_WEB;
+    const alreadyHasDisclaimer = text.includes(disclaimer) || text.includes(HALLUCINATION_DISCLAIMER);
     if (!alreadyHasDisclaimer) {
       console.warn(
-        "[GUARDRAIL][OUTPUT] No RAG context found — appending low-confidence annotation"
+        `[GUARDRAIL][OUTPUT] No RAG context found (${opts.mode}) — appending low-confidence annotation`
       );
       triggered.push("LOW_CONFIDENCE");
-      text += LOW_CONFIDENCE_DISCLAIMER;
+      text += disclaimer;
       wasModified = true;
     }
   }
