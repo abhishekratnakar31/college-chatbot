@@ -247,7 +247,7 @@ function SectionCard({
   badge,
   icon: Icon,
   reverse = false,
-  customContent
+  customContent,
 }: any) {
   return (
     <div
@@ -313,42 +313,60 @@ function NewsDashboard({ articles }: { articles: any[] }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
         {/* Current News */}
         <div className="bg-zinc-900/40 rounded-3xl p-6 border border-zinc-800/50 flex flex-col gap-4 overflow-hidden h-full">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2">Current News</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2">
+            Current News
+          </h3>
           <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
-            {articles.length > 0 ? (
-            articles.map((news, i) => {
-              // Extract acronym or first few words as potential college context if not in source
-              const collegeMatch = news.title.match(/^([A-Z]{2,6})\b/) || news.title.match(/at (IIT [A-Z][a-z]+|NIT [A-Z][a-z]+|BITS [A-Z][a-z]+)/);
-              const collegeLabel = collegeMatch ? collegeMatch[1] : null;
+            {articles.length > 0
+              ? articles.map((news, i) => {
+                  // Extract acronym or first few words as potential college context if not in source
+                  const collegeMatch =
+                    news.title.match(/^([A-Z]{2,6})\b/) ||
+                    news.title.match(
+                      /at (IIT [A-Z][a-z]+|NIT [A-Z][a-z]+|BITS [A-Z][a-z]+)/,
+                    );
+                  const collegeLabel = collegeMatch ? collegeMatch[1] : null;
 
-              return (
-                <div key={i} className="space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className={cn("text-[11px] font-bold leading-tight line-clamp-2", i === 0 ? "text-white" : "text-zinc-400")}>{news.title}</p>
-                    {collegeLabel && (
-                      <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-zinc-800 text-[7px] font-black text-zinc-500 uppercase tracking-tighter">
-                        {collegeLabel}
-                      </span>
-                    )}
+                  return (
+                    <div key={i} className="space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p
+                          className={cn(
+                            "text-[11px] font-bold leading-tight line-clamp-2",
+                            i === 0 ? "text-white" : "text-zinc-400",
+                          )}
+                        >
+                          {news.title}
+                        </p>
+                        {collegeLabel && (
+                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-zinc-800 text-[7px] font-black text-zinc-500 uppercase tracking-tighter">
+                            {collegeLabel}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[9px] text-zinc-600 font-medium uppercase tracking-tighter">
+                        {news.source} •{" "}
+                        {new Date(
+                          news.published_at || news.created_at,
+                        ).toLocaleDateString()}
+                      </p>
+                    </div>
+                  );
+                })
+              : [1, 2, 3].map((i) => (
+                  <div key={i} className="space-y-2 animate-pulse">
+                    <div className="h-3 bg-zinc-800 rounded w-full" />
+                    <div className="h-2 bg-zinc-800 rounded w-1/2" />
                   </div>
-                  <p className="text-[9px] text-zinc-600 font-medium uppercase tracking-tighter">{news.source} • {new Date(news.published_at || news.created_at).toLocaleDateString()}</p>
-                </div>
-              );
-            })
-          ) : (
-              [1, 2, 3].map(i => (
-                <div key={i} className="space-y-2 animate-pulse">
-                  <div className="h-3 bg-zinc-800 rounded w-full" />
-                  <div className="h-2 bg-zinc-800 rounded w-1/2" />
-                </div>
-              ))
-            )}
+                ))}
           </div>
           <div className="pt-4 border-t border-zinc-800/50 flex items-center justify-between mt-auto">
             <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
               <Newspaper size={14} className="text-zinc-500" />
             </div>
-            <span className="text-[9px] font-black text-zinc-700 uppercase tracking-widest">Live Updates</span>
+            <span className="text-[9px] font-black text-zinc-700 uppercase tracking-widest">
+              Live Updates
+            </span>
           </div>
         </div>
 
@@ -357,29 +375,47 @@ function NewsDashboard({ articles }: { articles: any[] }) {
           <div className="bg-zinc-900/40 rounded-3xl p-6 border border-zinc-800/50 flex flex-col items-center justify-center text-center gap-4 h-full">
             <div className="relative w-24 h-24 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90">
-                <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-zinc-800" />
-                <motion.circle 
-                  cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="8" fill="transparent" 
-                  strokeDasharray="251.2" 
-                  initial={{ strokeDashoffset: 251.2 }} 
-                  animate={{ strokeDashoffset: 251.2 * 0.28 }} 
-                  transition={{ duration: 1.5, ease: "easeOut" }} 
-                  className="text-white" 
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="40"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  className="text-zinc-800"
+                />
+                <motion.circle
+                  cx="48"
+                  cy="48"
+                  r="40"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  strokeDasharray="251.2"
+                  initial={{ strokeDashoffset: 251.2 }}
+                  animate={{ strokeDashoffset: 251.2 * 0.28 }}
+                  transition={{ duration: 1.5, ease: "easeOut" }}
+                  className="text-white"
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-xl font-black text-white">+12%</span>
-                <span className="text-[8px] font-black text-zinc-600 uppercase">Growth</span>
+                <span className="text-[8px] font-black text-zinc-600 uppercase">
+                  Growth
+                </span>
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Admission Rate</p>
-              <p className="text-lg font-serif font-bold italic text-white mt-1">94% Enrollment</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                Admission Rate
+              </p>
+              <p className="text-lg font-serif font-bold italic text-white mt-1">
+                94% Enrollment
+              </p>
             </div>
           </div>
         </div>
       </div>
-
 
       {/* Decorative Overlay */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.05)_0%,transparent_70%)]" />
@@ -401,7 +437,8 @@ function IntelligenceSection({ news }: { news: any[] }) {
           </Reveal>
           <Reveal delay={0.2}>
             <p className="text-zinc-500 text-2xl font-medium max-w-xl leading-relaxed">
-              Latest news and articles on admissions, cut-offs, and results across 500+ Indian institutions.
+              Latest news and articles on admissions, cut-offs, and results
+              across 500+ Indian institutions.
             </p>
           </Reveal>
           <Reveal delay={0.3}>
@@ -439,61 +476,76 @@ function RankingsDashboard({ colleges }: { colleges: any[] }) {
     <div className="relative aspect-auto md:aspect-[4/3] min-h-[400px] md:min-h-0 rounded-[2rem] md:rounded-[3.5rem] overflow-hidden border border-zinc-800 bg-black/40 backdrop-blur-3xl p-6 md:p-10 flex flex-col gap-8 shadow-2xl shadow-black">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Live Leaderboard</h3>
-          <p className="text-xl font-serif font-bold text-white mt-1 italic">Top Performers 2024</p>
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+            Live Leaderboard
+          </h3>
+          <p className="text-xl font-serif font-bold text-white mt-1 italic">
+            Top Performers 2024
+          </p>
         </div>
         <Trophy size={24} className="text-zinc-700" />
       </div>
 
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6">
-        {colleges.length > 0 ? (
-          colleges.map((college, i) => (
-            <div key={college.id} className="flex items-center gap-6 group">
-              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xs font-black text-white group-hover:bg-white group-hover:text-black transition-colors flex-shrink-0">
-                #{i + 1}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-zinc-300 group-hover:text-white transition-colors truncate">
-                  {college.college}
-                </p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest truncate">{college.city}, {college.state}</span>
+        {colleges.length > 0
+          ? colleges.map((college, i) => (
+              <div key={college.id} className="flex items-center gap-6 group">
+                <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xs font-black text-white group-hover:bg-white group-hover:text-black transition-colors flex-shrink-0">
+                  #{i + 1}
                 </div>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <div className="h-1 flex-1 bg-zinc-900 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(college.innovation_score / 100) * 100}%` }}
-                      transition={{ duration: 1, delay: i * 0.05 }}
-                      className="h-full bg-white/20"
-                    />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-zinc-300 group-hover:text-white transition-colors truncate">
+                    {college.college}
+                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest truncate">
+                      {college.city}, {college.state}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-black text-zinc-600">{college.innovation_score}</span>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <div className="h-1 flex-1 bg-zinc-900 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{
+                          width: `${(college.innovation_score / 100) * 100}%`,
+                        }}
+                        transition={{ duration: 1, delay: i * 0.05 }}
+                        className="h-full bg-white/20"
+                      />
+                    </div>
+                    <span className="text-[10px] font-black text-zinc-600">
+                      {college.innovation_score}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
-        ) : (
-          [1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="flex items-center gap-6 animate-pulse">
-              <div className="w-10 h-10 rounded-xl bg-zinc-900" />
-              <div className="flex-1 space-y-2">
-                <div className="h-3 bg-zinc-900 rounded w-1/2" />
-                <div className="h-1 bg-zinc-900 rounded w-full" />
+            ))
+          : [1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center gap-6 animate-pulse">
+                <div className="w-10 h-10 rounded-xl bg-zinc-900" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 bg-zinc-900 rounded w-1/2" />
+                  <div className="h-1 bg-zinc-900 rounded w-full" />
+                </div>
               </div>
-            </div>
-          ))
-        )}
+            ))}
       </div>
 
       <div className="pt-6 border-t border-zinc-900 flex items-center justify-between">
         <div className="flex -space-x-2">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="w-6 h-6 rounded-full border-2 border-black bg-zinc-800" />
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="w-6 h-6 rounded-full border-2 border-black bg-zinc-800"
+            />
           ))}
-          <div className="w-6 h-6 rounded-full border-2 border-black bg-zinc-900 flex items-center justify-center text-[8px] font-black text-zinc-500">+12</div>
+          <div className="w-6 h-6 rounded-full border-2 border-black bg-zinc-900 flex items-center justify-center text-[8px] font-black text-zinc-500">
+            +12
+          </div>
         </div>
-        <span className="text-[9px] font-black text-zinc-700 uppercase tracking-widest">Global Index Verified</span>
+        <span className="text-[9px] font-black text-zinc-700 uppercase tracking-widest">
+          Global Index Verified
+        </span>
       </div>
     </div>
   );
@@ -521,7 +573,8 @@ function RankingsSection({ rankings }: { rankings: any[] }) {
           </Reveal>
           <Reveal delay={0.2}>
             <p className="text-zinc-500 text-2xl font-medium max-w-xl leading-relaxed">
-              Rankings based on verifiable innovation, placement metrics, and global impact.
+              Rankings based on verifiable innovation, placement metrics, and
+              global impact.
             </p>
           </Reveal>
           <Reveal delay={0.3}>
@@ -546,7 +599,7 @@ function RankingsSection({ rankings }: { rankings: any[] }) {
 }
 
 // ── Quick Actions ────────────────────────────────────────────────────────────
-function QuickActions({ news, rankings }: { news: any[], rankings: any[] }) {
+function QuickActions({ news, rankings }: { news: any[]; rankings: any[] }) {
   return (
     <div className="w-full space-y-20 md:space-y-48 py-20 md:py-48 px-6 overflow-hidden">
       <IntelligenceSection news={news} />
@@ -591,11 +644,16 @@ function Footer() {
             </p>
           </div>
           <div className="col-span-1 md:col-span-1">
-            <h4 className="text-white font-bold text-[10px] mb-8 uppercase tracking-[0.3em]">Platform</h4>
+            <h4 className="text-white font-bold text-[10px] mb-8 uppercase tracking-[0.3em]">
+              Platform
+            </h4>
             <ul className="space-y-4">
-              {["AI Chatbot", "Latest News", "Rankings"].map(item => (
+              {["AI Chatbot", "Latest News", "Rankings"].map((item) => (
                 <li key={item}>
-                  <Link href={`/${item.toLowerCase().replace(" ", "")}`} className="text-zinc-500 hover:text-white text-sm transition-colors font-semibold">
+                  <Link
+                    href={`/${item.toLowerCase().replace(" ", "")}`}
+                    className="text-zinc-500 hover:text-white text-sm transition-colors font-semibold"
+                  >
                     {item}
                   </Link>
                 </li>
@@ -604,10 +662,15 @@ function Footer() {
           </div>
 
           <div className="col-span-1 md:col-span-1">
-            <h4 className="text-white font-bold text-[10px] mb-8 uppercase tracking-[0.3em]">Guidelines</h4>
+            <h4 className="text-white font-bold text-[10px] mb-8 uppercase tracking-[0.3em]">
+              Guidelines
+            </h4>
             <ul className="space-y-4">
               <li>
-                <Link href="/guidelines/usage-policy" className="text-zinc-500 hover:text-white text-sm transition-colors font-semibold">
+                <Link
+                  href="/guidelines/usage-policy"
+                  className="text-zinc-500 hover:text-white text-sm transition-colors font-semibold"
+                >
                   Usage Policy
                 </Link>
               </li>
@@ -615,15 +678,23 @@ function Footer() {
           </div>
 
           <div className="col-span-1 md:col-span-1">
-            <h4 className="text-white font-bold text-[10px] mb-8 uppercase tracking-[0.3em]">Support</h4>
+            <h4 className="text-white font-bold text-[10px] mb-8 uppercase tracking-[0.3em]">
+              Support
+            </h4>
             <ul className="space-y-4">
               <li>
-                <Link href="/support/documentation" className="text-zinc-500 hover:text-white text-sm transition-colors font-semibold">
+                <Link
+                  href="/support/documentation"
+                  className="text-zinc-500 hover:text-white text-sm transition-colors font-semibold"
+                >
                   Documentation
                 </Link>
               </li>
               <li>
-                <Link href="/support/contact" className="text-zinc-500 hover:text-white text-sm transition-colors font-semibold">
+                <Link
+                  href="/support/contact"
+                  className="text-zinc-500 hover:text-white text-sm transition-colors font-semibold"
+                >
                   Contact Support
                 </Link>
               </li>
@@ -634,7 +705,8 @@ function Footer() {
         <div className="pt-16 border-t border-zinc-900/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-12">
           <div className="space-y-3">
             <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.3em]">
-              © {new Date().getFullYear()} ACADEMIAAI. BUILT FOR THE NEXT GENERATION.
+              © {new Date().getFullYear()} ACADEMIAAI. BUILT FOR THE NEXT
+              GENERATION.
             </p>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-900 text-[9px] font-black uppercase tracking-widest text-zinc-600">
@@ -653,7 +725,10 @@ function Footer() {
               Platform Guidelines
             </p>
             <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">
-              AcademiaAI is an AI-powered intelligence platform. While we strive for absolute accuracy, always verify critical admission dates and cutoffs with official university portals. Use the platform responsibly to explore and discover academia.
+              AcademiaAI is an AI-powered intelligence platform. While we strive
+              for absolute accuracy, always verify critical admission dates and
+              cutoffs with official university portals. Use the platform
+              responsibly to explore and discover academia.
             </p>
           </div>
         </div>
@@ -666,6 +741,7 @@ export default function HeroPage() {
   const [query, setQuery] = useState("");
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgressText, setUploadProgressText] = useState("");
   const [news, setNews] = useState<any[]>([]);
   const [rankings, setRankings] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -680,6 +756,7 @@ export default function HeroPage() {
     e.preventDefault();
     if (attachedFile) {
       setIsUploading(true);
+      setUploadProgressText("Initializing...");
       let uploadedFileUrl = "";
       try {
         const formData = new FormData();
@@ -698,11 +775,18 @@ export default function HeroPage() {
           const lines = chunk.split("\n");
           for (const line of lines) {
             if (line.startsWith("data:")) {
-              const parsed = JSON.parse(line.replace("data: ", "").trim());
-              if (parsed.status === "done") {
-                uploadedFileUrl = parsed.fileUrl ?? "";
-                done = true;
-              }
+              try {
+                const parsed = JSON.parse(line.replace("data: ", "").trim());
+                if (parsed.status === "verifying") setUploadProgressText("Verifying relevance...");
+                else if (parsed.status === "started") setUploadProgressText(`Embedding (0/${parsed.total})...`);
+                else if (parsed.status === "embedding") setUploadProgressText(`Embedding (${parsed.progress}/${parsed.total})...`);
+                else if (parsed.status === "done") {
+                  uploadedFileUrl = parsed.fileUrl ?? "";
+                  done = true;
+                } else if (parsed.page) {
+                  setUploadProgressText(`Reading page ${parsed.page}...`);
+                }
+              } catch (e) {}
             }
           }
         }
@@ -710,6 +794,7 @@ export default function HeroPage() {
         console.error(err);
       } finally {
         setIsUploading(false);
+        setUploadProgressText("");
       }
 
       const params = new URLSearchParams();
@@ -736,8 +821,10 @@ export default function HeroPage() {
     async function init() {
       try {
         const [newsRes, rankingsRes] = await Promise.all([
-          fetch(`${API_URL_BASE}/news?limit=10`).then(r => r.json()),
-          fetch(`${API_URL_BASE}/rankings?limit=20&sort=rank_2024`).then(r => r.json())
+          fetch(`${API_URL_BASE}/news?limit=10`).then((r) => r.json()),
+          fetch(`${API_URL_BASE}/rankings?limit=20&sort=rank_2024`).then((r) =>
+            r.json(),
+          ),
         ]);
         setNews(newsRes.articles || []);
         setRankings(rankingsRes.colleges || []);
@@ -792,8 +879,18 @@ export default function HeroPage() {
           </span>
         </Link>
         <div className="flex items-center gap-4 md:gap-10">
-          <Link href="/news" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors">News</Link>
-          <Link href="/rankings" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors">Rankings</Link>
+          <Link
+            href="/news"
+            className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors"
+          >
+            News
+          </Link>
+          <Link
+            href="/rankings"
+            className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors"
+          >
+            Rankings
+          </Link>
         </div>
       </header>
 
@@ -803,9 +900,16 @@ export default function HeroPage() {
           { icon: GraduationCap, href: "/", active: true },
           { icon: Brain, href: "/chat" },
           { icon: Newspaper, href: "/news" },
-          { icon: Trophy, href: "/rankings" }
+          { icon: Trophy, href: "/rankings" },
         ].map((item, i) => (
-          <Link key={i} href={item.href} className={cn("p-3 rounded-xl transition-all", item.active ? "bg-white text-black" : "text-zinc-600")}>
+          <Link
+            key={i}
+            href={item.href}
+            className={cn(
+              "p-3 rounded-xl transition-all",
+              item.active ? "bg-white text-black" : "text-zinc-600",
+            )}
+          >
             <item.icon size={20} />
           </Link>
         ))}
@@ -861,7 +965,7 @@ export default function HeroPage() {
                   disabled={isUploading}
                   className="px-5 md:px-14 py-3 md:py-6 mr-7 bg-white text-black font-bold text-xs md:text-xl rounded-full hover:bg-zinc-200 transition-all active:scale-95 shadow-xl disabled:opacity-50"
                 >
-                  {isUploading ? "Indexing..." : "Search"}
+                  {isUploading ? (uploadProgressText || "Indexing...") : "Search"}
                 </button>
               </div>
               <input
@@ -924,26 +1028,36 @@ export default function HeroPage() {
             </div>
 
             <div className="flex flex-col items-center gap-16">
-              <Link 
-                href="/chat" 
+              <Link
+                href="/chat"
                 className="px-12 py-8 md:px-20 md:py-10 bg-white text-black font-black uppercase tracking-[0.4em] text-sm rounded-2xl hover:bg-zinc-200 transition-all inline-flex items-center gap-8 group/btn shadow-[0_30px_70px_rgba(255,255,255,0.15)] hover:scale-105 active:scale-95"
               >
                 Enter Platform
-                <ArrowRight size={24} className="group-hover/btn:translate-x-3 transition-transform" />
+                <ArrowRight
+                  size={24}
+                  className="group-hover/btn:translate-x-3 transition-transform"
+                />
               </Link>
 
               {/* Social Proof / Stats */}
               <div className="flex flex-wrap justify-center gap-12 pt-16 border-t border-zinc-900/50 w-full max-w-2xl mx-auto">
-                
                 <div className="w-px h-12 bg-zinc-900" />
                 <div className="text-center">
-                  <p className="text-white text-4xl font-serif font-bold tracking-tighter">500+</p>
-                  <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mt-2">Colleges</p>
+                  <p className="text-white text-4xl font-serif font-bold tracking-tighter">
+                    500+
+                  </p>
+                  <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mt-2">
+                    Colleges
+                  </p>
                 </div>
                 <div className="w-px h-12 bg-zinc-900" />
                 <div className="text-center">
-                  <p className="text-white text-4xl font-serif font-bold tracking-tighter">24/7</p>
-                  <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mt-2">Live Intel</p>
+                  <p className="text-white text-4xl font-serif font-bold tracking-tighter">
+                    24/7
+                  </p>
+                  <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mt-2">
+                    Live Intel
+                  </p>
                 </div>
               </div>
             </div>
@@ -967,5 +1081,3 @@ export default function HeroPage() {
     </div>
   );
 }
-
-

@@ -289,7 +289,7 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
 
       // When PDF context is present in web mode, build a hybrid context block.
       // Web results come FIRST — they are the primary source in web mode.
-      const pdfSnippetSection = hasPdfContext
+      const pdfSnippetSection = hasPdfText
         ? `\nBACKGROUND CONTEXT (from user-uploaded PDF — use for college name/program identification only):\n${body.pdfContext!.slice(0, 3000)}\n`
         : "";
 
