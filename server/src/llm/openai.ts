@@ -110,7 +110,12 @@ export async function evaluateIntent(messages: ChatMessage[]): Promise<string> {
   const sanitizedInput = lastMessage.replace(/SYSTEM:[\s\S]*?\n\n/g, "").trim();
 
   // HEURISTIC: If the query explicitly contains academic keywords, bypass LLM classification
-  const academicKeywords = ["fees", "placement", "ranking", "admission", "cutoff", "eligibility", "course", "curriculum", "syllabus", "hostel", "scholarship", "internship"];
+  const academicKeywords = [
+    "fees", "placement", "ranking", "admission", "cutoff", "eligibility", 
+    "course", "curriculum", "syllabus", "hostel", "scholarship", "internship",
+    "better", "best", "worst", "versus", " vs ", "difference", "compare",
+    "univer", "clg", "collge", "college", "institute", "faculty"
+  ];
   if (academicKeywords.some(kw => sanitizedInput.toLowerCase().includes(kw))) {
     return "VALID";
   }
@@ -133,7 +138,8 @@ Your job is to evaluate if the user's query is within the academic scope.
 
 VALID SCOPE:
 - College/University information (Fees, Placements, Rankings, Admissions, Courses, Campus facilities, official student life).
-- Short follow-ups like "its fees", "what about placements", "show rankings" are VALID if they refer to a college.
+- Subjective comparisons between institutions (e.g., "which is better", "A vs B").
+- Short follow-ups like "its fees", "what about placements", "show rankings", "which is best" are VALID if they refer to a college.
 
 OUT OF SCOPE:
 - General life advice (health, medical, recipes, relationships, workout).
@@ -141,7 +147,7 @@ OUT OF SCOPE:
 - Irrelevant topics (weather, sports, movies, politics).
 
 RULE:
-- If the query is about Fees, Placements, or Rankings, it is ALWAYS 'VALID'.
+- If the query is about comparing institutions or discussing academic metrics, it is ALWAYS 'VALID'.
 - Do not let previous off-topic queries poison the evaluation of a NEW on-topic query.
 - Reply EXACTLY 'VALID' or 'OUT_OF_DOMAIN'.`,
           },
