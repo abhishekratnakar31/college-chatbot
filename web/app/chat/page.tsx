@@ -30,6 +30,10 @@ import {
   FileUp,
   Loader2,
   SlidersHorizontal,
+  Mic,
+  Square,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
@@ -111,6 +115,8 @@ const ChatInput = ({
   setSelectedLanguage,
   isLangMenuOpen,
   setIsLangMenuOpen,
+  isRecordingVoice,
+  startVoiceRecording,
 }: any) => {
   const MenuContent = () => (
     <AnimatePresence>
@@ -443,6 +449,24 @@ const ChatInput = ({
               )}
             </button>
 
+            {/* Voice Dictation Toggle */}
+            <button
+              onClick={startVoiceRecording}
+              title={isRecordingVoice ? "Stop Recording" : "Start Dictation"}
+              className={cn(
+                "p-2 sm:p-4 transition-all rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 mr-1",
+                isRecordingVoice
+                  ? "bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 animate-pulse"
+                  : "text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10"
+              )}
+            >
+              {isRecordingVoice ? (
+                <Square size={18} className="sm:w-5 sm:h-5 fill-current" />
+              ) : (
+                <Mic size={18} className="sm:w-5 sm:h-5" />
+              )}
+            </button>
+
 
             {chatMode === "compare" && (
               <button
@@ -460,22 +484,34 @@ const ChatInput = ({
               </button>
             )}
 
-            {isLoading ? (
-              <button
-                onClick={() => abortControllerRef.current?.abort()}
-                className="p-3 sm:p-4 text-white hover:scale-110 transition-transform shrink-0"
-              >
-                <StopCircle size={20} className="sm:w-6 sm:h-6" />
-              </button>
-            ) : (
-              <button
-                onClick={() => handleSend()}
-                disabled={!input.trim() || isUploading}
-                className="w-10 h-10 sm:w-12 sm:h-12 bg-white text-black rounded-xl sm:rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-20 transition-all shrink-0"
-              >
-                <ArrowUp size={18} className="sm:w-5 sm:h-5" />
-              </button>
-            )}
+            <AnimatePresence>
+              {isLoading ? (
+                <motion.button
+                  key="stop-button"
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.5, opacity: 0 }}
+                  onClick={() => abortControllerRef.current?.abort()}
+                  className="p-3 sm:p-4 text-white hover:scale-110 transition-transform shrink-0"
+                >
+                  <StopCircle size={20} className="sm:w-6 sm:h-6" />
+                </motion.button>
+              ) : (
+                input.trim() && !isRecordingVoice && (
+                  <motion.button
+                    key="send-button"
+                    initial={{ scale: 0.5, opacity: 0, x: 10 }}
+                    animate={{ scale: 1, opacity: 1, x: 0 }}
+                    exit={{ scale: 0.5, opacity: 0, x: 10 }}
+                    onClick={() => handleSend()}
+                    disabled={isUploading}
+                    className="w-10 h-10 sm:w-12 sm:h-12 bg-white text-black rounded-xl sm:rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shrink-0 ml-1 sm:ml-2 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                  >
+                    <ArrowUp size={18} className="sm:w-5 sm:h-5" />
+                  </motion.button>
+                )
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -483,7 +519,17 @@ const ChatInput = ({
   );
 };
 
-const MessageBubble = ({ msg }: { msg: Message }) => {
+const MessageBubble = ({ 
+  msg, 
+  index, 
+  onSpeak, 
+  isSpeaking 
+}: { 
+  msg: Message; 
+  index: number;
+  onSpeak: (text: string, idx: number) => void;
+  isSpeaking: boolean;
+}) => {
   let mainContent = msg.content;
   let sourcesMeta: any[] | null = null;
 
@@ -505,12 +551,26 @@ const MessageBubble = ({ msg }: { msg: Message }) => {
   return (
     <div
       className={cn(
-        "max-w-[95%] sm:max-w-[85%] rounded-2xl sm:rounded-3xl text-sm sm:text-[15px] leading-relaxed",
+        "max-w-[95%] sm:max-w-[85%] rounded-2xl sm:rounded-3xl text-sm sm:text-[15px] leading-relaxed group/msg relative",
         msg.role === "user"
-          ? "bg-zinc-900 border border-zinc-800 px-4 sm:px-6 py-3 sm:py-4 text-white font-medium"
+          ? "bg-zinc-900 border border-zinc-800 px-4 sm:px-6 py-3 sm:py-4 text-white font-medium self-end"
           : "w-full text-zinc-300",
       )}
     >
+      {msg.role === "assistant" && mainContent && (
+        <button
+          onClick={() => onSpeak(mainContent, index)}
+          className={cn(
+            "absolute -right-12 top-2 p-2.5 rounded-xl transition-all border shrink-0",
+            isSpeaking 
+              ? "bg-white border-white text-black animate-pulse" 
+              : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-700 opacity-0 group-hover/msg:opacity-100"
+          )}
+          title={isSpeaking ? "Stop speaking" : "Read aloud"}
+        >
+          {isSpeaking ? <VolumeX size={16} /> : <Volume2 size={16} />}
+        </button>
+      )}
       <div className="flex flex-col gap-4 w-full">
         <div className="prose prose-invert max-w-none prose-premium prose-sm sm:prose-base">
           {mainContent ? (
@@ -582,6 +642,8 @@ const MessageBubble = ({ msg }: { msg: Message }) => {
   );
 };
 
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4006").replace("localhost", "127.0.0.1");
+
 function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q");
@@ -589,8 +651,6 @@ function ChatContent() {
   const initialFileUrl = searchParams.get("fileUrl");
   const initialMode =
     (searchParams.get("mode") as "pdf" | "web" | "compare") ?? "web";
-  const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4005";
-  const API_BASE_URL = rawApiUrl.replace("localhost", "127.0.0.1");
 
   const buildInitialMessages = (): Message[] => {
     const base: Message[] = [];
@@ -622,6 +682,51 @@ function ChatContent() {
   );
   const [comp1, setComp1] = useState("");
   const [comp2, setComp2] = useState("");
+  const [currentlySpeaking, setCurrentlySpeaking] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const speakMessage = async (text: string, index: number) => {
+    if (currentlySpeaking === index) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      window.speechSynthesis.cancel();
+      setCurrentlySpeaking(null);
+      return;
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    window.speechSynthesis.cancel();
+
+    setCurrentlySpeaking(index);
+
+    try {
+      const res = await fetch(`${API_URL}/tts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!res.ok) throw new Error("TTS failed");
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => setCurrentlySpeaking(null);
+      audio.play();
+    } catch (err) {
+      console.warn("ElevenLabs fallback to browser TTS:", err);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.onend = () => setCurrentlySpeaking(null);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
   const [selectedCriteria, setSelectedCriteria] = useState<string[]>([]);
   const [showCompareInputs, setShowCompareInputs] = useState(true);
   const [otherCriteria, setOtherCriteria] = useState("");
@@ -629,6 +734,62 @@ function ChatContent() {
   const [isFocusMenuOpen, setIsFocusMenuOpen] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<LangCode>("auto");
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const finalTranscriptRef = useRef("");
+
+  const startVoiceRecording = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice recognition is not supported in this browser.");
+      return;
+    }
+
+    if (isRecordingVoice && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsRecordingVoice(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true; // Keep listening until manual stop
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    finalTranscriptRef.current = "";
+
+    recognition.onstart = () => setIsRecordingVoice(true);
+
+    recognition.onresult = (event: any) => {
+      let fullTranscript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        fullTranscript += event.results[i][0].transcript;
+      }
+      
+      if (fullTranscript.trim()) {
+        setInput(fullTranscript);
+        finalTranscriptRef.current = fullTranscript;
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error", event.error);
+      setIsRecordingVoice(false);
+    };
+
+    recognition.onend = () => {
+      // Submission happens here when stop() is called manually
+      const textToSubmit = finalTranscriptRef.current;
+      if (textToSubmit && textToSubmit.trim() !== "") {
+        handleSend(textToSubmit);
+        finalTranscriptRef.current = ""; // Clear for next time
+      }
+      setIsRecordingVoice(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
 
   // Keep a ref in sync so handleSend always reads the LATEST language
   // even if the user switches and sends before the re-render completes.
@@ -660,7 +821,7 @@ function ChatContent() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(`${API_BASE_URL}/upload`, {
+      const res = await fetch(`${API_URL}/upload`, {
         method: "POST",
         body: formData,
       });
@@ -764,7 +925,7 @@ function ChatContent() {
     abortControllerRef.current = controller;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/chat`, {
+      const response = await fetch(`${API_URL}/chat`, {
         method: "POST",
         signal: controller.signal,
         headers: { "Content-Type": "application/json" },
@@ -931,7 +1092,7 @@ function ChatContent() {
                     const url = parts[2] || "";
                     const fullUrl = url.startsWith("http")
                       ? url
-                      : `${API_BASE_URL.replace(/\/$/, "")}/${url.replace(/^\//, "")}`;
+                      : `${API_URL.replace(/\/$/, "")}/${url.replace(/^\//, "")}`;
                     return (
                       <motion.div
                         key={i}
@@ -968,7 +1129,12 @@ function ChatContent() {
                         msg.role === "user" ? "items-end" : "items-start",
                       )}
                     >
-                      <MessageBubble msg={msg} />
+                      <MessageBubble 
+                        msg={msg} 
+                        index={i}
+                        onSpeak={speakMessage}
+                        isSpeaking={currentlySpeaking === i}
+                      />
                     </motion.div>
                   );
                 })}
@@ -1016,6 +1182,8 @@ function ChatContent() {
                   setSelectedLanguage={setSelectedLanguage}
                   isLangMenuOpen={isLangMenuOpen}
                   setIsLangMenuOpen={setIsLangMenuOpen}
+                  isRecordingVoice={isRecordingVoice}
+                  startVoiceRecording={startVoiceRecording}
                 />
               </div>
             )}
@@ -1066,6 +1234,8 @@ function ChatContent() {
                 setSelectedLanguage={setSelectedLanguage}
                 isLangMenuOpen={isLangMenuOpen}
                 setIsLangMenuOpen={setIsLangMenuOpen}
+                isRecordingVoice={isRecordingVoice}
+                startVoiceRecording={startVoiceRecording}
               />
             </div>
           </div>
@@ -1077,6 +1247,8 @@ function ChatContent() {
           onChange={handleFileUpload}
           accept=".pdf"
         />
+
+
       </main>
 
       <style jsx global>{`

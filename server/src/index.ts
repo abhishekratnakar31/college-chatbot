@@ -10,6 +10,7 @@ import helmet from "@fastify/helmet";
 import { chatRoute } from "./routes/chat.js";
 import { newsRoute } from "./routes/news.js";
 import { rankingsRoute } from "./routes/rankings.js";
+import { ttsRoute } from "./routes/tts.js";
 import multipart from "@fastify/multipart";
 import { uploadRoute } from "./routes/upload.js";
 import { contactRoute } from "./routes/contact.js";
@@ -68,9 +69,11 @@ await app.register(multipart, {
 
 await app.register(chatRoute);
 await app.register(newsRoute);
-await app.register(rankingsRoute);
-await app.register(contactRoute);
+await rankingsRoute(app);
+await ttsRoute(app);
+await contactRoute(app);
 await app.register(uploadRoute);
+
 async function initVectorDB() {
   const collections = await qdrant.getCollections();
   const existingNames = collections.collections.map((c) => c.name);

@@ -12,7 +12,15 @@ export async function reRankChunks(query: string, chunks: any[]): Promise<any[]>
 
   console.log(`[RAG Re-ranker] Re-ranking ${chunks.length} chunks for query: "${query}"`);
 
-  const chunkItems = chunks.map((c, i) => `[ID: ${i}] ${c.payload?.text || c.text}`).join("\n\n");
+  // Truncate each chunk to 300 chars to prevent token overflow and keep re-ranking fast.
+  // Relevance signals are almost always in the first few sentences.
+  const CHUNK_PREVIEW_LEN = 300;
+  const chunkItems = chunks
+    .map((c, i) => {
+      const text = (c.payload?.text || c.text || "").slice(0, CHUNK_PREVIEW_LEN);
+      return `[ID: ${i}] ${text}`;
+    })
+    .join("\n\n");
 
   const prompt = `
 You are an expert information retrieval system. Your task is to score the relevance of the following document chunks to a user's question.

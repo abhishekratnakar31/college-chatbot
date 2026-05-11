@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { generateStream, generateSearchQuery, evaluateIntent } from "../llm/openai.js";
+import { generateStream, generateSearchQuery, evaluateIntent, generateMultiQuery } from "../llm/openai.js";
 import type { ChatMessage } from "../types/chat.js";
 import crypto from "node:crypto";
 import { qdrant } from "../lib/qdrant.js";
@@ -197,6 +197,13 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
         return;
       }
 
+      // 1b. Multi-Query Expansion (Improve Recall)
+      // Generate 3 diverse phrasings to catch synonyms and synonyms.
+      const queryVariants = (intentResult === "VALID" && !hasPdfContext) 
+        ? await generateMultiQuery(rawOptimizedQuery)
+        : [rawOptimizedQuery];
+
+
       // 1b. Sanitize out-of-domain query string (safety net — normally caught above)
       let finalQuery = rawOptimizedQuery;
       if (finalQuery === "OUT_OF_DOMAIN") {
@@ -223,83 +230,107 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
         }
       }
 
-      const customFilters = body.filters ? Object.entries(body.filters).map(([key, value]) => ({
-        key,
-        match: { value }
-      })) : [];
-
       // 3. ── Retrieval with Cache ──────────────────────────────────────────────
-      // Identical queries (same mode + document + query text) skip embedding,
-      // Qdrant search, and reranking entirely for 5 min (PDF) / 3 min (web).
+      const cacheKey = buildQueryCacheKey(mode, queryVariants.join("|"), activeDocument);
       const TTL_PDF = 5 * 60 * 1000;
       const TTL_WEB = 3 * 60 * 1000;
-      const cacheKey = buildQueryCacheKey(mode, finalQuery, activeDocument);
 
       interface CachedRetrieval { qdrantResults: any[]; webResults: any[]; }
-
       let qdrantResults: any[] = [];
       let webResults: any[] = [];
 
       const cached = getCache<CachedRetrieval>(cacheKey);
       if (cached) {
-        console.log(`[Cache] ✅ HIT — skipping retrieval for: "${finalQuery.slice(0, 60)}" (mode: ${mode})`);
+        console.log(`[Cache] ✅ HIT — skipping retrieval for variants: ${queryVariants.length}`);
         qdrantResults = cached.qdrantResults;
         webResults = cached.webResults;
       } else {
-        // Cache miss — run the full retrieval pipeline
         if (mode === "pdf") {
-          const vectorSearchOptions: any = { limit: 25 };
-          const keywordSearchOptions: any = {
-            limit: 15,
-            filter: {
-              must: [
-                ...(activeDocument ? [{ key: "document", match: { value: activeDocument } }] : []),
-                ...customFilters,
-                { key: "text", match: { text: finalQuery } },
-              ],
-            },
-          };
+          // Multi-Query Vector + Keyword Search with RRF
+          const k = 60; // RRF constant
+          const scores: Record<string, { score: number; point: any }> = {};
 
-          if (activeDocument || customFilters.length > 0) {
-            vectorSearchOptions.filter = {
-              must: [
-                ...(activeDocument ? [{ key: "document", match: { value: activeDocument } }] : []),
-                ...customFilters,
-              ],
-            };
+          await Promise.all(queryVariants.map(async (q) => {
+            const queryEmbedding = await getEmbedding(q);
+            
+            // 1. Vector Search
+            const vectorRes = await qdrant.search("college_docs", {
+              vector: queryEmbedding,
+              limit: 20,
+              ...(activeDocument ? { filter: { must: [{ key: "document", match: { value: activeDocument } }] } } : {})
+            });
+
+            // 2. Keyword Search
+            const keywordRes = await qdrant.scroll("college_docs", {
+              limit: 15,
+              filter: {
+                must: [
+                  ...(activeDocument ? [{ key: "document", match: { value: activeDocument } }] : []),
+                  { key: "text", match: { text: q } }
+                ]
+              }
+            });
+
+            // Apply RRF scoring
+            vectorRes.forEach((r, rank) => {
+              const id = String(r.id);
+              if (!scores[id]) scores[id] = { score: 0, point: r };
+              scores[id].score += 1 / (k + rank + 1);
+            });
+
+            keywordRes.points.forEach((r, rank) => {
+              const id = String(r.id);
+              if (!scores[id]) scores[id] = { score: 0, point: r };
+              scores[id].score += 1 / (k + rank + 1);
+            });
+          }));
+
+          const combined = Object.values(scores)
+            .sort((a, b) => b.score - a.score)
+            .map(s => s.point);
+
+          // Re-rank top candidates
+          const rankedResults = combined.length > 3
+            ? await reRankChunks(queryVariants[0]!, combined.slice(0, 20))
+            : combined;
+          
+          // Score Gating (only keep relevant chunks)
+          qdrantResults = rankedResults.filter((r: any) => (r.rerank_score || 0) >= 4).slice(0, 8);
+          if (qdrantResults.length === 0 && rankedResults.length > 0) {
+             qdrantResults = rankedResults.slice(0, 3); // Fallback to top 3 if all gated
           }
-
-          const keywordSearchPromise = qdrant.scroll("college_docs", keywordSearchOptions).then(res => res || { points: [] });
-          const vectorSearchPromise = getEmbedding(finalQuery).then(queryEmbedding => {
-            vectorSearchOptions.vector = queryEmbedding;
-            return qdrant.search("college_docs", vectorSearchOptions).then(res => res || []);
-          });
-
-          const [keywordResults, vectorResults] = await Promise.all([keywordSearchPromise, vectorSearchPromise]);
-
-          const seenIds = new Set(vectorResults.map((r: any) => r.id));
-          const combinedCandidates = [...vectorResults];
-          for (const point of keywordResults.points) {
-            if (!seenIds.has(point.id)) {
-              combinedCandidates.push(point as any);
-              seenIds.add(point.id);
-            }
-          }
-
-          // Skip the LLM reranker for tiny result sets — the overhead
-          // (1 extra GPT-4o-mini call) is not worth it for ≤3 candidates.
-          const rankedResults = combinedCandidates.length > 3
-            ? await reRankChunks(finalQuery, combinedCandidates)
-            : combinedCandidates;
-          qdrantResults = rankedResults.slice(0, 8);
 
         } else if (mode === "web" || mode === "compare") {
-          webResults = (await searchWeb(finalQuery)) || [];
+          // Parallel Web + News Vector Search
+          const [tavilyResults, newsResults] = await Promise.all([
+            searchWeb(queryVariants[0]!),
+            (async () => {
+              try {
+                const queryEmbedding = await getEmbedding(queryVariants[0]!);
+                const res = await qdrant.search("college_news", {
+                  vector: queryEmbedding,
+                  limit: 5
+                });
+                return res.map(r => ({
+                  title: `News: ${r.payload?.title || "Latest Update"}`,
+                  url: r.payload?.url || "#",
+                  content: r.payload?.text || "",
+                  score: r.score
+                }));
+              } catch (e) {
+                console.warn("[News Search] Failed:", e);
+                return [];
+              }
+            })()
+          ]);
+          
+          webResults = [...newsResults, ...tavilyResults];
         }
 
         // Store results for subsequent identical queries
         setCache<CachedRetrieval>(cacheKey, { qdrantResults, webResults }, mode === "pdf" ? TTL_PDF : TTL_WEB);
-        console.log(`[Cache] STORED — key: "${finalQuery.slice(0, 60)}" (mode: ${mode}, ttl: ${mode === "pdf" ? "5m" : "3m"})`);
+        console.log(`[Cache] STORED — mode: ${mode}, variants: ${queryVariants.length}, ttl: ${mode === "pdf" ? "5m" : "3m"}`);
+
       }
 
       const rankingsContext = await rankingsPromise;

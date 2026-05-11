@@ -49,7 +49,9 @@ type CollegeRow = {
 
 /** Fuzzy-search for a single college by name or alias */
 async function findCollege(name: string): Promise<CollegeRow | null> {
-  const pattern = "%" + name + "%";
+  // Create a robust search pattern by replacing spaces with wildcards
+  // This helps match names like "ICAR-IARI" even if the search is "icar iari"
+  const pattern = "%" + name.trim().replace(/\s+/g, "%") + "%";
   const rows = await sql<CollegeRow[]>`
     SELECT * FROM college_achievements
     WHERE college ILIKE ${pattern}

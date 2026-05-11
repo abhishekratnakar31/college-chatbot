@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4005";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4006";
 
 function formatRelativeTime(dateString: string | null) {
   if (!dateString) return "";

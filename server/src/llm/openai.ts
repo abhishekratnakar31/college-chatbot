@@ -112,6 +112,76 @@ export async function generateSearchQuery(
     return lastMessage;
   }
 }
+/**
+ * Multi-Query Expansion
+ * Generates 3 diverse rephrasings of the user's query to improve retrieval recall.
+ * Each variant captures different keyword angles and synonyms.
+ */
+export async function generateMultiQuery(
+  originalQuery: string,
+): Promise<string[]> {
+  try {
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: `You are a search query diversifier for a College/University information system.
+Given a search query, generate exactly 3 alternative phrasings that capture different angles and synonyms.
+
+RULES:
+1. Each variant must use different keywords while preserving the original intent.
+2. Include abbreviations, full names, and alternate terms (e.g., "fees" → "tuition cost", "IIT" → "Indian Institute of Technology").
+3. One variant should focus on specific details, one on broader context, one on common misspellings or colloquial terms.
+4. Output ONLY a JSON array of 3 strings. No explanation.
+5. Keep each query under 15 words.
+
+Example input: "IIT Bombay placement stats"
+Example output: ["IITB campus recruitment statistics", "Indian Institute of Technology Bombay job placement data", "IIT Bombay placement record package salary"]`,
+            },
+            { role: "user", content: originalQuery },
+          ],
+          max_tokens: 150,
+          temperature: 0.7,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.warn("[MultiQuery] API error, falling back to original query");
+      return [originalQuery];
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content?.trim() || "";
+
+    try {
+      const queries = JSON.parse(content.match(/\[.*\]/s)?.[0] || content);
+      if (Array.isArray(queries) && queries.length > 0) {
+        // Always include the original query + up to 3 variants
+        const result = [originalQuery, ...queries.slice(0, 3)];
+        console.log(`[MultiQuery] Expanded to ${result.length} variants: ${result.map(q => `"${q}"`).join(", ")}`);
+        return result;
+      }
+    } catch (parseErr) {
+      console.warn("[MultiQuery] Parse error, falling back to original query:", parseErr);
+    }
+
+    return [originalQuery];
+  } catch (error) {
+    console.error("[MultiQuery] Error:", error);
+    return [originalQuery];
+  }
+}
+
 export async function evaluateIntent(messages: ChatMessage[]): Promise<string> {
   const lastMessage = messages[messages.length - 1]?.content || "";
   const sanitizedInput = lastMessage.replace(/SYSTEM:[\s\S]*?\n\n/g, "").trim();

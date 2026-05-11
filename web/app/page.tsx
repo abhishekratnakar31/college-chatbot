@@ -38,6 +38,7 @@ import {
   Sparkles,
   IndianRupee,
   Info,
+  Zap,
 } from "lucide-react";
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
@@ -51,9 +52,10 @@ function formatRelativeTime(dateString: string | null) {
   if (diffInSeconds < 60) return "Just now";
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-  
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  if (diffInSeconds < 604800)
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
 // ── Animated cycling word ────────────────────────────────────────────────────
@@ -97,7 +99,7 @@ function HeroBackground() {
       <motion.div
         style={{ y }}
         initial={{ scale: 1.1, opacity: 0 }}
-        animate={{ scale: 1, opacity: 0.15 }}
+        animate={{ scale: 1, opacity: 0.40 }}
         transition={{ duration: 2, ease: "easeOut" }}
         className="absolute inset-0"
       >
@@ -108,7 +110,7 @@ function HeroBackground() {
           draggable={false}
         />
       </motion.div>
-      <div className="absolute inset-0 bg-black/60" />
+      <div className="absolute inset-0 bg-black/40" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,#0a0a0a_100%)]" />
     </div>
   );
@@ -324,7 +326,7 @@ function SectionCard({
                 alt={title}
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </div>
           )}
         </Reveal>
@@ -373,7 +375,9 @@ function NewsDashboard({ articles }: { articles: any[] }) {
                       </div>
                       <p className="text-[9px] text-zinc-600 font-medium uppercase tracking-tighter">
                         {news.source} •{" "}
-                        {formatRelativeTime(news.published_at || news.created_at)}
+                        {formatRelativeTime(
+                          news.published_at || news.created_at,
+                        )}
                       </p>
                     </div>
                   );
@@ -734,10 +738,6 @@ function Footer() {
               GENERATION.
             </p>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-900 text-[9px] font-black uppercase tracking-widest text-zinc-600">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Systems Operational
-              </div>
               <span className="text-[9px] text-zinc-800 font-black uppercase tracking-widest">
                 AI Accuracy: 98.4%
               </span>
@@ -762,6 +762,8 @@ function Footer() {
   );
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4006";
+
 export default function HeroPage() {
   const [query, setQuery] = useState("");
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
@@ -770,7 +772,6 @@ export default function HeroPage() {
   const [news, setNews] = useState<any[]>([]);
   const [rankings, setRankings] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4005";
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAttachedFile(e.target.files?.[0] ?? null);
@@ -801,9 +802,14 @@ export default function HeroPage() {
             if (line.startsWith("data:")) {
               try {
                 const parsed = JSON.parse(line.replace("data: ", "").trim());
-                if (parsed.status === "verifying") setUploadProgressText("Verifying relevance...");
-                else if (parsed.status === "started") setUploadProgressText(`Embedding (0/${parsed.total})...`);
-                else if (parsed.status === "embedding") setUploadProgressText(`Embedding (${parsed.progress}/${parsed.total})...`);
+                if (parsed.status === "verifying")
+                  setUploadProgressText("Verifying relevance...");
+                else if (parsed.status === "started")
+                  setUploadProgressText(`Embedding (0/${parsed.total})...`);
+                else if (parsed.status === "embedding")
+                  setUploadProgressText(
+                    `Embedding (${parsed.progress}/${parsed.total})...`,
+                  );
                 else if (parsed.status === "done") {
                   uploadedFileUrl = parsed.fileUrl ?? "";
                   done = true;
@@ -989,7 +995,7 @@ export default function HeroPage() {
                   disabled={isUploading}
                   className="px-5 md:px-14 py-3 md:py-6 mr-7 bg-white text-black font-bold text-xs md:text-xl rounded-full hover:bg-blue-500 hover:text-white transition-all active:scale-95 shadow-xl disabled:opacity-50"
                 >
-                  {isUploading ? (uploadProgressText || "Indexing...") : "Search"}
+                  {isUploading ? uploadProgressText || "Indexing..." : "Search"}
                 </button>
               </div>
               <input

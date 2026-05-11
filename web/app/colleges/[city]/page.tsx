@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Building2 } from "lucide-react";
 import Link from "next/link";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4005";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4006";
 
 export default async function Page({ params }: { params: Promise<{ city: string }> }) {
   const { city: slug } = await params;

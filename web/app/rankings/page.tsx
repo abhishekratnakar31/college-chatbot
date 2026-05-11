@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4005";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4006";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 export function toSlug(name: string): string {
