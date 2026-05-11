@@ -746,39 +746,47 @@ function ChatContent() {
     }
 
     if (isRecordingVoice && recognitionRef.current) {
+      shouldSubmitOnEndRef.current = true; // Mark that we want to send the message now
       recognitionRef.current.stop();
       setIsRecordingVoice(false);
       return;
     }
 
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
     const recognition = new SpeechRecognition();
-    // Mobile Chrome has a famous bug with continuous=true that causes text doubling
-    recognition.continuous = !isMobile; 
+    recognition.continuous = true; 
     recognition.interimResults = true;
     recognition.lang = "en-US";
 
+    shouldSubmitOnEndRef.current = false;
     finalTranscriptRef.current = "";
 
     recognition.onstart = () => setIsRecordingVoice(true);
 
     recognition.onresult = (event: any) => {
-      let fTranscript = "";
-      let iTranscript = "";
+      const results = event.results;
+      const transcriptSegments: string[] = [];
       
-      for (let i = 0; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          fTranscript += event.results[i][0].transcript;
-        } else {
-          iTranscript += event.results[i][0].transcript;
-        }
+      // Build an array of all current results
+      for (let i = 0; i < results.length; i++) {
+        transcriptSegments.push(results[i][0].transcript.trim());
       }
 
-      const displayTranscript = fTranscript + iTranscript;
-      if (displayTranscript.trim()) {
-        setInput(displayTranscript);
-        finalTranscriptRef.current = displayTranscript;
+      /**
+       * DEDUPLICATION LOGIC for Mobile Chrome:
+       * Mobile Chrome often returns segments like ["tell", "tell me", "tell me about"].
+       * We filter out any segment that is a prefix of a later (longer) segment.
+       */
+      const uniqueSegments = transcriptSegments.filter((segment, index) => {
+        for (let j = index + 1; j < transcriptSegments.length; j++) {
+          if (transcriptSegments[j].startsWith(segment)) return false;
+        }
+        return true;
+      });
+
+      const fullTranscript = uniqueSegments.join(" ");
+      if (fullTranscript) {
+        setInput(fullTranscript);
+        finalTranscriptRef.current = fullTranscript;
       }
     };
 
@@ -788,11 +796,14 @@ function ChatContent() {
     };
 
     recognition.onend = () => {
-      // Submission happens here when stop() is called manually
-      const textToSubmit = finalTranscriptRef.current;
-      if (textToSubmit && textToSubmit.trim() !== "") {
-        handleSend(textToSubmit);
-        finalTranscriptRef.current = ""; // Clear for next time
+      // Only submit if the user manually clicked STOP
+      if (shouldSubmitOnEndRef.current) {
+        const textToSubmit = finalTranscriptRef.current;
+        if (textToSubmit && textToSubmit.trim() !== "") {
+          handleSend(textToSubmit);
+          finalTranscriptRef.current = ""; 
+        }
+        shouldSubmitOnEndRef.current = false;
       }
       setIsRecordingVoice(false);
     };
@@ -800,6 +811,8 @@ function ChatContent() {
     recognitionRef.current = recognition;
     recognition.start();
   };
+
+  const shouldSubmitOnEndRef = useRef(false);
 
   // Keep a ref in sync so handleSend always reads the LATEST language
   // even if the user switches and sends before the re-render completes.
