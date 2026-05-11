@@ -10,6 +10,7 @@ const envSchema = z.object({
   ALLOWED_ORIGIN: z.string().default("*"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   TAVILY_API_KEY: z.string().optional(),
+  ELEVEN_LABS_API_KEY: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);

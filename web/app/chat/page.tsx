@@ -11,7 +11,6 @@ import {
   Check,
   Globe,
   ExternalLink,
-  Paperclip,
   ArrowUp,
   X,
   Plus,
@@ -34,7 +33,11 @@ import {
   Square,
   Volume2,
   VolumeX,
+  Paperclip,
+  Activity,
 } from "lucide-react";
+import { useChat } from "../context/ChatContext";
+import { BarVisualizer } from "../components/ui/bar-visualizer";
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
 
@@ -54,32 +57,32 @@ const COMPARISON_CRITERIA = [
 
 // ── Language Registry (mirrors server/src/lib/languageDetector.ts) ────────
 const LANGUAGES = [
-  { code: "auto",  name: "Auto-detect",  native: "Auto",       region: "meta"   },
+  { code: "auto", name: "Auto-detect", native: "Auto", region: "meta" },
   // –– Indian ––
-  { code: "hi",    name: "Hindi",        native: "हिंदी",        region: "indian" },
-  { code: "mr",    name: "Marathi",      native: "मराठी",        region: "indian" },
-  { code: "ta",    name: "Tamil",        native: "தமிழ்",        region: "indian" },
-  { code: "te",    name: "Telugu",       native: "తెలుగు",       region: "indian" },
-  { code: "kn",    name: "Kannada",      native: "ಕನ್ನಡ",        region: "indian" },
-  { code: "ml",    name: "Malayalam",   native: "മലയാളം",      region: "indian" },
-  { code: "bn",    name: "Bengali",      native: "বাংলা",        region: "indian" },
-  { code: "gu",    name: "Gujarati",     native: "ગુજરાતી",      region: "indian" },
-  { code: "pa",    name: "Punjabi",      native: "ਪੰਜਾਬੀ",       region: "indian" },
-  { code: "ur",    name: "Urdu",         native: "اردو",         region: "indian" },
+  { code: "hi", name: "Hindi", native: "हिंदी", region: "indian" },
+  { code: "mr", name: "Marathi", native: "मराठी", region: "indian" },
+  { code: "ta", name: "Tamil", native: "தமிழ்", region: "indian" },
+  { code: "te", name: "Telugu", native: "తెలుగు", region: "indian" },
+  { code: "kn", name: "Kannada", native: "ಕನ್ನಡ", region: "indian" },
+  { code: "ml", name: "Malayalam", native: "മലയാളം", region: "indian" },
+  { code: "bn", name: "Bengali", native: "বাংলা", region: "indian" },
+  { code: "gu", name: "Gujarati", native: "ગુજરાતી", region: "indian" },
+  { code: "pa", name: "Punjabi", native: "ਪੰਜਾਬੀ", region: "indian" },
+  { code: "ur", name: "Urdu", native: "اردو", region: "indian" },
   // –– Global ––
-  { code: "ar",    name: "Arabic",       native: "العربية",      region: "global" },
-  { code: "fr",    name: "French",       native: "Français",     region: "global" },
-  { code: "es",    name: "Spanish",      native: "Español",      region: "global" },
-  { code: "pt",    name: "Portuguese",   native: "Português",    region: "global" },
-  { code: "de",    name: "German",       native: "Deutsch",      region: "global" },
-  { code: "zh",    name: "Chinese",      native: "中文",          region: "global" },
-  { code: "ja",    name: "Japanese",     native: "日本語",         region: "global" },
-  { code: "ko",    name: "Korean",       native: "한국어",          region: "global" },
-  { code: "ru",    name: "Russian",      native: "Русский",      region: "global" },
-  { code: "el",    name: "Greek",        native: "Ελληνικά",     region: "global" },
+  { code: "ar", name: "Arabic", native: "العربية", region: "global" },
+  { code: "fr", name: "French", native: "Français", region: "global" },
+  { code: "es", name: "Spanish", native: "Español", region: "global" },
+  { code: "pt", name: "Portuguese", native: "Português", region: "global" },
+  { code: "de", name: "German", native: "Deutsch", region: "global" },
+  { code: "zh", name: "Chinese", native: "中文", region: "global" },
+  { code: "ja", name: "Japanese", native: "日本語", region: "global" },
+  { code: "ko", name: "Korean", native: "한국어", region: "global" },
+  { code: "ru", name: "Russian", native: "Русский", region: "global" },
+  { code: "el", name: "Greek", native: "Ελληνικά", region: "global" },
 ] as const;
 
-type LangCode = typeof LANGUAGES[number]["code"];
+type LangCode = (typeof LANGUAGES)[number]["code"];
 
 const ChatInput = ({
   input,
@@ -117,7 +120,14 @@ const ChatInput = ({
   setIsLangMenuOpen,
   isRecordingVoice,
   startVoiceRecording,
+  isSpeaking,
 }: any) => {
+  const visualizerState = isRecordingVoice 
+    ? "listening" 
+    : isSpeaking 
+    ? "speaking" 
+    : "connecting";
+
   const MenuContent = () => (
     <AnimatePresence>
       {isMenuOpen && (
@@ -165,10 +175,10 @@ const ChatInput = ({
                   setIsMenuOpen(false);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left group",
+                  "w-full flex items-center gap-4 p-3 sm:p-4 rounded-2xl transition-all text-left group",
                   chatMode === mode.id
                     ? "bg-white text-black"
-                    : "hover:bg-blue-500/10 hover:text-blue-400",
+                    : "hover:bg-zinc-800 text-zinc-400 hover:text-white",
                 )}
               >
                 <mode.icon
@@ -176,7 +186,7 @@ const ChatInput = ({
                   className={cn(
                     chatMode === mode.id
                       ? "text-black"
-                      : "text-zinc-500 group-hover:text-blue-400",
+                      : "text-zinc-500 group-hover:text-white",
                   )}
                 />
                 <div>
@@ -207,9 +217,17 @@ const ChatInput = ({
         <AnimatePresence>
           {isLangMenuOpen && (
             <motion.div
-              initial={{ opacity: 0, y: menuSide === "top" ? -10 : 10, scale: 0.95 }}
+              initial={{
+                opacity: 0,
+                y: menuSide === "top" ? -10 : 10,
+                scale: 0.95,
+              }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: menuSide === "top" ? -10 : 10, scale: 0.95 }}
+              exit={{
+                opacity: 0,
+                y: menuSide === "top" ? -10 : 10,
+                scale: 0.95,
+              }}
               className={cn(
                 "absolute right-0 liquid-glass-card p-3 shadow-2xl shadow-black w-64 z-[110]",
                 menuSide === "top" ? "bottom-full mb-2" : "top-full mt-2",
@@ -220,13 +238,16 @@ const ChatInput = ({
               </h3>
               <div className="max-h-72 overflow-y-auto custom-scrollbar space-y-0.5 pr-1">
                 {/* Auto option */}
-                {LANGUAGES.filter(l => l.region === "meta").map(lang => (
+                {LANGUAGES.filter((l) => l.region === "meta").map((lang) => (
                   <button
                     key={lang.code}
-                    onClick={() => { setSelectedLanguage("auto"); setIsLangMenuOpen(false); }}
+                    onClick={() => {
+                      setSelectedLanguage("auto");
+                      setIsLangMenuOpen(false);
+                    }}
                     className={cn(
                       "w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl transition-all text-left",
-                      (selectedLanguage === "auto" || !selectedLanguage)
+                      selectedLanguage === "auto" || !selectedLanguage
                         ? "bg-white text-black"
                         : "hover:bg-blue-500/10 text-zinc-300 hover:text-blue-400",
                     )}
@@ -235,16 +256,23 @@ const ChatInput = ({
                       <Globe size={13} />
                       <span className="text-xs font-bold">{lang.name}</span>
                     </div>
-                    {(selectedLanguage === "auto" || !selectedLanguage) && <Check size={12} />}
+                    {(selectedLanguage === "auto" || !selectedLanguage) && (
+                      <Check size={12} />
+                    )}
                   </button>
                 ))}
 
                 {/* Indian languages */}
-                <p className="px-3 pt-3 pb-1 text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">🇮🇳 Indian</p>
-                {LANGUAGES.filter(l => l.region === "indian").map(lang => (
+                <p className="px-3 pt-3 pb-1 text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">
+                  🇮🇳 Indian
+                </p>
+                {LANGUAGES.filter((l) => l.region === "indian").map((lang) => (
                   <button
                     key={lang.code}
-                    onClick={() => { setSelectedLanguage(lang.code); setIsLangMenuOpen(false); }}
+                    onClick={() => {
+                      setSelectedLanguage(lang.code);
+                      setIsLangMenuOpen(false);
+                    }}
                     className={cn(
                       "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-2xl transition-all text-left",
                       selectedLanguage === lang.code
@@ -254,18 +282,32 @@ const ChatInput = ({
                   >
                     <div>
                       <p className="text-xs font-semibold">{lang.native}</p>
-                      <p className={cn("text-[10px]", selectedLanguage === lang.code ? "text-black/60" : "text-zinc-500")}>{lang.name}</p>
+                      <p
+                        className={cn(
+                          "text-[10px]",
+                          selectedLanguage === lang.code
+                            ? "text-black/60"
+                            : "text-zinc-500",
+                        )}
+                      >
+                        {lang.name}
+                      </p>
                     </div>
                     {selectedLanguage === lang.code && <Check size={12} />}
                   </button>
                 ))}
 
                 {/* Global languages */}
-                <p className="px-3 pt-3 pb-1 text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">🌍 Global</p>
-                {LANGUAGES.filter(l => l.region === "global").map(lang => (
+                <p className="px-3 pt-3 pb-1 text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">
+                  🌍 Global
+                </p>
+                {LANGUAGES.filter((l) => l.region === "global").map((lang) => (
                   <button
                     key={lang.code}
-                    onClick={() => { setSelectedLanguage(lang.code); setIsLangMenuOpen(false); }}
+                    onClick={() => {
+                      setSelectedLanguage(lang.code);
+                      setIsLangMenuOpen(false);
+                    }}
                     className={cn(
                       "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-2xl transition-all text-left",
                       selectedLanguage === lang.code
@@ -275,7 +317,16 @@ const ChatInput = ({
                   >
                     <div>
                       <p className="text-xs font-semibold">{lang.native}</p>
-                      <p className={cn("text-[10px]", selectedLanguage === lang.code ? "text-black/60" : "text-zinc-500")}>{lang.name}</p>
+                      <p
+                        className={cn(
+                          "text-[10px]",
+                          selectedLanguage === lang.code
+                            ? "text-black/60"
+                            : "text-zinc-500",
+                        )}
+                      >
+                        {lang.name}
+                      </p>
                     </div>
                     {selectedLanguage === lang.code && <Check size={12} />}
                   </button>
@@ -369,9 +420,9 @@ const ChatInput = ({
             </motion.div>
           )}
         </AnimatePresence>
-        
+
         {isUploading && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-4 space-y-3"
@@ -388,7 +439,7 @@ const ChatInput = ({
               </span>
             </div>
             <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/50">
-              <motion.div 
+              <motion.div
                 className="h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]"
                 initial={{ width: 0 }}
                 animate={{ width: `${uploadProgress}%` }}
@@ -398,138 +449,166 @@ const ChatInput = ({
           </motion.div>
         )}
 
-        <div className="bg-zinc-900 border-2 border-zinc-800 group-focus-within:border-white group-focus-within:bg-black rounded-3xl sm:rounded-[2.5rem] transition-all duration-500 shadow-2xl shadow-black/5 overflow-hidden">
-          <div className="flex items-center p-1 sm:p-3 pr-1.5 sm:pr-3 relative">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={cn(
-                "p-2 sm:p-4 transition-all rounded-xl sm:rounded-2xl shrink-0",
-                isMenuOpen
-                  ? "bg-white text-black"
-                  : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10",
-              )}
-            >
-              <LayoutGrid size={20} className="sm:w-6 sm:h-6" />
-            </button>
-            {chatMode !== "compare" && (
+        <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 group-focus-within:border-zinc-700 group-focus-within:bg-zinc-900 rounded-full transition-all duration-500 shadow-2xl shadow-black/20 overflow-hidden px-2 sm:px-4 py-1.5 sm:py-2">
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Left Action: Plus Menu & Attach */}
+            <div className="flex items-center gap-0.5">
               <button
-                onClick={() => fileInputRef.current?.click()}
-                className="p-2 sm:p-4 text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition-all rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0"
-              >
-                <FileUp size={20} className="sm:w-6 sm:h-6" />
-              </button>
-            )}
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder={
-                isUploading ? (uploadProgressText || "Indexing...") : `Ask in ${chatMode}...`
-              }
-              className="flex-1 min-w-0 bg-transparent py-3 sm:py-4 text-sm sm:text-lg font-medium text-white placeholder:text-zinc-700 outline-none"
-              disabled={isUploading}
-            />
-
-            {/* Language selector button — always visible */}
-            <button
-              onClick={() => { setIsLangMenuOpen(!isLangMenuOpen); setIsMenuOpen(false); setIsFocusMenuOpen(false); }}
-              title="Response language"
-              className={cn(
-                "p-2 sm:p-4 transition-all rounded-xl sm:rounded-2xl flex items-center gap-1 mr-0.5 shrink-0",
-                isLangMenuOpen || (selectedLanguage && selectedLanguage !== "auto")
-                  ? "bg-white text-black"
-                  : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10",
-              )}
-            >
-              <Globe size={18} className="sm:w-5 sm:h-5" />
-              {selectedLanguage && selectedLanguage !== "auto" && (
-                <span className="text-[10px] font-black">
-                  {LANGUAGES.find(l => l.code === selectedLanguage)?.native?.slice(0, 4) ?? selectedLanguage.toUpperCase()}
-                </span>
-              )}
-            </button>
-
-            {/* Voice Dictation Toggle */}
-            <button
-              onClick={startVoiceRecording}
-              title={isRecordingVoice ? "Stop Recording" : "Start Dictation"}
-              className={cn(
-                "p-2 sm:p-4 transition-all rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 mr-1",
-                isRecordingVoice
-                  ? "bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 animate-pulse"
-                  : "text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10"
-              )}
-            >
-              {isRecordingVoice ? (
-                <Square size={18} className="sm:w-5 sm:h-5 fill-current" />
-              ) : (
-                <Mic size={18} className="sm:w-5 sm:h-5" />
-              )}
-            </button>
-
-
-            {chatMode === "compare" && (
-              <button
-                onClick={() => setIsFocusMenuOpen(!isFocusMenuOpen)}
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className={cn(
-                  "p-3 sm:p-4 transition-all rounded-xl sm:rounded-2xl mr-1 sm:mr-2",
-                  isFocusMenuOpen ||
-                    selectedCriteria.length > 0 ||
-                    otherCriteria
-                    ? "bg-white text-black"
-                    : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10",
+                  "p-2 hover:bg-zinc-800 rounded-full transition-colors shrink-0",
+                  isMenuOpen ? "text-white" : "text-zinc-500",
                 )}
               >
-                <SlidersHorizontal size={20} className="sm:w-6 sm:h-6" />
+                <Plus size={22} />
               </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 hover:bg-zinc-800 text-zinc-500 hover:text-white rounded-full transition-colors shrink-0"
+              >
+                <Paperclip size={20} />
+              </button>
+            </div>
+
+            {/* Main Input */}
+            {isRecordingVoice || isSpeaking ? (
+              <div className="flex-1 flex items-center justify-center h-[44px]">
+                <BarVisualizer 
+                  state={visualizerState} 
+                  barCount={20} 
+                  className="w-full max-w-[200px]" 
+                />
+              </div>
+            ) : (
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                placeholder={
+                  isUploading
+                    ? uploadProgressText || "Indexing..."
+                    : "Ask anything..."
+                }
+                className="flex-1 min-w-0 bg-transparent py-2 sm:py-3 text-sm sm:text-base font-medium text-white placeholder:text-zinc-600 outline-none ml-1"
+                disabled={isUploading}
+              />
             )}
 
-            <AnimatePresence>
-              {isLoading ? (
-                <motion.button
-                  key="stop-button"
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.5, opacity: 0 }}
-                  onClick={() => abortControllerRef.current?.abort()}
-                  className="p-3 sm:p-4 text-white hover:scale-110 transition-transform shrink-0"
-                >
-                  <StopCircle size={20} className="sm:w-6 sm:h-6" />
-                </motion.button>
-              ) : (
-                input.trim() && !isRecordingVoice && (
+            {/* Right Action Group */}
+            <div className="flex items-center gap-0.5 sm:gap-1">
+              {/* Language Selector */}
+              <button
+                onClick={() => {
+                  setIsLangMenuOpen(!isLangMenuOpen);
+                  setIsMenuOpen(false);
+                  setIsFocusMenuOpen(false);
+                }}
+                className={cn(
+                  "p-2 hover:bg-zinc-800 rounded-full transition-colors shrink-0 relative",
+                  isLangMenuOpen ||
+                    (selectedLanguage && selectedLanguage !== "auto")
+                    ? "text-white"
+                    : "text-zinc-500",
+                )}
+              >
+                <Globe size={18} />
+                {selectedLanguage && selectedLanguage !== "auto" && (
+                  <span className="absolute -top-1 -right-1 bg-white text-black text-[8px] font-bold px-1 rounded-full border border-black">
+                    {selectedLanguage.toUpperCase()}
+                  </span>
+                )}
+              </button>
+
+              {/* Dynamic Action Button: Mic or Send/Stop */}
+              <AnimatePresence mode="wait">
+                {isLoading ? (
                   <motion.button
-                    key="send-button"
-                    initial={{ scale: 0.5, opacity: 0, x: 10 }}
-                    animate={{ scale: 1, opacity: 1, x: 0 }}
-                    exit={{ scale: 0.5, opacity: 0, x: 10 }}
+                    key="stop"
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.8, opacity: 0 }}
+                    onClick={() => abortControllerRef.current?.abort()}
+                    className="w-8 h-8 sm:w-10 sm:h-10 bg-zinc-800 text-white rounded-full flex items-center justify-center hover:bg-zinc-700 transition-colors shrink-0 ml-1"
+                  >
+                    <StopCircle size={18} />
+                  </motion.button>
+                ) : isRecordingVoice ? (
+                  <motion.button
+                    key="voice-active"
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.8, opacity: 0 }}
+                    onClick={startVoiceRecording}
+                    className="w-8 h-8 sm:w-10 sm:h-10 bg-rose-500 text-white rounded-full flex items-center justify-center animate-pulse shrink-0 ml-1"
+                  >
+                    <Mic size={18} />
+                  </motion.button>
+                ) : input.trim() ? (
+                  <motion.button
+                    key="send"
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.8, opacity: 0 }}
                     onClick={() => handleSend()}
                     disabled={isUploading}
-                    className="w-10 h-10 sm:w-12 sm:h-12 bg-white text-black rounded-xl sm:rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shrink-0 ml-1 sm:ml-2 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                    className="w-8 h-8 sm:w-10 sm:h-10 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 active:scale-95 shadow-lg shadow-white/10 transition-all shrink-0 ml-1"
                   >
-                    <ArrowUp size={18} className="sm:w-5 sm:h-5" />
+                    <ArrowUp size={18} strokeWidth={3} />
                   </motion.button>
-                )
-              )}
-            </AnimatePresence>
+                ) : (
+                  <motion.button
+                    key="voice-idle"
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.8, opacity: 0 }}
+                    onClick={startVoiceRecording}
+                    className="p-2 text-zinc-500 hover:bg-zinc-800 hover:text-white rounded-full transition-colors shrink-0 ml-1"
+                  >
+                    <Mic size={18} />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 };
+import { ShimmeringText } from "../components/ui/shimmering-text";
 
-const MessageBubble = ({ 
-  msg, 
-  index, 
-  onSpeak, 
-  isSpeaking 
-}: { 
-  msg: Message; 
+const LOADING_PHRASES = [
+  "Searching for top colleges...",
+  "Analyzing fees and placements...",
+  "Checking latest NIRF rankings...",
+  "Comparing university details...",
+  "Reading campus insights...",
+  "Preparing your academic report...",
+  "Almost ready with your answer...",
+];
+
+const MessageBubble = ({
+  msg,
+  index,
+  onSpeak,
+  isSpeaking,
+}: {
+  msg: Message;
   index: number;
   onSpeak: (text: string, idx: number) => void;
   isSpeaking: boolean;
 }) => {
+  const [loadingIndex, setLoadingIndex] = useState(0);
+
+  useEffect(() => {
+    if (!msg.content && msg.role === "assistant") {
+      const interval = setInterval(() => {
+        setLoadingIndex((prev) => (prev + 1) % LOADING_PHRASES.length);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [msg.content, msg.role]);
+
   let mainContent = msg.content;
   let sourcesMeta: any[] | null = null;
 
@@ -551,10 +630,10 @@ const MessageBubble = ({
   return (
     <div
       className={cn(
-        "max-w-[95%] sm:max-w-[85%] rounded-2xl sm:rounded-3xl text-sm sm:text-[15px] leading-relaxed group/msg relative",
+        "max-w-[95%] sm:max-w-[90%] rounded-2xl sm:rounded-3xl text-base sm:text-[18px] leading-relaxed group/msg relative",
         msg.role === "user"
-          ? "bg-zinc-900 border border-zinc-800 px-4 sm:px-6 py-3 sm:py-4 text-white font-medium self-end"
-          : "w-full text-zinc-300",
+          ? "bg-zinc-900 border border-zinc-800 px-5 sm:px-8 py-4 sm:py-5 text-white font-medium self-end"
+          : "w-full text-zinc-200",
       )}
     >
       {msg.role === "assistant" && mainContent && (
@@ -562,40 +641,44 @@ const MessageBubble = ({
           onClick={() => onSpeak(mainContent, index)}
           className={cn(
             "absolute -right-12 top-2 p-2.5 rounded-xl transition-all border shrink-0",
-            isSpeaking 
-              ? "bg-white border-white text-black animate-pulse" 
-              : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-700 opacity-0 group-hover/msg:opacity-100"
+            isSpeaking
+              ? "bg-white border-white text-black animate-pulse"
+              : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-700 opacity-0 group-hover/msg:opacity-100",
           )}
           title={isSpeaking ? "Stop speaking" : "Read aloud"}
         >
           {isSpeaking ? <VolumeX size={16} /> : <Volume2 size={16} />}
         </button>
       )}
-      <div className="flex flex-col gap-4 w-full">
-        <div className="prose prose-invert max-w-none prose-premium prose-sm sm:prose-base">
+      <div className="flex flex-col gap-5 w-full">
+        <div className="prose prose-invert max-w-none prose-premium prose-base sm:prose-lg lg:prose-xl">
           {mainContent ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {mainContent}
             </ReactMarkdown>
           ) : (
-            <div className="flex items-center h-6 px-2 text-zinc-400 text-sm font-medium">
-              <div className="flex items-center space-x-1.5 mt-1">
-                <div
-                  className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                ></div>
-                <div
-                  className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "150ms" }}
-                ></div>
-                <div
-                  className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "300ms" }}
-                ></div>
+            <div className="flex flex-col gap-4 py-2">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center space-x-1.5">
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-bounce"></div>
+                </div>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={loadingIndex}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <ShimmeringText 
+                      text={LOADING_PHRASES[loadingIndex]} 
+                      className="text-sm sm:text-base"
+                    />
+                  </motion.div>
+                </AnimatePresence>
               </div>
-              <span className="ml-3 animate-pulse">
-                Retrieving intelligence...
-              </span>
             </div>
           )}
         </div>
@@ -642,7 +725,9 @@ const MessageBubble = ({
   );
 };
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4006").replace("localhost", "127.0.0.1");
+const API_URL = (
+  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4006"
+).replace("localhost", "127.0.0.1");
 
 function ChatContent() {
   const searchParams = useSearchParams();
@@ -667,22 +752,30 @@ function ChatContent() {
     return base;
   };
 
-  const [messages, setMessages] = useState<Message[]>(buildInitialMessages);
+  const {
+    messages,
+    setMessages,
+    chatMode,
+    setChatMode,
+    webPdfFilename,
+    setWebPdfFilename,
+    selectedLanguage,
+    setSelectedLanguage,
+    isInitialized,
+    setIsInitialized,
+  } = useChat();
+
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgressText, setUploadProgressText] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [chatMode, setChatMode] = useState<"pdf" | "web" | "compare">(
-    initialMode,
-  );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [webPdfFilename, setWebPdfFilename] = useState<string | null>(
-    initialFile,
-  );
   const [comp1, setComp1] = useState("");
   const [comp2, setComp2] = useState("");
-  const [currentlySpeaking, setCurrentlySpeaking] = useState<number | null>(null);
+  const [currentlySpeaking, setCurrentlySpeaking] = useState<number | null>(
+    null,
+  );
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const speakMessage = async (text: string, index: number) => {
@@ -732,14 +825,15 @@ function ChatContent() {
   const [otherCriteria, setOtherCriteria] = useState("");
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [isFocusMenuOpen, setIsFocusMenuOpen] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<LangCode>("auto");
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef("");
 
   const startVoiceRecording = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("Voice recognition is not supported in this browser.");
       return;
@@ -753,7 +847,7 @@ function ChatContent() {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = true; 
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
 
@@ -765,7 +859,7 @@ function ChatContent() {
     recognition.onresult = (event: any) => {
       const results = event.results;
       const transcriptSegments: string[] = [];
-      
+
       // Build an array of all current results
       for (let i = 0; i < results.length; i++) {
         transcriptSegments.push(results[i][0].transcript.trim());
@@ -800,8 +894,8 @@ function ChatContent() {
       if (shouldSubmitOnEndRef.current) {
         const textToSubmit = finalTranscriptRef.current;
         if (textToSubmit && textToSubmit.trim() !== "") {
-          handleSend(textToSubmit);
-          finalTranscriptRef.current = ""; 
+          handleSend(textToSubmit, undefined, true); // Pass isVoice=true
+          finalTranscriptRef.current = "";
         }
         shouldSubmitOnEndRef.current = false;
       }
@@ -816,7 +910,7 @@ function ChatContent() {
 
   // Keep a ref in sync so handleSend always reads the LATEST language
   // even if the user switches and sends before the re-render completes.
-  const selectedLanguageRef = useRef<LangCode>("auto");
+  const selectedLanguageRef = useRef<any>("auto");
   useEffect(() => {
     selectedLanguageRef.current = selectedLanguage;
   }, [selectedLanguage]);
@@ -826,14 +920,23 @@ function ChatContent() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (initialQuery && messages.length === buildInitialMessages().length) {
-      handleSend(initialQuery);
+    if (!isInitialized) {
+      setChatMode(initialMode);
+      if (initialFile) {
+        setMessages(buildInitialMessages());
+        setWebPdfFilename(initialFile);
+      }
+      if (initialQuery) {
+        handleSend(initialQuery);
+      }
+      setIsInitialized(true);
     }
-  }, [initialQuery]);
+  }, [initialQuery, isInitialized, initialMode, initialFile]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -852,7 +955,10 @@ function ChatContent() {
       const decoder = new TextDecoder();
       let uploadedUrl = "";
       while (true) {
-        const { done, value } = await (reader?.read() || { done: true, value: undefined });
+        const { done, value } = await (reader?.read() || {
+          done: true,
+          value: undefined,
+        });
         if (done) break;
         const chunk = decoder.decode(value);
         const lines = chunk.split("\n");
@@ -867,8 +973,11 @@ function ChatContent() {
                 setUploadProgressText(`Embedding (0/${parsed.total})...`);
                 setUploadProgress(10);
               } else if (parsed.status === "embedding") {
-                const pct = Math.floor((parsed.progress / parsed.total) * 90) + 10;
-                setUploadProgressText(`Embedding (${parsed.progress}/${parsed.total})...`);
+                const pct =
+                  Math.floor((parsed.progress / parsed.total) * 90) + 10;
+                setUploadProgressText(
+                  `Embedding (${parsed.progress}/${parsed.total})...`,
+                );
                 setUploadProgress(pct);
               } else if (parsed.status === "done") {
                 uploadedUrl = parsed.fileUrl ?? "";
@@ -878,7 +987,9 @@ function ChatContent() {
                 setUploadProgress(2);
               } else if (parsed.status === "ocr_processing") {
                 const pct = Math.floor((parsed.progress / parsed.total) * 50);
-                setUploadProgressText(`Reading page ${parsed.progress}/${parsed.total}...`);
+                setUploadProgressText(
+                  `Reading page ${parsed.progress}/${parsed.total}...`,
+                );
                 setUploadProgress(pct);
               } else if (parsed.page) {
                 setUploadProgressText(`Reading page ${parsed.page}...`);
@@ -906,7 +1017,11 @@ function ChatContent() {
     }
   };
 
-  const handleSend = async (text: string = input, hiddenPrefix?: string) => {
+  const handleSend = async (
+    text: string = input,
+    hiddenPrefix?: string,
+    isVoice: boolean = false,
+  ) => {
     if (!text.trim() || isLoading) return;
 
     let displayedText = text;
@@ -940,7 +1055,7 @@ function ChatContent() {
       content: finalHiddenPrefix ? `${finalHiddenPrefix}\n\n${text}` : text,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage, { role: "assistant", content: "" }]);
     setInput("");
     setIsLoading(true);
 
@@ -956,7 +1071,8 @@ function ChatContent() {
           messages: [...messages, apiMessage],
           mode: chatMode,
           ...(webPdfFilename ? { pdfFilename: webPdfFilename } : {}),
-          ...(selectedLanguageRef.current && selectedLanguageRef.current !== "auto"
+          ...(selectedLanguageRef.current &&
+          selectedLanguageRef.current !== "auto"
             ? { language: selectedLanguageRef.current }
             : {}),
         }),
@@ -966,7 +1082,6 @@ function ChatContent() {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let assistantText = "";
-      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
       while (true) {
         const { done, value } = await (reader?.read() || {
@@ -1029,12 +1144,12 @@ function ChatContent() {
           </filter>
         </defs>
       </svg>
-      <aside className="hidden md:flex w-20 border-r border-zinc-900 flex-col items-center py-8 gap-8 z-[100] bg-black">
+      <aside className="hidden md:flex w-16 border-r border-zinc-900 flex-col items-center py-6 gap-6 z-[100] bg-black">
         <Link
           href="/"
-          className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center hover:scale-110 transition-transform"
+          className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center hover:scale-110 transition-transform"
         >
-          <GraduationCap className="text-black w-6 h-6" />
+          <GraduationCap className="text-black w-5 h-5" />
         </Link>
         <div className="flex flex-col gap-4">
           {[
@@ -1046,13 +1161,13 @@ function ChatContent() {
               key={i}
               href={item.href}
               className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
+                "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
                 item.active
                   ? "bg-white text-black shadow-xl shadow-white/10"
                   : "text-zinc-600 hover:bg-blue-500/10 hover:text-blue-400",
               )}
             >
-              <item.icon size={20} />
+              <item.icon size={18} />
             </Link>
           ))}
         </div>
@@ -1098,7 +1213,7 @@ function ChatContent() {
           >
             {messages.length === 0 && !isLoading && (
               <div className="text-center space-y-6 pt-12 md:pt-0">
-                <h1 className="text-4xl sm:text-5xl md:text-7xl font-serif font-bold tracking-tight text-zinc-500 px-4">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold tracking-tight text-white px-4">
                   {chatMode === "compare"
                     ? "Compare your institutions"
                     : "What shall we analyze today?"}
@@ -1126,7 +1241,9 @@ function ChatContent() {
                         <div className="bg-zinc-900 border border-zinc-800 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl sm:rounded-3xl flex items-center gap-4 text-white max-w-[85%]">
                           <FileText className="w-8 h-8 text-zinc-400 shrink-0" />
                           <div className="flex flex-col min-w-0">
-                            <p className="text-sm font-bold truncate">{filename}</p>
+                            <p className="text-sm font-bold truncate">
+                              {filename}
+                            </p>
                             {url && (
                               <a
                                 href={fullUrl}
@@ -1152,8 +1269,8 @@ function ChatContent() {
                         msg.role === "user" ? "items-end" : "items-start",
                       )}
                     >
-                      <MessageBubble 
-                        msg={msg} 
+                      <MessageBubble
+                        msg={msg}
                         index={i}
                         onSpeak={speakMessage}
                         isSpeaking={currentlySpeaking === i}
@@ -1207,6 +1324,7 @@ function ChatContent() {
                   setIsLangMenuOpen={setIsLangMenuOpen}
                   isRecordingVoice={isRecordingVoice}
                   startVoiceRecording={startVoiceRecording}
+                  isSpeaking={currentlySpeaking !== null}
                 />
               </div>
             )}
@@ -1259,6 +1377,7 @@ function ChatContent() {
                 setIsLangMenuOpen={setIsLangMenuOpen}
                 isRecordingVoice={isRecordingVoice}
                 startVoiceRecording={startVoiceRecording}
+                isSpeaking={currentlySpeaking !== null}
               />
             </div>
           </div>
@@ -1270,8 +1389,6 @@ function ChatContent() {
           onChange={handleFileUpload}
           accept=".pdf"
         />
-
-
       </main>
 
       <style jsx global>{`

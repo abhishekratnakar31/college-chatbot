@@ -348,13 +348,6 @@ export default function CollegeDetailView({
     <PageShell>
       <div className="relative w-full pt-8 pb-16 sm:pt-12 sm:pb-20 overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <Image
-            src={assets.campus}
-            alt="Campus"
-            fill
-            className="object-cover opacity-60"
-            priority
-          />
           <div className={`absolute inset-0 bg-gradient-to-r ${gradColor} opacity-40 mix-blend-multiply`} />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-[#0a0a0a]" />
         </div>

@@ -91,8 +91,22 @@ export async function processRAGQuery(
 
   let finalQuery = rawOptimizedQuery === "OUT_OF_DOMAIN" ? currentInput : rawOptimizedQuery;
 
+  // 4. Extract active document contexts from history
+  const activeDocuments: string[] = [];
+  for (let i = history.length - 1; i >= 0; i--) {
+    const msg = history[i];
+    if (msg && msg.content.startsWith("ATTACHMENT|")) {
+      const parts = msg.content.split("|");
+      if (parts.length > 1 && parts[1]) {
+        if (!activeDocuments.includes(parts[1])) {
+          activeDocuments.push(parts[1]);
+        }
+      }
+    }
+  }
+
   // 5. Retrieval
-  const cacheKey = buildQueryCacheKey(mode, finalQuery, null); // Simplified cache key
+  const cacheKey = buildQueryCacheKey(mode, finalQuery, activeDocuments);
   let qdrantResults: any[] = [];
   let webResults: any[] = [];
 
@@ -102,7 +116,56 @@ export async function processRAGQuery(
     webResults = cached.webResults || [];
   } else {
     if (mode === "pdf") {
-      qdrantResults = await qdrant.search("college_docs", { limit: 10, vector: await getEmbedding(finalQuery) });
+      // ── Hybrid Search (Vector + Keyword) with RRF ─────────────────
+      const k = 60; // RRF constant
+      const scores: Record<string, { score: number; point: any }> = {};
+
+      // 1. Vector Search
+      const queryEmbedding = await getEmbedding(finalQuery);
+      const vectorRes = await qdrant.search("college_docs", {
+        vector: queryEmbedding,
+        limit: 25,
+        ...(activeDocuments.length > 0 ? { filter: { must: [{ key: "document", match: { any: activeDocuments } }] } } : {})
+      });
+
+      // 2. Keyword Search (Text Match)
+      const keywordRes = await qdrant.scroll("college_docs", {
+        limit: 20,
+        filter: {
+          must: [
+            ...(activeDocuments.length > 0 ? [{ key: "document", match: { any: activeDocuments } }] : []),
+            { key: "text", match: { text: finalQuery } }
+          ]
+        }
+      });
+
+      // Merge using RRF
+      vectorRes.forEach((r, rank) => {
+        const id = String(r.id);
+        if (!scores[id]) scores[id] = { score: 0, point: r };
+        scores[id].score += 1 / (k + rank + 1);
+      });
+
+      keywordRes.points.forEach((r, rank) => {
+        const id = String(r.id);
+        if (!scores[id]) scores[id] = { score: 0, point: r };
+        scores[id].score += 1 / (k + rank + 1);
+      });
+
+      const combined = Object.values(scores)
+        .sort((a, b) => b.score - a.score)
+        .map(s => s.point);
+
+      // 3. Cross-Encoder Re-ranking
+      const rankedResults = combined.length > 3
+        ? await reRankChunks(finalQuery, combined.slice(0, 20))
+        : combined;
+      
+      // Score Gating & Selection
+      qdrantResults = rankedResults.filter((r: any) => (r.rerank_score || 0) >= 4).slice(0, 8);
+      if (qdrantResults.length === 0 && rankedResults.length > 0) {
+        qdrantResults = rankedResults.slice(0, 4);
+      }
     } else {
       webResults = await searchWeb(finalQuery);
     }
@@ -118,11 +181,23 @@ export async function processRAGQuery(
 
   const systemMessage = {
     role: "system",
-    content: `You are a College Assistant in ${mode.toUpperCase()} mode. 
-    Using these facts: ${context}
+    content: `You are AcademiaAI, a premium Academic Intelligence Engine.
+    Mode: ${mode.toUpperCase()}
+    
+    CRITICAL FORMATTING RULES:
+    1. For lists of courses, fees, or comparative data, ALWAYS use clean Markdown Tables with clear headers.
+    2. Use **Bold Section Headings** to organize different parts of your answer.
+    3. Use structured bullet points for features, highlights, or placements.
+    4. Maintain a professional, high-fidelity tone.
+    5. Citation Requirement: ALWAYS cite the document name or source if available from the context.
+    
+    CONTEXT DATA:
+    ${context}
     ${rankingsContext}
+    
     ${respondInstruction}
-    Rules: Answer only academic questions. Be concise. Citing sources is required.`
+    
+    FINAL RULE: Answer ONLY academic or college-related questions. If the context is insufficient, state that clearly but provide what you can based on the available facts.`
   };
 
   const messages = [systemMessage, ...history.slice(-5)];

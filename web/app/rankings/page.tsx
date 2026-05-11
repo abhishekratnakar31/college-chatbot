@@ -6,7 +6,8 @@ import {
   MapPin, Check, Star, ExternalLink, Search, X, FlaskConical,
   Scale, Palette, Stethoscope, Building2, Leaf, Pill, Info
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
@@ -212,9 +213,32 @@ function CollegeRow({ college, index }: { college: College; index: number }) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function RankingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen bg-[#050505] text-white items-center justify-center font-serif text-2xl italic animate-pulse">
+        Initializing Intelligence...
+      </div>
+    }>
+      <RankingsContent />
+    </Suspense>
+  );
+}
+
+function RankingsContent() {
   const [colleges, setColleges] = useState<College[]>([]);
   const [filterOptions, setFilterOptions] = useState<{ states: any[] }>({ states: [] });
-  const [selectedStates, setSelectedStates] = useState<string[]>([]);
+  const searchParams = useSearchParams();
+  
+  // Initialize states directly from URL search params
+  const [selectedStates, setSelectedStates] = useState<string[]>(() => {
+    const s = searchParams.get("state");
+    return s ? [s] : [];
+  });
+  const [selectedCities, setSelectedCities] = useState<string[]>(() => {
+    const c = searchParams.get("city");
+    return c ? [c] : [];
+  });
+
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState("nirf_rank");
   const [loading, setLoading] = useState(true);
@@ -222,6 +246,16 @@ export default function RankingsPage() {
   const [search, setSearch] = useState("");
   const [isNewsOpen, setIsNewsOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+
+  useEffect(() => {
+    const s = searchParams.get("state");
+    const c = searchParams.get("city");
+    if (s) setSelectedStates([s]);
+    else setSelectedStates([]);
+    
+    if (c) setSelectedCities([c]);
+    else setSelectedCities([]);
+  }, [searchParams]);
 
   useEffect(() => {
     // Open hubs by default only on desktop
@@ -244,6 +278,7 @@ export default function RankingsPage() {
     try {
       const params = new URLSearchParams();
       selectedStates.forEach(s => params.append("state", s));
+      selectedCities.forEach(c => params.append("city", c));
       if (activeCategory !== "All") params.append("category", activeCategory);
       params.append("sort", sortBy);
       params.append("limit", "100");
@@ -251,7 +286,7 @@ export default function RankingsPage() {
       const data = await res.json();
       setColleges(data.colleges || []);
     } catch (err) { console.error(err); } finally { setLoading(false); }
-  }, [selectedStates, activeCategory, sortBy]);
+  }, [selectedStates, selectedCities, activeCategory, sortBy]);
 
   const fetchNews = useCallback(async () => {
     try {
@@ -274,9 +309,9 @@ export default function RankingsPage() {
   return (
     <div className="flex h-screen bg-[#050505] text-white font-sans overflow-hidden">
       {/* Sidebar Navigation */}
-      <aside className="hidden md:flex w-20 border-r border-white/5 flex-col items-center py-8 gap-8 z-[100] bg-[#0a0a0a]">
-        <Link href="/" className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center hover:scale-110 transition-transform shadow-xl shadow-white/5">
-          <GraduationCap className="text-black w-6 h-6" />
+      <aside className="hidden md:flex w-16 border-r border-white/5 flex-col items-center py-6 gap-6 z-[100] bg-[#0a0a0a]">
+        <Link href="/" className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center hover:scale-110 transition-transform shadow-xl shadow-white/5">
+          <GraduationCap className="text-black w-5 h-5" />
         </Link>
         <div className="flex flex-col gap-4">
           {[
@@ -285,10 +320,10 @@ export default function RankingsPage() {
             { icon: Trophy, href: "/rankings", label: "Rankings", active: true },
           ].map((item) => (
             <Link key={item.label} href={item.href} className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
+              "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
               item.active ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.15)]" : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10"
             )}>
-              <item.icon size={20} />
+              <item.icon size={18} />
             </Link>
           ))}
         </div>
@@ -457,8 +492,8 @@ export default function RankingsPage() {
                   {activeCategory !== "All" && ` in ${activeCategory}`}
                   {search && ` matching "${search}"`}
                 </span>
-                {selectedStates.length > 0 && (
-                  <button onClick={() => setSelectedStates([])} className="text-[10px] text-white/40 hover:text-blue-400 flex items-center gap-1">
+                {(selectedStates.length > 0 || selectedCities.length > 0) && (
+                  <button onClick={() => { setSelectedStates([]); setSelectedCities([]); }} className="text-[10px] text-white/40 hover:text-blue-400 flex items-center gap-1">
                     <X size={11} /> Clear location
                   </button>
                 )}
@@ -477,7 +512,7 @@ export default function RankingsPage() {
                     <Search size={24} className="text-white/20" />
                   </div>
                   <p className="text-white/30 text-sm">No colleges found</p>
-                  <button onClick={() => { setSearch(""); setActiveCategory("All"); setSelectedStates([]); }}
+                  <button onClick={() => { setSearch(""); setActiveCategory("All"); setSelectedStates([]); setSelectedCities([]); }}
                     className="text-xs text-white/40 hover:text-blue-400 underline">Clear all filters</button>
                 </div>
               ) : (

@@ -99,7 +99,7 @@ function HeroBackground() {
       <motion.div
         style={{ y }}
         initial={{ scale: 1.1, opacity: 0 }}
-        animate={{ scale: 1, opacity: 0.40 }}
+        animate={{ scale: 1, opacity: 0.4 }}
         transition={{ duration: 2, ease: "easeOut" }}
         className="absolute inset-0"
       >
@@ -245,7 +245,7 @@ function TopStudyPlaces() {
         {TOP_CITIES.map((city, i) => (
           <Reveal key={city.name} delay={i * 0.05}>
             <Link
-              href={`/rankings?state=${encodeURIComponent(city.state)}`}
+              href={`/rankings?city=${encodeURIComponent(city.query)}&state=${encodeURIComponent(city.state)}`}
               className="flex-shrink-0 w-48 aspect-[4/5] snap-start p-8 rounded-[2rem] bg-zinc-900/30 border border-zinc-800 hover:border-blue-500 hover:bg-blue-500/10 transition-all group flex flex-col items-center justify-center text-center gap-6"
             >
               <div className="group-hover:scale-110 group-hover:text-blue-400 transition-all duration-500">
@@ -1035,6 +1035,46 @@ export default function HeroPage() {
       </section>
 
       <TopStudyPlaces />
+      
+      {/* Feature Explanations Section */}
+      <section className="w-full max-w-4xl mx-auto py-24 md:py-32 px-6 space-y-24 md:space-y-32">
+        <Reveal>
+          <div className="text-left">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 mb-6">Interactive Chat</h3>
+            <p className="text-2xl md:text-4xl font-serif font-medium text-white leading-snug md:leading-tight">
+              Engage in intelligent conversations with our AI-driven academic advisor. From understanding cut-off trends to exploring placement statistics, get instant, data-backed answers to all your college-related queries in real-time.
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.1}>
+          <div className="text-right">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6">Voice Intelligence</h3>
+            <p className="text-2xl md:text-4xl font-serif font-medium text-zinc-400 leading-snug md:leading-tight">
+              Speak your mind. Our voice-enabled interface allows you to interact naturally with the platform. Ask questions about your future campus while on the go, and receive spoken insights that make academic research feel effortless.
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.2}>
+          <div className="text-left">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 mb-6">PDF Synthesis</h3>
+            <p className="text-2xl md:text-4xl font-serif font-medium text-white leading-snug md:leading-tight">
+              Unlock the knowledge trapped in documents. Upload prospectuses, brochures, or research papers, and let AcademiaAI synthesize the most relevant information for you, turning complex PDFs into clear, actionable summaries.
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.3}>
+          <div className="text-right">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6">Institution Comparison</h3>
+            <p className="text-2xl md:text-4xl font-serif font-medium text-zinc-400 leading-snug md:leading-tight">
+              Make informed decisions with side-by-side comparisons. Evaluate multiple institutions across various parameters like innovation scores, campus life, and industry readiness to find the college that perfectly aligns with your aspirations.
+            </p>
+          </div>
+        </Reveal>
+      </section>
+
       <QuickActions news={news} rankings={rankings} />
 
       <div className="w-full py-64 px-6 bg-[#0a0a0a] relative overflow-hidden">
@@ -1073,7 +1113,8 @@ export default function HeroPage() {
               <div className="flex flex-wrap justify-center gap-12 pt-16 border-t border-zinc-900/50 w-full max-w-2xl mx-auto">
                 <div className="w-px h-12 bg-zinc-900" />
                 <div className="text-center">
-                  <p className="text-white text-4xl font-serif font-bold tracking-tighter">
+                  <p className="text-black text-4xl font-serif font-bold tracking-tighter">
+                    {" "}
                     100+
                   </p>
                   <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mt-2">
@@ -1082,7 +1123,7 @@ export default function HeroPage() {
                 </div>
                 <div className="w-px h-12 bg-zinc-900" />
                 <div className="text-center">
-                  <p className="text-white text-4xl font-serif font-bold tracking-tighter">
+                  <p className="text-black text-4xl font-serif font-bold tracking-tighter">
                     24/7
                   </p>
                   <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mt-2">

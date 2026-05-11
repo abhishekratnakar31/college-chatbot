@@ -8,17 +8,17 @@ export async function ttsRoute(app: FastifyInstance, options: FastifyPluginOptio
     };
 
     if (!text) {
-      reply.status(400).send({ error: "Text is required" });
-      return;
+      return reply.status(400).send({ error: "Text is required" });
     }
 
     const apiKey = process.env.ELEVEN_LABS_API_KEY;
     if (!apiKey) {
-      reply.status(500).send({ error: "ELEVEN_LABS_API_KEY is not configured on the server." });
-      return;
+      console.error("TTS: ELEVEN_LABS_API_KEY missing");
+      return reply.status(500).send({ error: "ELEVEN_LABS_API_KEY is not configured on the server." });
     }
 
     try {
+      console.log(`TTS: Requesting synthesis for ${text.length} chars...`);
       const response = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`,
         {
@@ -30,7 +30,7 @@ export async function ttsRoute(app: FastifyInstance, options: FastifyPluginOptio
           },
           body: JSON.stringify({
             text,
-            model_id: "eleven_monolingual_v1",
+            model_id: "eleven_multilingual_v2",
             voice_settings: {
               stability: 0.5,
               similarity_boost: 0.5,
@@ -40,18 +40,27 @@ export async function ttsRoute(app: FastifyInstance, options: FastifyPluginOptio
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail?.message || "ElevenLabs API error");
+        let errorMsg = "ElevenLabs API error";
+        try {
+          const error = await response.json();
+          errorMsg = error.detail?.message || JSON.stringify(error) || errorMsg;
+        } catch (e) {
+          errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        console.error(`TTS ElevenLabs Error: ${errorMsg}`);
+        return reply.status(response.status).send({ error: errorMsg });
       }
 
       const audioBuffer = await response.arrayBuffer();
-      reply
+      console.log(`TTS: Success, sending ${audioBuffer.byteLength} bytes`);
+      
+      return reply
         .header("Content-Type", "audio/mpeg")
         .send(Buffer.from(audioBuffer));
 
     } catch (err: any) {
-      console.error("TTS Error:", err);
-      reply.status(500).send({ error: err.message || "Failed to generate speech" });
+      console.error("TTS Server Error:", err);
+      return reply.status(500).send({ error: err.message || "Failed to generate speech" });
     }
   });
 }

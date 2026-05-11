@@ -101,9 +101,13 @@ export async function rankingsRoute(app: FastifyInstance) {
 
     if (q.minPackage) conditions.push(sql`avg_package >= ${parseFloat(q.minPackage)}`);
 
-    const whereClause = conditions.length > 0 
-      ? sql`WHERE ${conditions.reduce((acc, curr) => sql`${acc} AND ${curr}`)}` 
-      : sql``;
+    // Build the final query fragments
+    let whereClause = sql``;
+    if (conditions.length > 0) {
+      whereClause = sql`WHERE ${conditions.reduce((acc, cond, idx) => 
+        idx === 0 ? cond : sql`${acc} AND ${cond}`
+      )}`;
+    }
 
     const rows = await sql<CollegeRow[]>`
       SELECT * FROM college_achievements

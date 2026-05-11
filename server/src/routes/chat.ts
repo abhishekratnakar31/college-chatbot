@@ -217,21 +217,22 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
         }
       }
 
-      // 2. Extract active document context from history
-      let activeDocument: string | null = null;
+      // 2. Extract active document contexts from history
+      let activeDocuments: string[] = [];
       for (let i = history.length - 1; i >= 0; i--) {
         const msg = history[i];
         if (msg && msg.content.startsWith("ATTACHMENT|")) {
           const parts = msg.content.split("|");
-          if (parts.length > 1) {
-            activeDocument = parts[1] || null;
-            break;
+          if (parts.length > 1 && parts[1]) {
+            if (!activeDocuments.includes(parts[1])) {
+              activeDocuments.push(parts[1]);
+            }
           }
         }
       }
 
       // 3. ── Retrieval with Cache ──────────────────────────────────────────────
-      const cacheKey = buildQueryCacheKey(mode, queryVariants.join("|"), activeDocument);
+      const cacheKey = buildQueryCacheKey(mode, queryVariants.join("|"), activeDocuments);
       const TTL_PDF = 5 * 60 * 1000;
       const TTL_WEB = 3 * 60 * 1000;
 
@@ -256,16 +257,16 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
             // 1. Vector Search
             const vectorRes = await qdrant.search("college_docs", {
               vector: queryEmbedding,
-              limit: 20,
-              ...(activeDocument ? { filter: { must: [{ key: "document", match: { value: activeDocument } }] } } : {})
+              limit: 25,
+              ...(activeDocuments.length > 0 ? { filter: { must: [{ key: "document", match: { any: activeDocuments } }] } } : {})
             });
 
             // 2. Keyword Search
             const keywordRes = await qdrant.scroll("college_docs", {
-              limit: 15,
+              limit: 20,
               filter: {
                 must: [
-                  ...(activeDocument ? [{ key: "document", match: { value: activeDocument } }] : []),
+                  ...(activeDocuments.length > 0 ? [{ key: "document", match: { any: activeDocuments } }] : []),
                   { key: "text", match: { text: q } }
                 ]
               }

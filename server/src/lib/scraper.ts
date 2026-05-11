@@ -84,14 +84,27 @@ function stripHtml(html: string): string {
 
 /**
  * Extracts an image URL from an RSS feed item (best-effort).
- * Only used as a quick pass — most Google News items won't have these.
+ * Ignores generic Google News logos and icons.
  */
 function extractRssImage(item: any): string {
-  if (item.mediaThumbnail?.$.url) return item.mediaThumbnail.$.url;
-  if (item.mediaContent?.$.url) return item.mediaContent.$.url;
-  if (item.enclosure?.url && item.enclosure.type?.startsWith("image/")) {
-    return item.enclosure.url;
+  const candidates = [
+    item.mediaThumbnail?.$.url,
+    item.mediaContent?.$.url,
+    item.enclosure?.url,
+  ].filter(Boolean);
+
+  for (const url of candidates) {
+    if (typeof url !== "string") continue;
+    // Ignore generic Google News icons/logos (usually on lh3.googleusercontent.com)
+    // Real thumbnails are also on this domain but usually have different path patterns.
+    // However, if the URL is very short or contains 'logo'/'icon', skip it.
+    const lower = url.toLowerCase();
+    if (lower.includes("favicon") || lower.includes("logo") || lower.includes("icon")) continue;
+    if (lower.includes("googleusercontent.com") && url.length < 100) continue; 
+    
+    return url;
   }
+
   const imgMatch = (item["content:encoded"] || item.content || "").match(
     /<img[^>]+src=["']([^"']+)["']/i
   );
@@ -105,22 +118,43 @@ function extractRssImage(item: any): string {
  */
 async function fetchOgImage(url: string): Promise<string> {
   try {
-    const { data, status } = await httpClient.get<string>(url);
+    const { data, status, headers } = await httpClient.get<string>(url);
     if (status < 200 || status >= 400 || typeof data !== "string") return "";
+
+    // If we were redirected back to Google News (e.g. login wall), ignore
+    if (headers["content-location"]?.includes("google.com/news")) return "";
 
     const $ = cheerio.load(data);
 
+    // Prioritize high-quality social images
     const img =
+      $('meta[property="og:image:secure_url"]').attr("content") ||
       $('meta[property="og:image"]').attr("content") ||
       $('meta[name="og:image"]').attr("content") ||
+      $('meta[name="twitter:image:src"]').attr("content") ||
       $('meta[name="twitter:image"]').attr("content") ||
       $('meta[property="twitter:image"]').attr("content") ||
       $('meta[itemprop="image"]').attr("content") ||
+      $('link[rel="image_src"]').attr("href") ||
       "";
 
-    // Validate: must look like an HTTP image URL
-    if (img && img.startsWith("http")) return img;
-    return "";
+    if (!img || !img.startsWith("http")) return "";
+
+    // Filter out common trackers/transparent pixels/generic icons
+    const lower = img.toLowerCase();
+    if (
+      lower.includes("pixel") ||
+      lower.includes("tracking") ||
+      lower.includes("spacer") ||
+      lower.includes("favicon") ||
+      lower.includes("logo") ||
+      lower.includes("ad.doubleclick") ||
+      lower.includes("sprite")
+    ) {
+      return "";
+    }
+
+    return img;
   } catch {
     return "";
   }

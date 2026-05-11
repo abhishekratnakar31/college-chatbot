@@ -82,7 +82,19 @@ function WeatherWidget() {
   );
 }
 
+const getFallbackImage = (category?: string) => {
+  const cat = (category || "General").toLowerCase();
+  if (cat.includes("admission")) return "https://images.unsplash.com/photo-1523050853063-8951ac51b4c3?w=800&q=80";
+  if (cat.includes("placement")) return "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&q=80";
+  if (cat.includes("tech")) return "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80";
+  if (cat.includes("medical")) return "https://images.unsplash.com/photo-1505751172107-5732488c371c?w=800&q=80";
+  if (cat.includes("business")) return "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80";
+  return "https://images.unsplash.com/photo-1541339907198-e08759dfc3ef?w=800&q=80";
+};
+
 function ArticleCardLarge({ article }: { article: Article }) {
+  const [imgSrc, setImgSrc] = useState(article.image || getFallbackImage(article.category));
+
   return (
     <motion.a
       href={article.url}
@@ -90,9 +102,10 @@ function ArticleCardLarge({ article }: { article: Article }) {
       rel="noopener noreferrer"
       className="group block space-y-4"
     >
-      <div className="relative aspect-[16/9] overflow-hidden rounded-2xl border border-white/5">
+      <div className="relative aspect-[16/9] overflow-hidden rounded-2xl border border-white/5 bg-zinc-900">
         <img 
-          src={article.image || `https://images.unsplash.com/photo-1523050853063-8951ac51b4c3?w=800&auto=format&fit=crop&q=60`} 
+          src={imgSrc} 
+          onError={() => setImgSrc(getFallbackImage(article.category))}
           alt={article.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
         />
@@ -128,6 +141,8 @@ function ArticleCardLarge({ article }: { article: Article }) {
 }
 
 function ArticleListItem({ article }: { article: Article }) {
+  const [imgSrc, setImgSrc] = useState(article.image || getFallbackImage(article.category));
+
   return (
     <motion.a
       href={article.url}
@@ -159,7 +174,8 @@ function ArticleListItem({ article }: { article: Article }) {
       </div>
       <div className="w-20 h-20 shrink-0 rounded-xl overflow-hidden border border-white/5 bg-zinc-900">
         <img 
-          src={article.image || `https://images.unsplash.com/photo-1541339907198-e08759dfc3ef?w=400&auto=format&fit=crop&q=60`} 
+          src={imgSrc} 
+          onError={() => setImgSrc(getFallbackImage(article.category))}
           alt={article.title}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />
@@ -225,9 +241,9 @@ export default function NewsPage() {
   return (
     <div className="flex h-screen bg-[#121212] text-white font-sans overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-20 border-r border-white/5 flex-col items-center py-8 gap-8 z-[100] bg-[#0a0a0a] shrink-0">
-        <Link href="/" className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center hover:scale-110 transition-transform shadow-xl shadow-white/5">
-          <GraduationCap className="text-black w-6 h-6" />
+      <aside className="hidden md:flex w-16 border-r border-white/5 flex-col items-center py-6 gap-6 z-[100] bg-[#0a0a0a] shrink-0">
+        <Link href="/" className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center hover:scale-110 transition-transform shadow-xl shadow-white/5">
+          <GraduationCap className="text-black w-5 h-5" />
         </Link>
         <div className="flex flex-col gap-4">
           {[
@@ -239,13 +255,13 @@ export default function NewsPage() {
               key={item.label} 
               href={item.href} 
               className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all", 
+                "w-10 h-10 rounded-2xl flex items-center justify-center transition-all", 
                 item.active 
                   ? "bg-white text-black shadow-xl shadow-white/10" 
                   : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10"
               )}
             >
-              <item.icon size={20} />
+              <item.icon size={18} />
             </Link>
           ))}
         </div>

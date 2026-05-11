@@ -92,10 +92,10 @@ export function clearCache(keyPrefix?: string): void {
 export function buildQueryCacheKey(
   mode: string,
   optimizedQuery: string,
-  activeDocument: string | null
+  activeDocuments: string[]
 ): string {
-  const doc = activeDocument ?? "none";
-  return `${mode}:${doc}:${optimizedQuery.toLowerCase().trim()}`;
+  const docs = activeDocuments.length > 0 ? activeDocuments.sort().join("|") : "none";
+  return `${mode}:${docs}:${optimizedQuery.toLowerCase().trim()}`;
 }
 
 /** Returns current cache size (for diagnostics). */
