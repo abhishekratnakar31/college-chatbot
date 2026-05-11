@@ -513,7 +513,7 @@ export default function RankingsPage() {
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Platform Scope</p>
                     </div>
                     <p className="text-sm text-white/40 leading-relaxed font-medium">
-                      We currently track <span className="text-white/70">500+ top-tier institutions</span> across India, offering insights into over <span className="text-white/70">12,000 courses</span> and <span className="text-white/70">850+ scholarship programs</span>. This dashboard acts as a living map of the Indian academic landscape, updated in real-time.
+                      We currently track <span className="text-white/70">100+ premier institutions</span> across India, providing <span className="text-white/70">real-time AI insights</span> into courses, placements, and scholarship opportunities. This dashboard serves as a dynamic intelligence map of the Indian academic landscape.
                     </p>
                   </div>
                 </div>
