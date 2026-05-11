@@ -69,9 +69,9 @@ await app.register(multipart, {
 
 await app.register(chatRoute);
 await app.register(newsRoute);
-await rankingsRoute(app);
-await ttsRoute(app);
-await contactRoute(app);
+await app.register(rankingsRoute);
+await app.register(ttsRoute);
+await app.register(contactRoute);
 await app.register(uploadRoute);
 
 async function initVectorDB() {

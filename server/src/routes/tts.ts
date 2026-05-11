@@ -1,6 +1,6 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 
-export async function ttsRoute(app: FastifyInstance) {
+export async function ttsRoute(app: FastifyInstance, options: FastifyPluginOptions) {
   app.post("/tts", async (request, reply) => {
     const { text, voiceId = "21m00Tcm4TlvDq8ikWAM" } = request.body as { 
       text: string; 
