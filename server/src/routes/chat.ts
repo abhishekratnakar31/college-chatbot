@@ -10,6 +10,8 @@ import { generatePdfAwareSearchQuery } from "../llm/queryEnricher.js";
 import { reRankChunks } from "../llm/reranker.js";
 import { detectColleges, computeInnovationScore } from "./rankings.js";
 import { sql } from "../lib/db.js";
+import { getCache, setCache, buildQueryCacheKey } from "../lib/cache.js";
+import { detectLanguage, getRespondInInstruction, isValidLangCode, SUPPORTED_LANGUAGES } from "../lib/languageDetector.js";
 
 export async function chatRoute(app: FastifyInstance) {
   app.post("/chat", async (request, reply) => {
@@ -20,6 +22,7 @@ export async function chatRoute(app: FastifyInstance) {
         pdfContext?: string;    // Extracted PDF text (may be empty for scanned PDFs)
         pdfFilename?: string;   // PDF filename — used as fallback when text is empty
         filters?: Record<string, any>; // Optional metadata filters (e.g. { page_number: 5 })
+        language?: string;      // Optional explicit language code override (e.g. "hi", "ta")
       };
       const mode = body.mode || "pdf";
 
@@ -60,7 +63,24 @@ export async function chatRoute(app: FastifyInstance) {
       if (inputCheck.piiDetected) {
         console.info(`[GUARDRAIL][PII] Personal information was redacted from the input.`);
       }
-      // ── END INPUT GUARDRAILS ────────────────────────────────────────
+      // ── END INPUT GUARDRAILS ──────────────────────────────────────────────
+
+      // ── LANGUAGE DETECTION ──────────────────────────────────────────────
+      // 1. Accept an explicit override from the frontend (user chose from selector).
+      // 2. Otherwise, auto-detect from the (PII-scrubbed) input text.
+      // All detection is synchronous, ~0ms, no API cost.
+      const langCode = (body.language && isValidLangCode(body.language))
+        ? body.language
+        : detectLanguage(currentInput);
+
+      const langMeta = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
+      const detectedLangName = langMeta?.name ?? "English";
+      const respondInstruction = getRespondInInstruction(langCode);
+
+      if (langCode !== "en") {
+        console.log(`[Language] Detected: ${detectedLangName} (${langCode}) — ${body.language ? "user-selected" : "auto-detected"}`);
+      }
+      // ── END LANGUAGE DETECTION ───────────────────────────────────────────
 
       console.log(`\n[RAG Search] ------------------------------------------------`);
       console.log(`[RAG Search] User question received: "${currentInput}"`);
@@ -139,8 +159,8 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
         return context;
       })();
 
-      // 1. Optimize Search Query for Retrieval
-      // In web mode with PDF context (or filename as fallback), use the enriched query generator
+      // 1. ── Optimize Query + Evaluate Intent (PARALLEL) ────────────────────
+      // In web mode with PDF context (or filename as fallback), use enriched query generator
       const hasPdfText = mode === "web" && !!body.pdfContext?.trim();
       const hasPdfFilename = mode === "web" && !!body.pdfFilename?.trim();
       const hasPdfContext = hasPdfText || hasPdfFilename;
@@ -151,16 +171,16 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
           ? `Document: ${body.pdfFilename} (text could not be extracted — use the filename as a college/document name hint)`
           : "";
 
-      let optimizedQuery: string;
+      // Both calls are independent — run them at the same time to save
+      // ~400-800ms per request compared to sequential execution.
+      const [rawOptimizedQuery, intentResult] = await Promise.all([
+        hasPdfContext
+          ? generatePdfAwareSearchQuery(currentInput, pdfContextForQuery)
+          : generateSearchQuery(history, detectedLangName),
+        evaluateIntent(history),
+      ]);
 
-      if (hasPdfContext) {
-        optimizedQuery = await generatePdfAwareSearchQuery(currentInput, pdfContextForQuery);
-      } else {
-        optimizedQuery = await generateSearchQuery(history);
-      }
-
-      // 1. Evaluate Intent (Domain Enforcement)
-      const intentResult = await evaluateIntent(history);
+      // 1a. Intent check — early exit before any retrieval cost
       if (intentResult === "OUT_OF_DOMAIN") {
         reply.raw.writeHead(200, {
           "Content-Type": "text/event-stream",
@@ -175,15 +195,16 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
         return;
       }
 
-      if (optimizedQuery === "OUT_OF_DOMAIN") {
+      // 1b. Sanitize out-of-domain query string (safety net — normally caught above)
+      let finalQuery = rawOptimizedQuery;
+      if (finalQuery === "OUT_OF_DOMAIN") {
         if (mode === "web" && hasPdfContext) {
           const nameHint = body.pdfFilename
             ? body.pdfFilename.replace(/\.pdf$/i, "").replace(/[-_]/g, " ")
             : "college information";
-          optimizedQuery = `${nameHint} admissions courses programs`;
+          finalQuery = `${nameHint} admissions courses programs`;
         } else {
-          // This should be caught by evaluateIntent above, but kept as a safety net
-          optimizedQuery = currentInput;
+          finalQuery = currentInput;
         }
       }
 
@@ -205,65 +226,81 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
         match: { value }
       })) : [];
 
-      // 3. & 4. Retrieve relevant chunks from Qdrant (Local PDFs) or Web
+      // 3. ── Retrieval with Cache ──────────────────────────────────────────────
+      // Identical queries (same mode + document + query text) skip embedding,
+      // Qdrant search, and reranking entirely for 5 min (PDF) / 3 min (web).
+      const TTL_PDF = 5 * 60 * 1000;
+      const TTL_WEB = 3 * 60 * 1000;
+      const cacheKey = buildQueryCacheKey(mode, finalQuery, activeDocument);
+
+      interface CachedRetrieval { qdrantResults: any[]; webResults: any[]; }
+
       let qdrantResults: any[] = [];
       let webResults: any[] = [];
 
-      if (mode === "pdf") {
-        const vectorSearchOptions: any = {
-          limit: 25,
-        };
-        const keywordSearchOptions: any = {
-          limit: 15,
-          filter: {
-            must: [
-              ...(activeDocument ? [{ key: "document", match: { value: activeDocument } }] : []),
-              ...customFilters,
-              {
-                key: "text",
-                match: {
-                  text: optimizedQuery,
-                },
-              },
-            ],
-          },
-        };
-
-        if (activeDocument || customFilters.length > 0) {
-          vectorSearchOptions.filter = {
-            must: [
-              ...(activeDocument ? [{ key: "document", match: { value: activeDocument } }] : []),
-              ...customFilters
-            ],
+      const cached = getCache<CachedRetrieval>(cacheKey);
+      if (cached) {
+        console.log(`[Cache] ✅ HIT — skipping retrieval for: "${finalQuery.slice(0, 60)}" (mode: ${mode})`);
+        qdrantResults = cached.qdrantResults;
+        webResults = cached.webResults;
+      } else {
+        // Cache miss — run the full retrieval pipeline
+        if (mode === "pdf") {
+          const vectorSearchOptions: any = { limit: 25 };
+          const keywordSearchOptions: any = {
+            limit: 15,
+            filter: {
+              must: [
+                ...(activeDocument ? [{ key: "document", match: { value: activeDocument } }] : []),
+                ...customFilters,
+                { key: "text", match: { text: finalQuery } },
+              ],
+            },
           };
-        }
 
-        const keywordSearchPromise = qdrant.scroll("college_docs", keywordSearchOptions).then(res => res || { points: [] });
-        const vectorSearchPromise = getEmbedding(optimizedQuery).then(queryEmbedding => {
-          vectorSearchOptions.vector = queryEmbedding;
-          return qdrant.search("college_docs", vectorSearchOptions).then(res => res || []);
-        });
-
-        const [keywordResults, vectorResults] = await Promise.all([keywordSearchPromise, vectorSearchPromise]);
-
-        const seenIds = new Set(vectorResults.map((r: any) => r.id));
-        const combinedCandidates = [...vectorResults];
-        
-        for (const point of keywordResults.points) {
-          if (!seenIds.has(point.id)) {
-            combinedCandidates.push(point as any);
-            seenIds.add(point.id);
+          if (activeDocument || customFilters.length > 0) {
+            vectorSearchOptions.filter = {
+              must: [
+                ...(activeDocument ? [{ key: "document", match: { value: activeDocument } }] : []),
+                ...customFilters,
+              ],
+            };
           }
+
+          const keywordSearchPromise = qdrant.scroll("college_docs", keywordSearchOptions).then(res => res || { points: [] });
+          const vectorSearchPromise = getEmbedding(finalQuery).then(queryEmbedding => {
+            vectorSearchOptions.vector = queryEmbedding;
+            return qdrant.search("college_docs", vectorSearchOptions).then(res => res || []);
+          });
+
+          const [keywordResults, vectorResults] = await Promise.all([keywordSearchPromise, vectorSearchPromise]);
+
+          const seenIds = new Set(vectorResults.map((r: any) => r.id));
+          const combinedCandidates = [...vectorResults];
+          for (const point of keywordResults.points) {
+            if (!seenIds.has(point.id)) {
+              combinedCandidates.push(point as any);
+              seenIds.add(point.id);
+            }
+          }
+
+          // Skip the LLM reranker for tiny result sets — the overhead
+          // (1 extra GPT-4o-mini call) is not worth it for ≤3 candidates.
+          const rankedResults = combinedCandidates.length > 3
+            ? await reRankChunks(finalQuery, combinedCandidates)
+            : combinedCandidates;
+          qdrantResults = rankedResults.slice(0, 8);
+
+        } else if (mode === "web" || mode === "compare") {
+          webResults = (await searchWeb(finalQuery)) || [];
         }
 
-        const rankedResults = await reRankChunks(optimizedQuery, combinedCandidates);
-        qdrantResults = rankedResults.slice(0, 8);
-      } else if (mode === "web" || mode === "compare") {
-        webResults = (await searchWeb(optimizedQuery)) || [];
+        // Store results for subsequent identical queries
+        setCache<CachedRetrieval>(cacheKey, { qdrantResults, webResults }, mode === "pdf" ? TTL_PDF : TTL_WEB);
+        console.log(`[Cache] STORED — key: "${finalQuery.slice(0, 60)}" (mode: ${mode}, ttl: ${mode === "pdf" ? "5m" : "3m"})`);
       }
 
       const rankingsContext = await rankingsPromise;
-
 
       // 4. Build Context & Sources
       let sourceCounter = 1;
@@ -344,6 +381,8 @@ ${rankingsContext ? `
 COLLEGE RANKINGS & ACHIEVEMENTS (VERIFIED — NIRF 2024 Official Data):
 ${rankingsContext}
 When answering ranking or achievement questions, always use this verified data and label it as [Verified Data].` : ""}
+${respondInstruction ? `
+${respondInstruction}` : ""}
 Context:
 ${context}
 `,

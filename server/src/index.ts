@@ -1,3 +1,6 @@
+import { initHttpAgent } from "./lib/httpAgent.js";
+initHttpAgent(); // Establish global HTTP keep-alive pool before anything else
+
 import { validateEnv, env } from "./utils/env.js";
 validateEnv();
 
@@ -111,12 +114,40 @@ async function initVectorDB() {
   }
 }
 
+// ── Readiness tracking ──────────────────────────────────────────────
+let isReady = false;
+
 // Initialization tasks (Critical ones first)
 await initDB();
+
+// ── Pre-warm database connections ───────────────────────────────────
+// Fires a trivial query on each connection so the pool is hot before
+// the first real user request arrives. Done after initDB() to reuse
+// the already-established pool.
+try {
+  const { sql } = await import("./lib/db.js");
+  const { qdrant } = await import("./lib/qdrant.js");
+  await Promise.all([
+    sql`SELECT 1`,          // warm PostgreSQL connection pool
+    qdrant.getCollections(), // warm Qdrant HTTP client
+  ]);
+  console.log("[Warm-up] PostgreSQL and Qdrant connections pre-warmed ✅");
+} catch (e) {
+  console.warn("[Warm-up] Pre-warm failed (non-fatal):", e);
+}
+// ──────────────────────────────────────────────────────────────────
 
 // ── Health Check ────────────────────────────────────────────────────
 app.get("/health", async () => {
   return { status: "ok", timestamp: new Date().toISOString() };
+});
+
+// ── Readiness Check ─────────────────────────────────────────────────
+// Returns 200 { ready: true } only after background init (VectorDB,
+// seeding, cron) has completed. The frontend can poll this once on
+// mount to decide whether to show a "warming up" banner.
+app.get("/ready", async (_req, reply) => {
+  return reply.status(isReady ? 200 : 503).send({ ready: isReady });
 });
 
 // ── Global Error Handler ────────────────────────────────────────────
@@ -159,9 +190,11 @@ try {
       await initVectorDB();
       await seedCollegeAchievements();
       startNewsCron();
-      app.log.info("✅ All background services (VectorDB, Seeding, Cron) initialized.");
+      isReady = true; // Signal readiness — all services are warm
+      app.log.info("✅ All background services (VectorDB, Seeding, Cron) initialized. Server is READY.");
     } catch (err) {
       app.log.error(err, "Background initialization failed");
+      isReady = true; // Still mark ready even if optional services fail
     }
   })();
   // ──────────────────────────────────────────────────────────────────

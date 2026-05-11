@@ -48,6 +48,35 @@ const COMPARISON_CRITERIA = [
   "Alumni",
 ];
 
+// ── Language Registry (mirrors server/src/lib/languageDetector.ts) ────────
+const LANGUAGES = [
+  { code: "auto",  name: "Auto-detect",  native: "Auto",       region: "meta"   },
+  // –– Indian ––
+  { code: "hi",    name: "Hindi",        native: "हिंदी",        region: "indian" },
+  { code: "mr",    name: "Marathi",      native: "मराठी",        region: "indian" },
+  { code: "ta",    name: "Tamil",        native: "தமிழ்",        region: "indian" },
+  { code: "te",    name: "Telugu",       native: "తెలుగు",       region: "indian" },
+  { code: "kn",    name: "Kannada",      native: "ಕನ್ನಡ",        region: "indian" },
+  { code: "ml",    name: "Malayalam",   native: "മലയാളം",      region: "indian" },
+  { code: "bn",    name: "Bengali",      native: "বাংলা",        region: "indian" },
+  { code: "gu",    name: "Gujarati",     native: "ગુજરાતી",      region: "indian" },
+  { code: "pa",    name: "Punjabi",      native: "ਪੰਜਾਬੀ",       region: "indian" },
+  { code: "ur",    name: "Urdu",         native: "اردو",         region: "indian" },
+  // –– Global ––
+  { code: "ar",    name: "Arabic",       native: "العربية",      region: "global" },
+  { code: "fr",    name: "French",       native: "Français",     region: "global" },
+  { code: "es",    name: "Spanish",      native: "Español",      region: "global" },
+  { code: "pt",    name: "Portuguese",   native: "Português",    region: "global" },
+  { code: "de",    name: "German",       native: "Deutsch",      region: "global" },
+  { code: "zh",    name: "Chinese",      native: "中文",          region: "global" },
+  { code: "ja",    name: "Japanese",     native: "日本語",         region: "global" },
+  { code: "ko",    name: "Korean",       native: "한국어",          region: "global" },
+  { code: "ru",    name: "Russian",      native: "Русский",      region: "global" },
+  { code: "el",    name: "Greek",        native: "Ελληνικά",     region: "global" },
+] as const;
+
+type LangCode = typeof LANGUAGES[number]["code"];
+
 const ChatInput = ({
   input,
   setInput,
@@ -78,6 +107,10 @@ const ChatInput = ({
   hasMessages = false,
   showCompareInputs = true,
   setShowCompareInputs,
+  selectedLanguage,
+  setSelectedLanguage,
+  isLangMenuOpen,
+  setIsLangMenuOpen,
 }: any) => {
   const MenuContent = () => (
     <AnimatePresence>
@@ -164,6 +197,87 @@ const ChatInput = ({
       <div className="w-full relative group">
         <MenuContent />
 
+        {/* Language Picker Dropdown */}
+        <AnimatePresence>
+          {isLangMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: menuSide === "top" ? -10 : 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: menuSide === "top" ? -10 : 10, scale: 0.95 }}
+              className={cn(
+                "absolute right-0 liquid-glass-card p-3 shadow-2xl shadow-black w-64 z-[110]",
+                menuSide === "top" ? "bottom-full mb-2" : "top-full mt-2",
+              )}
+            >
+              <h3 className="px-3 pt-2 pb-3 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                Response Language
+              </h3>
+              <div className="max-h-72 overflow-y-auto custom-scrollbar space-y-0.5 pr-1">
+                {/* Auto option */}
+                {LANGUAGES.filter(l => l.region === "meta").map(lang => (
+                  <button
+                    key={lang.code}
+                    onClick={() => { setSelectedLanguage("auto"); setIsLangMenuOpen(false); }}
+                    className={cn(
+                      "w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl transition-all text-left",
+                      (selectedLanguage === "auto" || !selectedLanguage)
+                        ? "bg-white text-black"
+                        : "hover:bg-zinc-800 text-zinc-300",
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Globe size={13} />
+                      <span className="text-xs font-bold">{lang.name}</span>
+                    </div>
+                    {(selectedLanguage === "auto" || !selectedLanguage) && <Check size={12} />}
+                  </button>
+                ))}
+
+                {/* Indian languages */}
+                <p className="px-3 pt-3 pb-1 text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">🇮🇳 Indian</p>
+                {LANGUAGES.filter(l => l.region === "indian").map(lang => (
+                  <button
+                    key={lang.code}
+                    onClick={() => { setSelectedLanguage(lang.code); setIsLangMenuOpen(false); }}
+                    className={cn(
+                      "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-2xl transition-all text-left",
+                      selectedLanguage === lang.code
+                        ? "bg-white text-black"
+                        : "hover:bg-zinc-800 text-zinc-300",
+                    )}
+                  >
+                    <div>
+                      <p className="text-xs font-semibold">{lang.native}</p>
+                      <p className={cn("text-[10px]", selectedLanguage === lang.code ? "text-black/60" : "text-zinc-500")}>{lang.name}</p>
+                    </div>
+                    {selectedLanguage === lang.code && <Check size={12} />}
+                  </button>
+                ))}
+
+                {/* Global languages */}
+                <p className="px-3 pt-3 pb-1 text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">🌍 Global</p>
+                {LANGUAGES.filter(l => l.region === "global").map(lang => (
+                  <button
+                    key={lang.code}
+                    onClick={() => { setSelectedLanguage(lang.code); setIsLangMenuOpen(false); }}
+                    className={cn(
+                      "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-2xl transition-all text-left",
+                      selectedLanguage === lang.code
+                        ? "bg-white text-black"
+                        : "hover:bg-zinc-800 text-zinc-300",
+                    )}
+                  >
+                    <div>
+                      <p className="text-xs font-semibold">{lang.native}</p>
+                      <p className={cn("text-[10px]", selectedLanguage === lang.code ? "text-black/60" : "text-zinc-500")}>{lang.name}</p>
+                    </div>
+                    {selectedLanguage === lang.code && <Check size={12} />}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <AnimatePresence>
           {chatMode === "compare" && isFocusMenuOpen && (
             <motion.div
@@ -309,6 +423,26 @@ const ChatInput = ({
               className="flex-1 bg-transparent py-3 sm:py-4 text-sm sm:text-lg font-medium text-white placeholder:text-zinc-700 outline-none"
               disabled={isUploading}
             />
+
+            {/* Language selector button — always visible */}
+            <button
+              onClick={() => { setIsLangMenuOpen(!isLangMenuOpen); setIsMenuOpen(false); setIsFocusMenuOpen(false); }}
+              title="Response language"
+              className={cn(
+                "p-3 sm:p-4 transition-all rounded-xl sm:rounded-2xl flex items-center gap-1.5 mr-0.5",
+                isLangMenuOpen || (selectedLanguage && selectedLanguage !== "auto")
+                  ? "bg-white text-black"
+                  : "text-zinc-600 hover:text-white hover:bg-zinc-800",
+              )}
+            >
+              <Globe size={18} className="sm:w-5 sm:h-5" />
+              {selectedLanguage && selectedLanguage !== "auto" && (
+                <span className="text-[10px] font-black">
+                  {LANGUAGES.find(l => l.code === selectedLanguage)?.native?.slice(0, 4) ?? selectedLanguage.toUpperCase()}
+                </span>
+              )}
+            </button>
+
 
             {chatMode === "compare" && (
               <button
@@ -493,6 +627,15 @@ function ChatContent() {
   const [otherCriteria, setOtherCriteria] = useState("");
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [isFocusMenuOpen, setIsFocusMenuOpen] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<LangCode>("auto");
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+
+  // Keep a ref in sync so handleSend always reads the LATEST language
+  // even if the user switches and sends before the re-render completes.
+  const selectedLanguageRef = useRef<LangCode>("auto");
+  useEffect(() => {
+    selectedLanguageRef.current = selectedLanguage;
+  }, [selectedLanguage]);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -629,6 +772,9 @@ function ChatContent() {
           messages: [...messages, apiMessage],
           mode: chatMode,
           ...(webPdfFilename ? { pdfFilename: webPdfFilename } : {}),
+          ...(selectedLanguageRef.current && selectedLanguageRef.current !== "auto"
+            ? { language: selectedLanguageRef.current }
+            : {}),
         }),
       });
 
@@ -866,6 +1012,10 @@ function ChatContent() {
                   hasMessages={messages.length > 0}
                   showCompareInputs={showCompareInputs}
                   setShowCompareInputs={setShowCompareInputs}
+                  selectedLanguage={selectedLanguage}
+                  setSelectedLanguage={setSelectedLanguage}
+                  isLangMenuOpen={isLangMenuOpen}
+                  setIsLangMenuOpen={setIsLangMenuOpen}
                 />
               </div>
             )}
@@ -912,6 +1062,10 @@ function ChatContent() {
                 hasMessages={messages.length > 0}
                 showCompareInputs={showCompareInputs}
                 setShowCompareInputs={setShowCompareInputs}
+                selectedLanguage={selectedLanguage}
+                setSelectedLanguage={setSelectedLanguage}
+                isLangMenuOpen={isLangMenuOpen}
+                setIsLangMenuOpen={setIsLangMenuOpen}
               />
             </div>
           </div>

@@ -57,10 +57,17 @@ export async function generateChatCompletion(messages: ChatMessage[], model = "o
 
 export async function generateSearchQuery(
   messages: ChatMessage[],
+  detectedLangName: string = "English",
 ): Promise<string> {
   const lastMessage = messages[messages.length - 1]?.content || "";
   // Strip out any internal SYSTEM: blocks from the query optimizer input
   const sanitizedInput = lastMessage.replace(/SYSTEM:[\s\S]*?\n\n/g, "").trim();
+
+  // If the user is writing in a non-English language, instruct the LLM to
+  // always output the search query in English for accurate vector search.
+  const langRule = detectedLangName !== "English"
+    ? ` (5) The user is currently writing in ${detectedLangName}. ALWAYS translate and output the search query in ENGLISH only — the search index is in English.`
+    : "";
 
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
@@ -76,7 +83,7 @@ export async function generateSearchQuery(
           {
             role: "system",
             content:
-              "You are a search query optimizer for a College Assistant chatbot. Your ONLY job is to rewrite the user's question into a clean, specific web search query. RULES: (1) ALWAYS output a search query — never refuse. (2) Only reply OUT_OF_DOMAIN if the question is unrelated to institutional information, admissions, or academic programs. (3) DO NOT search for general lifestyle, health, diet, or medical advice even if 'campus' is mentioned. (4) Output ONLY the search query.",
+              `You are a search query optimizer for a College Assistant chatbot. Your ONLY job is to rewrite the user's question into a clean, specific web search query. RULES: (1) ALWAYS output a search query — never refuse. (2) Only reply OUT_OF_DOMAIN if the question is unrelated to institutional information, admissions, or academic programs. (3) DO NOT search for general lifestyle, health, diet, or medical advice even if 'campus' is mentioned. (4) Output ONLY the search query.${langRule}`,
           },
           ...messages.slice(-5).map(m => m === messages[messages.length-1] ? { ...m, content: sanitizedInput } : m),
         ],
