@@ -1,7 +1,8 @@
+import { fetchWithTimeout } from "../utils/fetchUtils.js";
 import type { ChatMessage } from "../types/chat.js";
 
 export async function generateStream(messages: ChatMessage[]) {
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     "https://openrouter.ai/api/v1/chat/completions",
     {
       method: "POST",
@@ -15,9 +16,10 @@ export async function generateStream(messages: ChatMessage[]) {
         model: "openai/gpt-4o-mini",
         stream: true,
         messages,
-        max_tokens: 4000,
+        max_tokens: 2000,
       }),
     },
+    30000 // Stream can take longer
   );
   if (!response.ok) {
     const errText = await response.text();
@@ -30,7 +32,7 @@ export async function generateStream(messages: ChatMessage[]) {
  * Standard non-streaming chat completion
  */
 export async function generateChatCompletion(messages: ChatMessage[], model = "openai/gpt-4o-mini") {
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     "https://openrouter.ai/api/v1/chat/completions",
     {
       method: "POST",
@@ -69,7 +71,7 @@ export async function generateSearchQuery(
     ? ` (5) The user is currently writing in ${detectedLangName}. ALWAYS translate and output the search query in ENGLISH only — the search index is in English.`
     : "";
 
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     "https://openrouter.ai/api/v1/chat/completions",
     {
       method: "POST",
@@ -121,7 +123,7 @@ export async function generateMultiQuery(
   originalQuery: string,
 ): Promise<string[]> {
   try {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
@@ -197,7 +199,7 @@ export async function evaluateIntent(messages: ChatMessage[]): Promise<string> {
     return "VALID";
   }
 
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     "https://openrouter.ai/api/v1/chat/completions",
     {
       method: "POST",
@@ -244,5 +246,74 @@ RULE:
     return result.includes("OUT_OF_DOMAIN") ? "OUT_OF_DOMAIN" : "VALID";
   } catch {
     return "VALID";
+  }
+}
+/**
+ * Combined Query Optimizer & Intent Evaluator
+ * Reduces total request latency by combining two LLM calls into one round-trip.
+ */
+export async function generateOptimizedQueryAndIntent(
+  messages: ChatMessage[],
+  detectedLangName: string = "English"
+): Promise<{ query: string; intent: "VALID" | "OUT_OF_DOMAIN"; variants: string[] }> {
+  const lastMessage = messages[messages.length - 1]?.content || "";
+  const sanitizedInput = lastMessage.replace(/SYSTEM:[\s\S]*?\n\n/g, "").trim();
+
+  // HEURISTIC: Fast-path for obvious academic queries
+  const academicKeywords = [
+    "fees", "placement", "ranking", "admission", "cutoff", "eligibility", 
+    "course", "curriculum", "syllabus", "hostel", "scholarship", "internship",
+    "better", "best", "worst", "versus", " vs ", "difference", "compare",
+    "univer", "clg", "collge", "college", "institute", "faculty"
+  ];
+  const isLikelyAcademic = academicKeywords.some(kw => sanitizedInput.toLowerCase().includes(kw));
+
+  const langRule = detectedLangName !== "English"
+    ? ` (5) The user is writing in ${detectedLangName}. ALWAYS translate the 'query' into ENGLISH.`
+    : "";
+
+  try {
+    const response = await fetchWithTimeout(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: `You are a specialized router for a College Assistant. Analyze the user's request.
+RULES:
+1. 'intent': 'VALID' if the query is about colleges, admissions, programs, or institutional info. 'OUT_OF_DOMAIN' otherwise.
+2. 'query': A clean, keyword-dense search query optimized for a vector database. ${langRule}
+3. 'variants': Array of 2 alternative phrasings using synonyms (e.g. "fees" vs "tuition").
+4. Output ONLY a JSON object: {"intent": "VALID"|"OUT_OF_DOMAIN", "query": "string", "variants": ["str1", "str2"]}`,
+            },
+            ...messages.slice(-3).map(m => m === messages[messages.length-1] ? { ...m, content: sanitizedInput } : m),
+          ],
+          max_tokens: 150,
+          temperature: 0,
+          response_format: { type: "json_object" }
+        }),
+      }
+    );
+
+    if (!response.ok) throw new Error("LLM Router failed");
+
+    const data = await response.json();
+    const result = JSON.parse(data.choices?.[0]?.message?.content || "{}");
+    
+    return {
+      query: result.query || sanitizedInput,
+      intent: isLikelyAcademic ? "VALID" : (result.intent === "OUT_OF_DOMAIN" ? "OUT_OF_DOMAIN" : "VALID"),
+      variants: Array.isArray(result.variants) ? result.variants : []
+    };
+  } catch (error) {
+    console.error("[LLM Router] Error:", error);
+    return { query: sanitizedInput, intent: "VALID", variants: [] }; // Safe fallback
   }
 }

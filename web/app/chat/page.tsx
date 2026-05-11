@@ -1055,7 +1055,13 @@ function ChatContent() {
       content: finalHiddenPrefix ? `${finalHiddenPrefix}\n\n${text}` : text,
     };
 
-    setMessages((prev) => [...prev, userMessage, { role: "assistant", content: "" }]);
+    // Use functional state updates to ensure we have the absolute latest history
+    let currentHistory: Message[] = [];
+    setMessages((prev) => {
+      currentHistory = [...prev];
+      return [...prev, userMessage, { role: "assistant", content: "" }];
+    });
+    
     setInput("");
     setIsLoading(true);
 
@@ -1068,7 +1074,7 @@ function ChatContent() {
         signal: controller.signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [...messages, apiMessage],
+          messages: [...currentHistory, apiMessage],
           mode: chatMode,
           ...(webPdfFilename ? { pdfFilename: webPdfFilename } : {}),
           ...(selectedLanguageRef.current &&
@@ -1078,23 +1084,29 @@ function ChatContent() {
         }),
       });
 
-      if (!response.ok) throw new Error("Server error");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "The server encountered an error. Please try again.");
+      }
+      
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let assistantText = "";
 
+      if (!reader) throw new Error("No response stream available");
+
       while (true) {
-        const { done, value } = await (reader?.read() || {
-          done: true,
-          value: undefined,
-        });
+        const { done, value } = await reader.read();
         if (done) break;
+        
         const chunk = decoder.decode(value);
         const lines = chunk.split("\n");
         for (const line of lines) {
           if (line.startsWith("data:")) {
+            const dataStr = line.replace("data: ", "").trim();
+            if (dataStr === "[DONE]") break;
             try {
-              const json = JSON.parse(line.replace("data: ", ""));
+              const json = JSON.parse(dataStr);
               if (json.choices?.[0]?.delta?.content) {
                 assistantText += json.choices[0].delta.content;
                 setMessages((prev) => {
@@ -1107,8 +1119,17 @@ function ChatContent() {
           }
         }
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error("Chat Error:", err);
+      if (err.name !== "AbortError") {
+        setMessages((prev) => {
+          const updated = [...prev];
+          if (updated[updated.length - 1].role === "assistant") {
+            updated[updated.length - 1].content = `⚠️ **Error:** ${err.message || "Failed to connect to the intelligence engine. Please check your connection."}`;
+          }
+          return updated;
+        });
+      }
     } finally {
       setIsLoading(false);
       abortControllerRef.current = null;

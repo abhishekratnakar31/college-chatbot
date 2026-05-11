@@ -14,6 +14,7 @@ const playfair = Playfair_Display({
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("http://localhost:3000"),
   title: "AcademiaAI | Academic Intelligence",
   description:
     "The intelligent platform for exploring Indian academia, research, and institutional rankings.",

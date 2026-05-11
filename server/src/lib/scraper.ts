@@ -224,11 +224,15 @@ export async function scrapeAllNews(): Promise<NewsArticle[]> {
     // Dynamic import to avoid circular dependencies if any
     const { sql } = await import("./db.js");
     const colleges = await sql`SELECT DISTINCT college FROM college_achievements`;
-    dynamicFeeds = colleges.map((c: any) => ({
+    // Randomly sample 15 colleges per run to avoid hitting Google News too hard.
+    // This provides freshness over time without being aggressive.
+    const sample = colleges.sort(() => 0.5 - Math.random()).slice(0, 15);
+    
+    dynamicFeeds = sample.map((c: any) => ({
       name: c.college,
       url: `https://news.google.com/rss/search?q=${encodeURIComponent(c.college + " campus news admission placements")}&hl=en-IN&gl=IN&ceid=IN:en`
     }));
-    console.log(`[News Scraper] Dynamically generated ${dynamicFeeds.length} feeds from DB.`);
+    console.log(`[News Scraper] Sampled 15 dynamic feeds from ${colleges.length} total colleges.`);
   } catch (err: any) {
     console.error(`[News Scraper] Failed to load dynamic feeds from DB:`, err.message);
   }
@@ -239,12 +243,26 @@ export async function scrapeAllNews(): Promise<NewsArticle[]> {
     `[News Scraper] Starting scrape of ${allSources.length} sources...`
   );
 
-  const results = await Promise.allSettled(allSources.map(fetchFeed));
-
+  // ── Concurrency Limiting (Batching) ─────────────────────────────────
+  // Hit Google News in smaller waves (e.g. 2 at a time) to avoid 503 rate-limiting.
+  const BATCH_SIZE = 2;
+  const BATCH_DELAY_MS = 5000; // 5s between waves
   const allArticles: NewsArticle[] = [];
-  for (const result of results) {
-    if (result.status === "fulfilled") {
-      allArticles.push(...result.value);
+
+  for (let i = 0; i < allSources.length; i += BATCH_SIZE) {
+    const batch = allSources.slice(i, i + BATCH_SIZE);
+    console.log(`[News Scraper] Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(allSources.length / BATCH_SIZE)}...`);
+    
+    const results = await Promise.allSettled(batch.map(fetchFeed));
+    
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        allArticles.push(...result.value);
+      }
+    }
+
+    if (i + BATCH_SIZE < allSources.length) {
+      await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
     }
   }
 

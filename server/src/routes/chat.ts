@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { generateStream, generateSearchQuery, evaluateIntent, generateMultiQuery } from "../llm/openai.js";
+import { generateStream, generateOptimizedQueryAndIntent } from "../llm/openai.js";
 import type { ChatMessage } from "../types/chat.js";
 import crypto from "node:crypto";
 import { qdrant } from "../lib/qdrant.js";
@@ -161,26 +161,16 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
         return context;
       })();
 
-      // 1. ── Optimize Query + Evaluate Intent (PARALLEL) ────────────────────
-      // In web mode with PDF context (or filename as fallback), use enriched query generator
+      // 1. ── Router: Optimize Query + Evaluate Intent (SINGLE CALL) ─────────
+      // Saves ~500-1000ms by combining intent check and query optimization
       const hasPdfText = mode === "web" && !!body.pdfContext?.trim();
       const hasPdfFilename = mode === "web" && !!body.pdfFilename?.trim();
       const hasPdfContext = hasPdfText || hasPdfFilename;
 
-      const pdfContextForQuery = hasPdfText
-        ? body.pdfContext!
-        : hasPdfFilename
-          ? `Document: ${body.pdfFilename} (text could not be extracted — use the filename as a college/document name hint)`
-          : "";
-
-      // Both calls are independent — run them at the same time to save
-      // ~400-800ms per request compared to sequential execution.
-      const [rawOptimizedQuery, intentResult] = await Promise.all([
-        hasPdfContext
-          ? generatePdfAwareSearchQuery(currentInput, pdfContextForQuery)
-          : generateSearchQuery(history, detectedLangName),
-        evaluateIntent(history),
-      ]);
+      const { query: rawOptimizedQuery, intent: intentResult, variants: queryVariantsFromRouter } = await generateOptimizedQueryAndIntent(
+        history,
+        detectedLangName
+      );
 
       // 1a. Intent check — early exit before any retrieval cost
       if (intentResult === "OUT_OF_DOMAIN") {
@@ -197,10 +187,10 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
         return;
       }
 
-      // 1b. Multi-Query Expansion (Improve Recall)
-      // Generate 3 diverse phrasings to catch synonyms and synonyms.
+      // 1b. Query Expansion (Improve Recall)
+      // Use the pre-computed variants from the router call.
       const queryVariants = (intentResult === "VALID" && !hasPdfContext) 
-        ? await generateMultiQuery(rawOptimizedQuery)
+        ? [rawOptimizedQuery, ...queryVariantsFromRouter]
         : [rawOptimizedQuery];
 
 

@@ -22,8 +22,10 @@ export async function runNewsPipeline(): Promise<void> {
  * Also runs once immediately on startup so the DB isn't empty on first boot.
  */
 export function startNewsCron(): void {
-  // Run immediately at startup
-  runNewsPipeline();
+  // Run with a delay at startup so it doesn't block early user requests
+  setTimeout(() => {
+    runNewsPipeline();
+  }, 30_000); // 30s delay
 
   // Schedule: every 6 hours (0:00, 6:00, 12:00, 18:00)
   cron.schedule("0 */6 * * *", () => {
