@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4006";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4005";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 export function toSlug(name: string): string {
@@ -428,7 +428,7 @@ export default function RankingsPage() {
 
               {/* Hero */}
               <div className="mb-8">
-                <p className="text-white/30 text-[9px] uppercase tracking-[0.25em] mb-2 font-black">NIRF 2024 · Ministry of Education</p>
+                <p className="text-white/30 text-[9px] uppercase tracking-[0.25em] mb-2 font-black">NIRF 2025 · Ministry of Education</p>
                 <h1 className="text-3xl md:text-5xl font-serif font-bold tracking-tight text-white leading-tight mb-6">
                   Top <span className="text-white/30 italic">Institutions</span>
                 </h1>
@@ -503,7 +503,7 @@ export default function RankingsPage() {
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Data Intelligence</p>
                     </div>
                     <p className="text-sm text-white/40 leading-relaxed font-medium">
-                      Our institutional data is aggregated from the latest <span className="text-white/70">Ministry of Education (NIRF 2024)</span> reports, QS World Rankings, and verified campus audits. We prioritize accuracy by cross-referencing placement statistics and research outputs with official institutional disclosures.
+                      Our institutional data is aggregated from the latest <span className="text-white/70">Ministry of Education (NIRF 2025)</span> reports, QS World Rankings, and verified campus audits. We prioritize accuracy by cross-referencing placement statistics and research outputs with official institutional disclosures.
                     </p>
                   </div>
 

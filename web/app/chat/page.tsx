@@ -393,11 +393,11 @@ const ChatInput = ({
         )}
 
         <div className="bg-zinc-900 border-2 border-zinc-800 group-focus-within:border-white group-focus-within:bg-black rounded-3xl sm:rounded-[2.5rem] transition-all duration-500 shadow-2xl shadow-black/5 overflow-hidden">
-          <div className="flex items-center p-1.5 sm:p-3 relative">
+          <div className="flex items-center p-1 sm:p-3 pr-1.5 sm:pr-3 relative">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className={cn(
-                "p-3 sm:p-4 transition-all rounded-xl sm:rounded-2xl",
+                "p-2 sm:p-4 transition-all rounded-xl sm:rounded-2xl shrink-0",
                 isMenuOpen
                   ? "bg-white text-black"
                   : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10",
@@ -408,7 +408,7 @@ const ChatInput = ({
             {chatMode !== "compare" && (
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-3 sm:p-4 text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition-all rounded-xl sm:rounded-2xl flex items-center justify-center"
+                className="p-2 sm:p-4 text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition-all rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0"
               >
                 <FileUp size={20} className="sm:w-6 sm:h-6" />
               </button>
@@ -420,7 +420,7 @@ const ChatInput = ({
               placeholder={
                 isUploading ? (uploadProgressText || "Indexing...") : `Ask in ${chatMode}...`
               }
-              className="flex-1 bg-transparent py-3 sm:py-4 text-sm sm:text-lg font-medium text-white placeholder:text-zinc-700 outline-none"
+              className="flex-1 min-w-0 bg-transparent py-3 sm:py-4 text-sm sm:text-lg font-medium text-white placeholder:text-zinc-700 outline-none"
               disabled={isUploading}
             />
 
@@ -429,7 +429,7 @@ const ChatInput = ({
               onClick={() => { setIsLangMenuOpen(!isLangMenuOpen); setIsMenuOpen(false); setIsFocusMenuOpen(false); }}
               title="Response language"
               className={cn(
-                "p-3 sm:p-4 transition-all rounded-xl sm:rounded-2xl flex items-center gap-1.5 mr-0.5",
+                "p-2 sm:p-4 transition-all rounded-xl sm:rounded-2xl flex items-center gap-1 mr-0.5 shrink-0",
                 isLangMenuOpen || (selectedLanguage && selectedLanguage !== "auto")
                   ? "bg-white text-black"
                   : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10",
@@ -463,7 +463,7 @@ const ChatInput = ({
             {isLoading ? (
               <button
                 onClick={() => abortControllerRef.current?.abort()}
-                className="p-3 sm:p-4 text-white hover:scale-110 transition-transform"
+                className="p-3 sm:p-4 text-white hover:scale-110 transition-transform shrink-0"
               >
                 <StopCircle size={20} className="sm:w-6 sm:h-6" />
               </button>
@@ -471,7 +471,7 @@ const ChatInput = ({
               <button
                 onClick={() => handleSend()}
                 disabled={!input.trim() || isUploading}
-                className="w-10 h-10 sm:w-12 sm:h-12 bg-white text-black rounded-xl sm:rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-20 transition-all"
+                className="w-10 h-10 sm:w-12 sm:h-12 bg-white text-black rounded-xl sm:rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-20 transition-all shrink-0"
               >
                 <ArrowUp size={18} className="sm:w-5 sm:h-5" />
               </button>
@@ -909,7 +909,7 @@ function ChatContent() {
               "max-w-3xl w-full mx-auto px-4 sm:px-6",
               messages.length === 0
                 ? "space-y-10 sm:space-y-16"
-                : "space-y-8 sm:space-y-12 pt-8 sm:pt-12 pb-24 sm:pb-32",
+                : "space-y-8 sm:space-y-12 pt-8 sm:pt-12 pb-32 sm:pb-32",
             )}
           >
             {messages.length === 0 && !isLoading && (
@@ -1026,7 +1026,7 @@ function ChatContent() {
         {(messages.length > 0 || chatMode !== "compare") && (
           <div
             className={cn(
-              "absolute bottom-16 md:bottom-0 left-0 right-0 p-2 sm:p-4 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a] to-transparent pt-6 sm:pt-10 z-50",
+              "fixed bottom-16 md:bottom-0 left-0 md:left-20 right-0 p-2 sm:p-4 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a] to-transparent pt-6 sm:pt-10 z-50",
               messages.length === 0 && chatMode !== "compare" && "md:hidden",
               messages.length === 0 && chatMode === "compare" && "hidden",
             )}

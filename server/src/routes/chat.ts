@@ -122,6 +122,7 @@ export async function chatRoute(app: FastifyInstance) {
 | Research Papers | ${a.research_papers ?? 0}+ | ${b.research_papers ?? 0}+ |
 | Startups Incubated | ${a.startups_incubated ?? 0}+ | ${b.startups_incubated ?? 0}+ |
 | Innovation Score | ${a.innovation_score} | ${b.innovation_score} |
+| Official Website | ${a.website ? `[${a.website.replace(/^https?:\/\/(www\.)?/, "")}](${a.website})` : 'N/A'} | ${b.website ? `[${b.website.replace(/^https?:\/\/(www\.)?/, "")}](${b.website})` : 'N/A'} |
 
 Awards — ${a.college}: ${(a.awards as string[]).join(', ') || 'N/A'}
 Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
@@ -140,6 +141,7 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
               context = `
 ## VERIFIED COLLEGE PROFILE — ${c.college} (from NIRF 2024 database)
 - **Location**: ${c.city}, ${c.state}
+- **Official Website**: ${c.website ? `[${c.website}](${c.website})` : 'N/A'}
 - **NIRF Rank**: #${c.nirf_rank ?? 'N/A'} (${c.nirf_category})
 - **QS Global Rank**: ${c.global_rank ? '#' + c.global_rank : 'Not ranked globally'}
 - **Innovation Score**: ${score}/100
@@ -357,7 +359,9 @@ REASONING PROTOCOLS (WEB/COMPARE MODE${hasPdfContext ? " + PDF BACKGROUND" : ""}
 1. Your PRIMARY source is LIVE_WEB_SEARCH_RESULTS. Always lead with live web data.
 2. If LIVE_WEB_SEARCH_RESULTS is empty or sparse, use your internal knowledge to provide a helpful answer, but ADD A DISCLAIMER that the information is from general knowledge and not a live search.
 3. **STRICT DOMAIN ENFORCEMENT**: Only answer questions about colleges, universities, admissions, programs, campus life, and careers.
-4. DO NOT just say "I couldn't find information" if you can provide a high-quality analysis from your internal data.
+4. **OFFICIAL WEBSITES**: Always include the institution's official website in the response if it is available in the [Verified Data].
+5. DO NOT just say "I couldn't find information" if you can provide a high-quality analysis from your internal data.
+`}
 `}
 
 CORE RULES:

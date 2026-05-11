@@ -32,6 +32,20 @@ import {
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4005";
 
+function formatRelativeTime(dateString: string | null) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "Just now";
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
 interface Article {
   id: number;
   title: string;
@@ -101,7 +115,7 @@ function ArticleCardLarge({ article }: { article: Article }) {
           </span>
           <span className="text-zinc-800">•</span>
           <span className="text-[10px] font-bold text-zinc-600 uppercase">
-            {new Date(article.published_at || article.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {formatRelativeTime(article.published_at || article.created_at)}
           </span>
           <span className="text-zinc-800">•</span>
           <span className="text-[10px] font-bold text-zinc-600 uppercase hover:text-blue-400 transition-colors cursor-pointer">
@@ -138,8 +152,8 @@ function ArticleListItem({ article }: { article: Article }) {
             {article.category || "General"}
           </span>
           <span className="text-zinc-800 text-[10px]">•</span>
-          <span className="text-[10px] font-bold text-zinc-700">
-            {new Date(article.published_at || article.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          <span className="text-[9px] font-bold text-zinc-600 uppercase">
+            {formatRelativeTime(article.published_at || article.created_at)}
           </span>
         </div>
       </div>
@@ -304,7 +318,9 @@ export default function NewsPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
           <div className="space-y-2">
             <h1 className="text-4xl md:text-5xl font-serif font-bold tracking-tight">Your briefing</h1>
-            <p className="text-zinc-500 font-medium">Monday, 4 May • Curated for you</p>
+            <p className="text-zinc-500 font-medium">
+              {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })} • Curated for you
+            </p>
           </div>
           <WeatherWidget />
         </div>

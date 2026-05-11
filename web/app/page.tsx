@@ -42,6 +42,20 @@ import {
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
 
+function formatRelativeTime(dateString: string | null) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "Just now";
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
 // ── Animated cycling word ────────────────────────────────────────────────────
 const CYCLE_WORDS = ["Search", "Explore", "Discover", "Analyse"];
 
@@ -359,9 +373,7 @@ function NewsDashboard({ articles }: { articles: any[] }) {
                       </div>
                       <p className="text-[9px] text-zinc-600 font-medium uppercase tracking-tighter">
                         {news.source} •{" "}
-                        {new Date(
-                          news.published_at || news.created_at,
-                        ).toLocaleDateString()}
+                        {formatRelativeTime(news.published_at || news.created_at)}
                       </p>
                     </div>
                   );
@@ -451,7 +463,7 @@ function IntelligenceSection({ news }: { news: any[] }) {
           <Reveal delay={0.2}>
             <p className="text-zinc-500 text-2xl font-medium max-w-xl leading-relaxed">
               Latest news and articles on admissions, cut-offs, and results
-              across 500+ Indian institutions.
+              across 100+ premier Indian institutions.
             </p>
           </Reveal>
           <Reveal delay={0.3}>
@@ -493,7 +505,7 @@ function RankingsDashboard({ colleges }: { colleges: any[] }) {
             Live Leaderboard
           </h3>
           <p className="text-xl font-serif font-bold text-white mt-1 italic">
-            Top Performers 2024
+            Top Performers 2025
           </p>
         </div>
         <Trophy size={24} className="text-zinc-700" />
@@ -758,8 +770,7 @@ export default function HeroPage() {
   const [news, setNews] = useState<any[]>([]);
   const [rankings, setRankings] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const API_URL_BASE =
-    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4005";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4005";
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAttachedFile(e.target.files?.[0] ?? null);
@@ -774,7 +785,7 @@ export default function HeroPage() {
       try {
         const formData = new FormData();
         formData.append("file", attachedFile);
-        const res = await fetch(`${API_URL_BASE}/upload`, {
+        const res = await fetch(`${API_URL}/upload`, {
           method: "POST",
           body: formData,
         });
@@ -834,8 +845,8 @@ export default function HeroPage() {
     async function init() {
       try {
         const [newsRes, rankingsRes] = await Promise.all([
-          fetch(`${API_URL_BASE}/news?limit=10`).then((r) => r.json()),
-          fetch(`${API_URL_BASE}/rankings?limit=20&sort=rank_2024`).then((r) =>
+          fetch(`${API_URL}/news?limit=10`).then((r) => r.json()),
+          fetch(`${API_URL}/rankings?limit=20&sort=rank_2024`).then((r) =>
             r.json(),
           ),
         ]);
@@ -846,7 +857,7 @@ export default function HeroPage() {
       }
     }
     init();
-  }, [API_URL_BASE]);
+  }, [API_URL]);
 
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 500], [0, -100]);
@@ -1057,7 +1068,7 @@ export default function HeroPage() {
                 <div className="w-px h-12 bg-zinc-900" />
                 <div className="text-center">
                   <p className="text-white text-4xl font-serif font-bold tracking-tighter">
-                    500+
+                    100+
                   </p>
                   <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mt-2">
                     Colleges

@@ -260,33 +260,33 @@ export default function CollegeDetailView({
     const cat = college.nirf_category || "Engineering";
     const data: any = {
       "Engineering": [
-        { type: "Exam", name: "JEE Advanced 2025", status: "Live", url: "https://jeeadv.ac.in/" },
+        { type: "Exam", name: "JEE Advanced 2026", status: "Live", url: "https://jeeadv.ac.in/" },
         { type: "Scholarship", name: "Merit-cum-Means (MCM)", status: "Closed", remark: "Application Closed" },
         { type: "Scholarship", name: "Inspire Scholarship", status: "Live", url: "https://online-inspire.gov.in/" },
-        { type: "Exam", name: "GATE 2025", status: "Closed", remark: "Registration Over" },
-        { type: "Exam", name: "BITSAT 2025", status: "Live", url: "https://www.bitsadmission.com/" }
+        { type: "Exam", name: "GATE 2026", status: "Closed", remark: "Registration Over" },
+        { type: "Exam", name: "BITSAT 2026", status: "Live", url: "https://www.bitsadmission.com/" }
       ],
       "Medical": [
-        { type: "Exam", name: "NEET UG 2025", status: "Live", url: "https://neet.nta.nic.in/" },
+        { type: "Exam", name: "NEET UG 2026", status: "Live", url: "https://neet.nta.nic.in/" },
         { type: "Scholarship", name: "Central Sector Scheme", status: "Live", url: "https://scholarships.gov.in/" },
-        { type: "Exam", name: "NEET PG 2025", status: "Closed", remark: "Application Period Ended" },
-        { type: "Scholarship", name: "State Merit Scholarship", status: "Closed", remark: "Next Intake: July 2025" }
+        { type: "Exam", name: "NEET PG 2026", status: "Closed", remark: "Application Period Ended" },
+        { type: "Scholarship", name: "State Merit Scholarship", status: "Closed", remark: "Next Intake: July 2026" }
       ],
       "Management": [
-        { type: "Exam", name: "CAT 2024", status: "Closed", remark: "Exam Conducted" },
+        { type: "Exam", name: "CAT 2025", status: "Closed", remark: "Exam Conducted" },
         { type: "Exam", name: "GMAT Focus Edition", status: "Live", url: "https://www.mba.com/exams/gmat" },
         { type: "Scholarship", name: "OP Jindal Engineering & Management", status: "Live", url: "https://www.opjems.com/" },
         { type: "Scholarship", name: "Aditya Birla Scholarship", status: "Closed", remark: "Admissions Closed" }
       ],
       "Law": [
-        { type: "Exam", name: "CLAT 2025", status: "Live", url: "https://consortiumofnlus.ac.in/" },
-        { type: "Exam", name: "AILET 2025", status: "Closed", remark: "Result Awaited" },
+        { type: "Exam", name: "CLAT 2026", status: "Live", url: "https://consortiumofnlus.ac.in/" },
+        { type: "Exam", name: "AILET 2026", status: "Closed", remark: "Result Awaited" },
         { type: "Scholarship", name: "Inlaks Shivdasani Foundation", status: "Live", url: "https://www.inlaksfoundation.org/" }
       ]
     };
     return data[cat] || [
       { type: "Scholarship", name: "National Scholarship Portal", status: "Live", url: "https://scholarships.gov.in/" },
-      { type: "Exam", name: "CUET 2025", status: "Live", url: "https://cuet.samarth.ac.in/" },
+      { type: "Exam", name: "CUET 2026", status: "Live", url: "https://cuet.samarth.ac.in/" },
       { type: "Scholarship", name: "Reliance Foundation", status: "Closed", remark: "Registration Closed" }
     ];
   };
