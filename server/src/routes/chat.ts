@@ -362,7 +362,6 @@ REASONING PROTOCOLS (WEB/COMPARE MODE${hasPdfContext ? " + PDF BACKGROUND" : ""}
 4. **OFFICIAL WEBSITES**: Always include the institution's official website in the response if it is available in the [Verified Data].
 5. DO NOT just say "I couldn't find information" if you can provide a high-quality analysis from your internal data.
 `}
-`}
 
 CORE RULES:
 1. ONLY answer questions related to colleges, admissions, academic programs, and institutional campus life.
