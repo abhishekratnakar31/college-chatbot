@@ -751,8 +751,11 @@ function ChatContent() {
       return;
     }
 
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
     const recognition = new SpeechRecognition();
-    recognition.continuous = true; // Keep listening until manual stop
+    // Mobile Chrome has a famous bug with continuous=true that causes text doubling
+    recognition.continuous = !isMobile; 
     recognition.interimResults = true;
     recognition.lang = "en-US";
 
@@ -760,20 +763,19 @@ function ChatContent() {
 
     recognition.onstart = () => setIsRecordingVoice(true);
 
-    let finalTranscript = "";
-
     recognition.onresult = (event: any) => {
-      let interimTranscript = "";
+      let fTranscript = "";
+      let iTranscript = "";
       
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
+      for (let i = 0; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
+          fTranscript += event.results[i][0].transcript;
         } else {
-          interimTranscript += event.results[i][0].transcript;
+          iTranscript += event.results[i][0].transcript;
         }
       }
 
-      const displayTranscript = finalTranscript + interimTranscript;
+      const displayTranscript = fTranscript + iTranscript;
       if (displayTranscript.trim()) {
         setInput(displayTranscript);
         finalTranscriptRef.current = displayTranscript;
