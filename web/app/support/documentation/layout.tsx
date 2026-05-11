@@ -41,7 +41,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link 
             href="/" 
-            className="inline-flex items-center gap-3 text-zinc-500 hover:text-white transition-colors group"
+            className="inline-flex items-center gap-3 text-zinc-500 hover:text-blue-400 transition-colors group"
           >
             <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
             <span className="text-[10px] font-black uppercase tracking-[0.3em]">Back to Home</span>
@@ -87,7 +87,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-6">Need Help?</h4>
             <Link 
               href="/support/contact" 
-              className="text-sm font-bold text-zinc-500 hover:text-white transition-colors block"
+              className="text-sm font-bold text-zinc-500 hover:text-blue-400 transition-colors block"
             >
               Contact Support →
             </Link>

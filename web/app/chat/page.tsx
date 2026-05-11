@@ -162,7 +162,7 @@ const ChatInput = ({
                   "w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left group",
                   chatMode === mode.id
                     ? "bg-white text-black"
-                    : "hover:bg-zinc-800",
+                    : "hover:bg-blue-500/10 hover:text-blue-400",
                 )}
               >
                 <mode.icon
@@ -170,7 +170,7 @@ const ChatInput = ({
                   className={cn(
                     chatMode === mode.id
                       ? "text-black"
-                      : "text-zinc-500 group-hover:text-white",
+                      : "text-zinc-500 group-hover:text-blue-400",
                   )}
                 />
                 <div>
@@ -222,7 +222,7 @@ const ChatInput = ({
                       "w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl transition-all text-left",
                       (selectedLanguage === "auto" || !selectedLanguage)
                         ? "bg-white text-black"
-                        : "hover:bg-zinc-800 text-zinc-300",
+                        : "hover:bg-blue-500/10 text-zinc-300 hover:text-blue-400",
                     )}
                   >
                     <div className="flex items-center gap-2">
@@ -243,7 +243,7 @@ const ChatInput = ({
                       "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-2xl transition-all text-left",
                       selectedLanguage === lang.code
                         ? "bg-white text-black"
-                        : "hover:bg-zinc-800 text-zinc-300",
+                        : "hover:bg-blue-500/10 text-zinc-300 hover:text-blue-400",
                     )}
                   >
                     <div>
@@ -264,7 +264,7 @@ const ChatInput = ({
                       "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-2xl transition-all text-left",
                       selectedLanguage === lang.code
                         ? "bg-white text-black"
-                        : "hover:bg-zinc-800 text-zinc-300",
+                        : "hover:bg-blue-500/10 text-zinc-300 hover:text-blue-400",
                     )}
                   >
                     <div>
@@ -309,7 +309,7 @@ const ChatInput = ({
                         "flex items-center gap-3 w-full p-3 rounded-2xl transition-all text-left group",
                         isSelected
                           ? "bg-white/10 text-white"
-                          : "hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-200",
+                          : "hover:bg-blue-500/10 text-zinc-400 hover:text-blue-400",
                       )}
                     >
                       <div
@@ -400,7 +400,7 @@ const ChatInput = ({
                 "p-3 sm:p-4 transition-all rounded-xl sm:rounded-2xl",
                 isMenuOpen
                   ? "bg-white text-black"
-                  : "text-zinc-600 hover:text-white hover:bg-zinc-800",
+                  : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10",
               )}
             >
               <LayoutGrid size={20} className="sm:w-6 sm:h-6" />
@@ -408,7 +408,7 @@ const ChatInput = ({
             {chatMode !== "compare" && (
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-3 sm:p-4 text-zinc-600 hover:text-white hover:bg-zinc-800 transition-all rounded-xl sm:rounded-2xl flex items-center justify-center"
+                className="p-3 sm:p-4 text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition-all rounded-xl sm:rounded-2xl flex items-center justify-center"
               >
                 <FileUp size={20} className="sm:w-6 sm:h-6" />
               </button>
@@ -432,7 +432,7 @@ const ChatInput = ({
                 "p-3 sm:p-4 transition-all rounded-xl sm:rounded-2xl flex items-center gap-1.5 mr-0.5",
                 isLangMenuOpen || (selectedLanguage && selectedLanguage !== "auto")
                   ? "bg-white text-black"
-                  : "text-zinc-600 hover:text-white hover:bg-zinc-800",
+                  : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10",
               )}
             >
               <Globe size={18} className="sm:w-5 sm:h-5" />
@@ -453,7 +453,7 @@ const ChatInput = ({
                     selectedCriteria.length > 0 ||
                     otherCriteria
                     ? "bg-white text-black"
-                    : "text-zinc-600 hover:text-white hover:bg-zinc-800",
+                    : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10",
                 )}
               >
                 <SlidersHorizontal size={20} className="sm:w-6 sm:h-6" />
@@ -553,7 +553,7 @@ const MessageBubble = ({ msg }: { msg: Message }) => {
                   href={s.url || "#"}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all group w-fit max-w-[280px]"
+                  className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/5 border border-white/5 hover:bg-blue-500/10 hover:border-blue-500/30 transition-all group w-fit max-w-[280px]"
                 >
                   <div className="w-8 h-8 rounded-lg bg-black/50 flex items-center justify-center shrink-0">
                     {s.type === "pdf" ? (
@@ -865,7 +865,7 @@ function ChatContent() {
                 "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
                 item.active
                   ? "bg-white text-black shadow-xl shadow-white/10"
-                  : "text-zinc-600 hover:bg-zinc-900 hover:text-white",
+                  : "text-zinc-600 hover:bg-blue-500/10 hover:text-blue-400",
               )}
             >
               <item.icon size={20} />
@@ -948,7 +948,7 @@ function ChatContent() {
                                 href={fullUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[10px] uppercase tracking-wider text-blue-400 hover:text-blue-300 mt-1 flex items-center gap-1 w-fit"
+                                className="text-[10px] uppercase tracking-wider text-zinc-400 hover:text-blue-400 mt-1 flex items-center gap-1 w-fit"
                               >
                                 Preview PDF <ExternalLink className="w-3 h-3" />
                               </a>

@@ -209,13 +209,13 @@ function TopStudyPlaces() {
           <div className="flex gap-3">
             <button
               onClick={() => scroll("left")}
-              className="w-12 h-12 rounded-full border border-zinc-800 flex items-center justify-center hover:bg-white hover:text-black transition-all shadow-sm"
+              className="w-12 h-12 rounded-full border border-zinc-800 flex items-center justify-center hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all shadow-sm"
             >
               <ChevronLeft size={20} />
             </button>
             <button
               onClick={() => scroll("right")}
-              className="w-12 h-12 rounded-full border border-zinc-800 flex items-center justify-center hover:bg-white hover:text-black transition-all shadow-sm"
+              className="w-12 h-12 rounded-full border border-zinc-800 flex items-center justify-center hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all shadow-sm"
             >
               <ChevronRight size={20} />
             </button>
@@ -230,9 +230,9 @@ function TopStudyPlaces() {
           <Reveal key={city.name} delay={i * 0.05}>
             <Link
               href={`/rankings?state=${encodeURIComponent(city.state)}`}
-              className="flex-shrink-0 w-48 aspect-[4/5] snap-start p-8 rounded-[2rem] bg-zinc-900/30 border border-zinc-800 hover:border-white hover:bg-zinc-900 transition-all group flex flex-col items-center justify-center text-center gap-6"
+              className="flex-shrink-0 w-48 aspect-[4/5] snap-start p-8 rounded-[2rem] bg-zinc-900/30 border border-zinc-800 hover:border-blue-500 hover:bg-blue-500/10 transition-all group flex flex-col items-center justify-center text-center gap-6"
             >
-              <div className="group-hover:scale-110 group-hover:text-white transition-all duration-500">
+              <div className="group-hover:scale-110 group-hover:text-blue-400 transition-all duration-500">
                 {city.icon}
               </div>
               <div className="flex flex-col gap-1 transition-all">
@@ -289,7 +289,7 @@ function SectionCard({
         <Reveal delay={0.3}>
           <Link
             href={href}
-            className="inline-flex items-center gap-4 px-10 py-5 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all hover:scale-105 shadow-2xl shadow-white/5 group"
+            className="inline-flex items-center gap-4 px-10 py-5 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-blue-500 hover:text-white transition-all hover:scale-105 shadow-2xl shadow-white/5 group"
           >
             Explore{" "}
             <ArrowRight
@@ -457,7 +457,7 @@ function IntelligenceSection({ news }: { news: any[] }) {
           <Reveal delay={0.3}>
             <Link
               href="/news"
-              className="inline-flex items-center gap-4 px-8 py-5 md:px-12 md:py-6 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all hover:scale-105 shadow-2xl shadow-white/10 group/btn"
+              className="inline-flex items-center gap-4 px-8 py-5 md:px-12 md:py-6 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-blue-500 hover:text-white transition-all hover:scale-105 shadow-2xl shadow-white/10 group/btn"
             >
               Explore Full Feed
               <ArrowRight
@@ -503,11 +503,11 @@ function RankingsDashboard({ colleges }: { colleges: any[] }) {
         {colleges.length > 0
           ? colleges.map((college, i) => (
               <div key={college.id} className="flex items-center gap-6 group">
-                <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xs font-black text-white group-hover:bg-white group-hover:text-black transition-colors flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xs font-black text-white group-hover:bg-blue-500 transition-colors flex-shrink-0">
                   #{i + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-zinc-300 group-hover:text-white transition-colors truncate">
+                  <p className="text-sm font-bold text-zinc-300 group-hover:text-blue-400 transition-colors truncate">
                     {college.college}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
@@ -593,7 +593,7 @@ function RankingsSection({ rankings }: { rankings: any[] }) {
           <Reveal delay={0.3}>
             <Link
               href="/rankings"
-              className="inline-flex items-center gap-4 px-8 py-5 md:px-12 md:py-6 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all hover:scale-105 shadow-2xl shadow-white/10 group/btn"
+              className="inline-flex items-center gap-4 px-8 py-5 md:px-12 md:py-6 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-blue-500 hover:text-white transition-all hover:scale-105 shadow-2xl shadow-white/10 group/btn"
             >
               View Rankings
               <ArrowRight
@@ -665,7 +665,7 @@ function Footer() {
                 <li key={item}>
                   <Link
                     href={`/${item.toLowerCase().replace(" ", "")}`}
-                    className="text-zinc-500 hover:text-white text-sm transition-colors font-semibold"
+                    className="text-zinc-500 hover:text-blue-400 text-sm transition-colors font-semibold"
                   >
                     {item}
                   </Link>
@@ -682,7 +682,7 @@ function Footer() {
               <li>
                 <Link
                   href="/guidelines/usage-policy"
-                  className="text-zinc-500 hover:text-white text-sm transition-colors font-semibold"
+                  className="text-zinc-500 hover:text-blue-400 text-sm transition-colors font-semibold"
                 >
                   Usage Policy
                 </Link>
@@ -698,7 +698,7 @@ function Footer() {
               <li>
                 <Link
                   href="/support/documentation"
-                  className="text-zinc-500 hover:text-white text-sm transition-colors font-semibold"
+                  className="text-zinc-500 hover:text-blue-400 text-sm transition-colors font-semibold"
                 >
                   Documentation
                 </Link>
@@ -706,7 +706,7 @@ function Footer() {
               <li>
                 <Link
                   href="/support/contact"
-                  className="text-zinc-500 hover:text-white text-sm transition-colors font-semibold"
+                  className="text-zinc-500 hover:text-blue-400 text-sm transition-colors font-semibold"
                 >
                   Contact Support
                 </Link>
@@ -894,13 +894,13 @@ export default function HeroPage() {
         <div className="flex items-center gap-4 md:gap-10">
           <Link
             href="/news"
-            className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors"
+            className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-blue-400 transition-colors"
           >
             News
           </Link>
           <Link
             href="/rankings"
-            className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors"
+            className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-blue-400 transition-colors"
           >
             Rankings
           </Link>
@@ -967,7 +967,7 @@ export default function HeroPage() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className={cn(
-                    "p-3 md:p-10 mr-1 md:mr-2 text-zinc-300 hover:text-white transition-colors",
+                    "p-3 md:p-10 mr-1 md:mr-2 text-zinc-300 hover:text-blue-400 transition-colors",
                     attachedFile && "text-white",
                   )}
                 >
@@ -976,7 +976,7 @@ export default function HeroPage() {
                 <button
                   type="submit"
                   disabled={isUploading}
-                  className="px-5 md:px-14 py-3 md:py-6 mr-7 bg-white text-black font-bold text-xs md:text-xl rounded-full hover:bg-zinc-200 transition-all active:scale-95 shadow-xl disabled:opacity-50"
+                  className="px-5 md:px-14 py-3 md:py-6 mr-7 bg-white text-black font-bold text-xs md:text-xl rounded-full hover:bg-blue-500 hover:text-white transition-all active:scale-95 shadow-xl disabled:opacity-50"
                 >
                   {isUploading ? (uploadProgressText || "Indexing...") : "Search"}
                 </button>
@@ -1007,7 +1007,7 @@ export default function HeroPage() {
                   onClick={() =>
                     (window.location.href = `/chat?q=${encodeURIComponent(s)}&mode=web`)
                   }
-                  className="px-4 md:px-6 py-2 md:py-3 rounded-full border border-zinc-800 bg-zinc-900/50 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-zinc-500 hover:text-white hover:border-white transition-all"
+                  className="px-4 md:px-6 py-2 md:py-3 rounded-full border border-zinc-800 bg-zinc-900/50 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-zinc-500 hover:text-blue-400 hover:border-blue-500 transition-all"
                 >
                   {s}
                 </button>
@@ -1043,7 +1043,7 @@ export default function HeroPage() {
             <div className="flex flex-col items-center gap-16">
               <Link
                 href="/chat"
-                className="px-12 py-8 md:px-20 md:py-10 bg-white text-black font-black uppercase tracking-[0.4em] text-sm rounded-2xl hover:bg-zinc-200 transition-all inline-flex items-center gap-8 group/btn shadow-[0_30px_70px_rgba(255,255,255,0.15)] hover:scale-105 active:scale-95"
+                className="px-12 py-8 md:px-20 md:py-10 bg-white text-black font-black uppercase tracking-[0.4em] text-sm rounded-2xl hover:bg-blue-500 hover:text-white transition-all inline-flex items-center gap-8 group/btn shadow-[0_30px_70px_rgba(255,255,255,0.15)] hover:scale-105 active:scale-95"
               >
                 Enter Platform
                 <ArrowRight

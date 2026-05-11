@@ -185,11 +185,27 @@ async function fetchFeed(feed: FeedSource): Promise<NewsArticle[]> {
  * Uses Promise.allSettled so one failing feed never crashes the rest.
  */
 export async function scrapeAllNews(): Promise<NewsArticle[]> {
+  let dynamicFeeds: FeedSource[] = [];
+  try {
+    // Dynamic import to avoid circular dependencies if any
+    const { sql } = await import("./db.js");
+    const colleges = await sql`SELECT DISTINCT college FROM college_achievements`;
+    dynamicFeeds = colleges.map((c: any) => ({
+      name: c.college,
+      url: `https://news.google.com/rss/search?q=${encodeURIComponent(c.college + " campus news admission placements")}&hl=en-IN&gl=IN&ceid=IN:en`
+    }));
+    console.log(`[News Scraper] Dynamically generated ${dynamicFeeds.length} feeds from DB.`);
+  } catch (err: any) {
+    console.error(`[News Scraper] Failed to load dynamic feeds from DB:`, err.message);
+  }
+
+  const allSources = [...RSS_FEEDS, ...dynamicFeeds];
+
   console.log(
-    `[News Scraper] Starting scrape of ${RSS_FEEDS.length} sources...`
+    `[News Scraper] Starting scrape of ${allSources.length} sources...`
   );
 
-  const results = await Promise.allSettled(RSS_FEEDS.map(fetchFeed));
+  const results = await Promise.allSettled(allSources.map(fetchFeed));
 
   const allArticles: NewsArticle[] = [];
   for (const result of results) {

@@ -44,9 +44,9 @@ export default function ContactPage() {
       <nav className="relative z-10 p-8 md:p-12">
         <Link 
           href="/" 
-          className="inline-flex items-center gap-4 text-zinc-500 hover:text-white transition-all group"
+          className="inline-flex items-center gap-4 text-zinc-500 hover:text-blue-400 transition-all group"
         >
-          <div className="w-10 h-10 rounded-full border border-zinc-900 flex items-center justify-center group-hover:border-zinc-700 transition-colors">
+          <div className="w-10 h-10 rounded-full border border-zinc-900 flex items-center justify-center group-hover:border-blue-500 transition-colors">
             <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
           </div>
           <span className="text-[10px] font-black uppercase tracking-[0.4em]">Back to Portal</span>
@@ -119,7 +119,7 @@ export default function ContactPage() {
                 </div>
                 <button 
                   onClick={() => setStatus("idle")}
-                  className="px-10 py-5 bg-white text-black font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-zinc-200 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
+                  className="px-10 py-5 bg-white text-black font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-blue-500 hover:text-white transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
                 >
                   Send Another Report
                 </button>

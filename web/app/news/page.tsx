@@ -96,7 +96,7 @@ function ArticleCardLarge({ article }: { article: Article }) {
           {article.summary}
         </p>
         <div className="flex items-center gap-2 pt-1">
-          <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded text-[10px] font-bold uppercase tracking-wider">
+          <span className="px-2 py-0.5 bg-white/10 text-white/90 rounded text-[10px] font-bold uppercase tracking-wider">
             {article.category || "General"}
           </span>
           <span className="text-zinc-800">•</span>
@@ -104,7 +104,7 @@ function ArticleCardLarge({ article }: { article: Article }) {
             {new Date(article.published_at || article.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
           <span className="text-zinc-800">•</span>
-          <span className="text-[10px] font-bold text-zinc-600 uppercase hover:text-white transition-colors cursor-pointer">
+          <span className="text-[10px] font-bold text-zinc-600 uppercase hover:text-blue-400 transition-colors cursor-pointer">
             Read more
           </span>
         </div>
@@ -134,7 +134,7 @@ function ArticleListItem({ article }: { article: Article }) {
           {article.title}
         </h4>
         <div className="flex items-center gap-2">
-          <span className="text-[9px] font-bold text-blue-500/70 uppercase">
+          <span className="text-[9px] font-bold text-white/60 uppercase">
             {article.category || "General"}
           </span>
           <span className="text-zinc-800 text-[10px]">•</span>
@@ -159,9 +159,9 @@ function SidebarSection({ title, children }: { title: string; children: React.Re
     <div className="bg-[#1a1a1a] rounded-[2rem] p-8 border border-white/5 space-y-6">
       <div className="flex items-center justify-between group cursor-pointer">
         <h2 className="text-xl font-serif font-bold flex items-center gap-2 group-hover:text-blue-400 transition-colors">
-          {title} <ChevronRight size={18} className="text-blue-500" />
+          {title} <ChevronRight size={18} className="text-white/40" />
         </h2>
-        <Settings size={16} className="text-zinc-700 hover:text-white transition-colors" />
+        <Settings size={16} className="text-zinc-700 hover:text-blue-400 transition-colors" />
       </div>
       <div className="space-y-2">
         {children}
@@ -228,7 +228,7 @@ export default function NewsPage() {
                 "w-12 h-12 rounded-2xl flex items-center justify-center transition-all", 
                 item.active 
                   ? "bg-white text-black shadow-xl shadow-white/10" 
-                  : "text-zinc-600 hover:text-white hover:bg-zinc-900"
+                  : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10"
               )}
             >
               <item.icon size={20} />
@@ -238,7 +238,7 @@ export default function NewsPage() {
       </aside>
 
       {/* Mobile Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-lg border-t border-white/5 flex items-center justify-around z-[200] px-6">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-950/90 via-zinc-900/60 to-black/90 backdrop-blur-lg border-t border-white/5 flex items-center justify-around z-[200] px-6">
         {[
           { icon: GraduationCap, href: "/" },
           { icon: Brain, href: "/chat" },
@@ -263,9 +263,8 @@ export default function NewsPage() {
         <header className="sticky top-0 z-[150] bg-[#121212]/80 backdrop-blur-2xl border-b border-white/5 shrink-0">
           <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
             <div className="flex items-center gap-2 shrink-0">
-              <Menu className="p-2 text-zinc-400 hover:text-white cursor-pointer hover:bg-white/5 rounded-full transition-all" size={40} />
               <Link href="/" className="flex items-center gap-2 ml-2">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center">
                   <GraduationCap className="text-white w-5 h-5" />
                 </div>
                 <span className="text-xl font-serif font-bold hidden sm:inline tracking-tight text-white">
@@ -283,14 +282,14 @@ export default function NewsPage() {
                 onClick={() => setActiveTab(tab)}
                 className={cn(
                   "text-xs font-bold whitespace-nowrap transition-all relative h-full flex items-center px-2",
-                  activeTab === tab ? "text-blue-500" : "text-zinc-500 hover:text-zinc-300"
+                  activeTab === tab ? "text-white" : "text-zinc-500 hover:text-blue-400"
                 )}
               >
                 {tab}
                 {activeTab === tab && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-[3px] bg-blue-500 rounded-t-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                    className="absolute bottom-0 left-0 right-0 h-[3px] bg-white rounded-t-full shadow-[0_0_10px_rgba(255,255,255,0.3)]"
                   />
                 )}
               </button>
@@ -319,8 +318,8 @@ export default function NewsPage() {
             {/* Top Stories Section */}
             <section className="space-y-8">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-serif font-bold text-blue-400 flex items-center gap-2 cursor-pointer hover:underline">
-                  Top stories <ChevronRight size={20} />
+                <h2 className="text-2xl font-serif font-bold text-white/90 flex items-center gap-2 cursor-pointer hover:text-blue-400 hover:underline">
+                  Top stories <ChevronRight size={20} className="text-white/40" />
                 </h2>
               </div>
 
@@ -351,7 +350,7 @@ export default function NewsPage() {
                     {mainList.map((article) => (
                       <ArticleListItem key={article.id} article={article} />
                     ))}
-                    <button className="w-full py-4 bg-white/5 rounded-2xl text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 mt-4">
+                    <button className="w-full py-4 bg-white/5 rounded-2xl text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-blue-500 transition-all flex items-center justify-center gap-2 mt-4">
                       <Grid size={14} /> See more headlines and perspectives
                     </button>
                   </div>

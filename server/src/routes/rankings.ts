@@ -202,7 +202,7 @@ export async function rankingsRoute(app: FastifyInstance) {
     reply.send({ comparison: results });
   });
 
-  // ── POST /rankings/increment ───────────────────────────────────────────────
+  // ── GET /rankings/increment ───────────────────────────────────────────────
   // Internal: increment a field from AI extraction
   app.post("/rankings/increment", async (request, reply) => {
     const { college, field, delta, source_url } = request.body as {
@@ -234,4 +234,42 @@ export async function rankingsRoute(app: FastifyInstance) {
 
     reply.send({ success: true });
   });
+
+  // ── GET /colleges/:slug ────────────────────────────────────────────────────
+  // Full profile for a single college accessed via a URL-friendly slug.
+  // Slug format: "iit-bombay", "iim-ahmedabad", "aiims-delhi"
+  // Converts dashes to spaces then fuzzy-matches against college name & aliases.
+  app.get("/colleges/:slug", async (request, reply) => {
+    const { slug } = request.params as { slug: string };
+    // "iit-bombay" → "iit bombay"
+    const name = decodeURIComponent(slug).replace(/-/g, " ");
+    const row = await findCollege(name);
+    if (!row) {
+      reply.status(404).send({ error: `College not found for slug: ${slug}` });
+      return;
+    }
+    reply.send({ college: { ...row, innovation_score: computeInnovationScore(row) } });
+  });
+
+  // ── GET /colleges ──────────────────────────────────────────────────────────
+  // All colleges — used by the detail page to show related colleges in same category
+  app.get("/colleges", async (request, reply) => {
+    const q = request.query as { category?: string; limit?: string };
+    const limit = Math.min(50, parseInt(q.limit ?? "50", 10));
+    const rows = q.category && q.category !== "All"
+      ? await sql<CollegeRow[]>`
+          SELECT * FROM college_achievements
+          WHERE nirf_category = ${q.category}
+          ORDER BY nirf_rank ASC NULLS LAST
+          LIMIT ${limit}
+        `
+      : await sql<CollegeRow[]>`
+          SELECT * FROM college_achievements
+          ORDER BY nirf_rank ASC NULLS LAST
+          LIMIT ${limit}
+        `;
+    const colleges = rows.map(r => ({ ...r, innovation_score: computeInnovationScore(r as any) }));
+    reply.send({ colleges });
+  });
 }
+

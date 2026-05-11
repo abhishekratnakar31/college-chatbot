@@ -11,7 +11,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 
 // ── Configuration ─────────────────────────────────────────────────
 
-const MAX_REQUESTS_PER_WINDOW = 20;
+const MAX_REQUESTS_PER_WINDOW = 100;
 const WINDOW_MS = 60 * 1000; // 60 seconds
 
 // ── In-memory store ───────────────────────────────────────────────
