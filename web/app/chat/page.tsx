@@ -760,15 +760,23 @@ function ChatContent() {
 
     recognition.onstart = () => setIsRecordingVoice(true);
 
+    let finalTranscript = "";
+
     recognition.onresult = (event: any) => {
-      let fullTranscript = "";
-      for (let i = 0; i < event.results.length; i++) {
-        fullTranscript += event.results[i][0].transcript;
-      }
+      let interimTranscript = "";
       
-      if (fullTranscript.trim()) {
-        setInput(fullTranscript);
-        finalTranscriptRef.current = fullTranscript;
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
+
+      const displayTranscript = finalTranscript + interimTranscript;
+      if (displayTranscript.trim()) {
+        setInput(displayTranscript);
+        finalTranscriptRef.current = displayTranscript;
       }
     };
 
