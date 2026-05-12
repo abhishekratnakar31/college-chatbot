@@ -58,6 +58,7 @@ export const metadata: Metadata = {
 };
 
 import { ChatProvider } from "./context/ChatContext";
+import { ShortlistProvider } from "./context/ShortlistContext";
 
 export default function RootLayout({
   children,
@@ -70,7 +71,9 @@ export default function RootLayout({
         className={`${inter.variable} ${playfair.variable} font-sans antialiased bg-white text-zinc-900`}
         suppressHydrationWarning
       >
-        <ChatProvider>{children}</ChatProvider>
+        <ShortlistProvider>
+          <ChatProvider>{children}</ChatProvider>
+        </ShortlistProvider>
       </body>
     </html>
   );

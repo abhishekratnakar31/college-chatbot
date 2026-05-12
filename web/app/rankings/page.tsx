@@ -140,9 +140,24 @@ function imgSeed(name: string): number {
   return Math.abs(h) % 900 + 100; // keeps us in a good range
 }
 
+import { useShortlist } from "../context/ShortlistContext";
+import { Bookmark } from "lucide-react";
+
 function CollegeRow({ college, index }: { college: College; index: number }) {
   const slug = toSlug(college.college ?? "");
-  const seed = imgSeed(college.college ?? "campus");
+  const { addToShortlist, removeFromShortlist, isInShortlist } = useShortlist();
+  const isSaved = isInShortlist(college.id);
+
+  const toggleSave = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();  
+    if (isSaved) {
+      removeFromShortlist(college.id);
+    } else {
+      addToShortlist(college);
+    }
+  };
+
   const isTop3 = (college.nirf_rank ?? 999) <= 3;
 
   return (
@@ -150,9 +165,10 @@ function CollegeRow({ college, index }: { college: College; index: number }) {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3, delay: Math.min(index * 0.03, 0.4) }}
+      className="relative group"
     >
       <Link href={`/colleges/${slug}`}
-        className="group flex items-center gap-4 sm:gap-8 py-6 border-b border-white/5 hover:bg-white/[0.02] transition-all group">
+        className="flex items-center gap-4 sm:gap-8 py-6 border-b border-white/5 hover:bg-white/[0.02] transition-all">
         
         {/* ── Rank Number ── */}
         <div className="flex w-12 flex-col items-center justify-center shrink-0">
@@ -203,7 +219,20 @@ function CollegeRow({ college, index }: { college: College; index: number }) {
               )}
             </div>
 
-            <ChevronRight size={18} className="text-white/10 group-hover:text-blue-400 transition-all group-hover:translate-x-1" />
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={toggleSave}
+                className={cn(
+                  "p-2.5 rounded-xl transition-all border",
+                  isSaved 
+                    ? "bg-amber-500/10 border-amber-500/50 text-amber-500" 
+                    : "bg-white/5 border-white/5 text-white/20 hover:text-amber-400 hover:border-amber-400/30"
+                )}
+              >
+                <Bookmark size={16} className={cn(isSaved && "fill-amber-500")} />
+              </button>
+              <ChevronRight size={18} className="text-white/10 group-hover:text-blue-400 transition-all group-hover:translate-x-1" />
+            </div>
           </div>
         </div>
       </Link>
@@ -318,10 +347,11 @@ function RankingsContent() {
             { icon: Brain, href: "/chat", label: "Chat" },
             { icon: Newspaper, href: "/news", label: "News" },
             { icon: Trophy, href: "/rankings", label: "Rankings", active: true },
+            { icon: Bookmark, href: "/shortlist", label: "Saved Colleges" },
           ].map((item) => (
-            <Link key={item.label} href={item.href} className={cn(
+            <Link key={item.label} href={item.href} title={item.label} className={cn(
               "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
-              item.active ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.15)]" : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10"
+              item.active ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.15)]" : "text-zinc-600 hover:text-amber-400 hover:bg-amber-500/10"
             )}>
               <item.icon size={18} />
             </Link>
@@ -336,8 +366,9 @@ function RankingsContent() {
           { icon: Brain, href: "/chat" },
           { icon: Newspaper, href: "/news" },
           { icon: Trophy, href: "/rankings", active: true },
+          { icon: Bookmark, href: "/shortlist" },
         ].map((item, i) => (
-          <Link key={i} href={item.href} className={cn("p-3 rounded-xl transition-all", item.active ? "bg-white text-black" : "text-zinc-600")}>
+          <Link key={i} href={item.href} className={cn("p-3 rounded-xl transition-all", item.active ? "bg-white text-black" : "text-zinc-600 hover:text-amber-400")}>
             <item.icon size={20} />
           </Link>
         ))}

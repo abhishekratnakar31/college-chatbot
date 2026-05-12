@@ -23,6 +23,7 @@ export async function chatRoute(app: FastifyInstance) {
         pdfFilename?: string;   // PDF filename — used as fallback when text is empty
         filters?: Record<string, any>; // Optional metadata filters (e.g. { page_number: 5 })
         language?: string;      // Optional explicit language code override (e.g. "hi", "ta")
+        contextHint?: string;   // Optional context hint (e.g. college name for widget)
       };
       const mode = body.mode || "pdf";
 
@@ -84,14 +85,31 @@ export async function chatRoute(app: FastifyInstance) {
 
       console.log(`\n[RAG Search] ------------------------------------------------`);
       console.log(`[RAG Search] User question received: "${currentInput}"`);
+      console.log(`[RAG Search] Context Hint: ${body.contextHint || "None"}`);
       console.log(`[RAG Search] Optimizing query for vector search...`);
 
       // ── Rankings Context Injection (Parallel) ───────────────────────
       const rankingsPromise = (async () => {
         let context = "";
         try {
-          const mentioned = detectColleges(currentInput);
-          if (mentioned.length >= 2) {
+          // If a contextHint is provided, use it as a primary college for detection
+          const queryForDetection = body.contextHint 
+            ? `${body.contextHint} ${currentInput}`
+            : currentInput;
+
+          let mentioned = detectColleges(queryForDetection);
+          
+          // STRICT FILTER: If contextHint is present, ignore any other colleges mentioned in the prompt
+          // to prevent the LLM from getting verified data about competitors.
+          if (body.contextHint) {
+            mentioned = mentioned.filter(name => 
+              name.toLowerCase().includes(body.contextHint!.toLowerCase()) || 
+              body.contextHint!.toLowerCase().includes(name.toLowerCase())
+            );
+            if (mentioned.length === 0) mentioned = [body.contextHint];
+          }
+
+          if (mentioned.length >= 2 && !body.contextHint) {
             const rows = await Promise.all(
               mentioned.slice(0, 2).map(async (name) => {
                 const res = await sql<any[]>`
@@ -128,8 +146,8 @@ Awards — ${a.college}: ${(a.awards as string[]).join(', ') || 'N/A'}
 Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
 `;
             }
-          } else if (mentioned.length === 1) {
-            const name = mentioned[0]!;
+          } else if (mentioned.length === 1 || body.contextHint) {
+            const name = mentioned[0] || body.contextHint!;
             const res = await sql<any[]>`
               SELECT * FROM college_achievements
               WHERE college ILIKE ${"%" + name + "%"} OR ${name} = ANY(aliases)
@@ -169,7 +187,8 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
 
       const { query: rawOptimizedQuery, intent: intentResult, variants: queryVariantsFromRouter } = await generateOptimizedQueryAndIntent(
         history,
-        detectedLangName
+        detectedLangName,
+        body.contextHint
       );
 
       // 1a. Intent check — early exit before any retrieval cost
@@ -369,6 +388,14 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
           role: "system",
           content: `
 You are a specialized College Assistant chatbot operating in **${mode.toUpperCase()} MODE${hasPdfContext ? " + PDF CONTEXT" : ""}**. 
+
+${body.contextHint ? `
+STRICT SCOPING PROTOCOL:
+1. You are the EXCLUSIVE AI assistant for **${body.contextHint}**.
+2. YOU MUST ONLY answer questions about **${body.contextHint}**. 
+3. If the user asks about ANY OTHER college, institution, or university, you MUST politely refuse and state: "I am specifically here to assist you with information regarding **${body.contextHint}**. For information about other institutions, please visit their respective pages or use our global comparison tool."
+4. DO NOT provide comparisons with other colleges in this mode. Stay 100% focused on **${body.contextHint}**.
+` : ""}
 
 ${mode === "pdf" ? `
 REASONING PROTOCOLS (PDF MODE):

@@ -39,6 +39,7 @@ import {
   IndianRupee,
   Info,
   Zap,
+  Bookmark,
 } from "lucide-react";
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
@@ -921,6 +922,12 @@ export default function HeroPage() {
           >
             Rankings
           </Link>
+          <Link
+            href="/shortlist"
+            className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-amber-400 transition-colors"
+          >
+            Saved Colleges
+          </Link>
         </div>
       </header>
 
@@ -931,13 +938,14 @@ export default function HeroPage() {
           { icon: Brain, href: "/chat" },
           { icon: Newspaper, href: "/news" },
           { icon: Trophy, href: "/rankings" },
+          { icon: Bookmark, href: "/shortlist" },
         ].map((item, i) => (
           <Link
             key={i}
             href={item.href}
             className={cn(
               "p-3 rounded-xl transition-all",
-              item.active ? "bg-white text-black" : "text-zinc-600",
+              item.active ? "bg-white text-black" : "text-zinc-600 hover:text-amber-400",
             )}
           >
             <item.icon size={20} />

@@ -254,7 +254,8 @@ RULE:
  */
 export async function generateOptimizedQueryAndIntent(
   messages: ChatMessage[],
-  detectedLangName: string = "English"
+  detectedLangName: string = "English",
+  contextHint?: string
 ): Promise<{ query: string; intent: "VALID" | "OUT_OF_DOMAIN"; variants: string[] }> {
   const lastMessage = messages[messages.length - 1]?.content || "";
   const sanitizedInput = lastMessage.replace(/SYSTEM:[\s\S]*?\n\n/g, "").trim();
@@ -270,6 +271,10 @@ export async function generateOptimizedQueryAndIntent(
 
   const langRule = detectedLangName !== "English"
     ? ` (5) The user is writing in ${detectedLangName}. ALWAYS translate the 'query' into ENGLISH.`
+    : "";
+
+  const contextRule = contextHint 
+    ? `\n6. IMPORTANT: The user is currently viewing information about **${contextHint}**. If their question is ambiguous (e.g. "what are the fees?", "show rankings"), assume they are referring to ${contextHint}. Include "${contextHint}" in the 'query' if it helps specificity.`
     : "";
 
   try {
@@ -291,7 +296,7 @@ RULES:
 1. 'intent': 'VALID' if the query is about colleges, admissions, programs, or institutional info. 'OUT_OF_DOMAIN' otherwise.
 2. 'query': A clean, keyword-dense search query optimized for a vector database. ${langRule}
 3. 'variants': Array of 2 alternative phrasings using synonyms (e.g. "fees" vs "tuition").
-4. Output ONLY a JSON object: {"intent": "VALID"|"OUT_OF_DOMAIN", "query": "string", "variants": ["str1", "str2"]}`,
+4. Output ONLY a JSON object: {"intent": "VALID"|"OUT_OF_DOMAIN", "query": "string", "variants": ["str1", "str2"]}${contextRule}`,
             },
             ...messages.slice(-3).map(m => m === messages[messages.length-1] ? { ...m, content: sanitizedInput } : m),
           ],

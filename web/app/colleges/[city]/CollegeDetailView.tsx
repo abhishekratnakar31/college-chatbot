@@ -8,11 +8,13 @@ import {
   GraduationCap, Brain, Newspaper, MapPin, ExternalLink,
   Star, ChevronLeft, Zap, Users, Bookmark,
   BookOpen, Award, Globe, Lightbulb, Rocket, Building2, ArrowRight,
-  MessageSquare, Cpu, DollarSign, Info, FileText, LayoutGrid, Landmark
+  MessageSquare, Cpu, DollarSign, Info, FileText, LayoutGrid, Landmark,
 } from "lucide-react";
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { ChatWidget } from "@/app/components/ChatWidget";
+import { useShortlist } from "../../context/ShortlistContext";
 
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
@@ -197,31 +199,32 @@ export default function CollegeDetailView({
 }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("College Info");
-  const [isSaved, setIsSaved] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const saved = JSON.parse(localStorage.getItem("academia_saved_colleges") || "[]");
-    setIsSaved(saved.includes(college.college));
-  }, [college.college]);
+  const { addToShortlist, removeFromShortlist, isInShortlist } = useShortlist();
+  
+  const seed = imgSeed(college.college);
+  const clgAssets = getCollegeAssets(college.college, college.website);
+  const collegeId = (college as any).id || seed;
+  const isSaved = isInShortlist(collegeId);
 
   const toggleSave = () => {
-    const saved = JSON.parse(localStorage.getItem("academia_saved_colleges") || "[]");
-    let newSaved;
     if (isSaved) {
-      newSaved = saved.filter((name: string) => name !== college.college);
+      removeFromShortlist(collegeId);
     } else {
-      newSaved = [...saved, college.college];
+      addToShortlist({
+        id: collegeId,
+        college: college.college,
+        city: college.city || "",
+        state: college.state || "",
+        nirf_rank: college.nirf_rank,
+        avg_package: college.avg_package,
+        nirf_category: college.nirf_category,
+        logo: clgAssets.logo
+      });
     }
-    localStorage.setItem("academia_saved_colleges", JSON.stringify(newSaved));
-    setIsSaved(!isSaved);
   };
 
-  const seed = imgSeed(college.college);
   const gradColor = CATEGORY_COLORS[college.nirf_category ?? ""] ?? "from-zinc-950/90 via-zinc-900/60 to-black/90";
   const metaInfo = getCollegeMeta(college.college, college.nirf_category);
-  const assets = getCollegeAssets(college.college, college.website);
 
   // ── Review Data Generator ──
   const getReviewsList = () => {
@@ -367,9 +370,9 @@ export default function CollegeDetailView({
             className="flex flex-col sm:flex-row items-start sm:items-end gap-6 sm:gap-8">
             
             <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 shadow-2xl backdrop-blur-xl group relative overflow-hidden">
-              {assets.logo ? (
+              {clgAssets.logo ? (
                 <Image 
-                  src={assets.logo} 
+                  src={clgAssets.logo} 
                   alt="Logo" 
                   fill 
                   className="object-contain p-4 group-hover:scale-110 transition-transform duration-500" 
@@ -436,13 +439,13 @@ export default function CollegeDetailView({
                   <button 
                     onClick={toggleSave}
                     className={cn(
-                      "flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-bold backdrop-blur-md transition-all shadow-lg hover:scale-105 active:scale-95",
+                      "flex items-center gap-2 px-6 py-2.5 rounded-xl border text-[11px] font-black uppercase tracking-widest backdrop-blur-md transition-all shadow-lg hover:scale-105 active:scale-95",
                       isSaved 
-                        ? "bg-white border-white text-black shadow-white/10" 
-                        : "border-white/20 text-white hover:bg-blue-500/10 hover:text-blue-400"
+                        ? "bg-amber-500 border-amber-500 text-white shadow-amber-500/20" 
+                        : "border-white/20 text-white hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-400/30"
                     )}
                   >
-                    <Bookmark size={14} className={isSaved ? "fill-black" : ""} /> {isSaved ? "Saved" : "Save Institution"}
+                    <Bookmark size={14} className={isSaved ? "fill-white" : ""} /> {isSaved ? "Saved" : "Save College"}
                   </button>
                 </div>
               </div>
@@ -798,6 +801,7 @@ export default function CollegeDetailView({
 
       </div>
 
+      <ChatWidget collegeName={college.college} logo={clgAssets.logo} />
     </PageShell>
   );
 }

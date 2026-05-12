@@ -34,7 +34,8 @@ import {
   Volume2,
   VolumeX,
   Paperclip,
-  Activity,
+  Activity, 
+  Bookmark
 } from "lucide-react";
 import { useChat } from "../context/ChatContext";
 import { BarVisualizer } from "../components/ui/bar-visualizer";
@@ -1177,15 +1178,17 @@ function ChatContent() {
             { icon: Brain, href: "/chat", active: true },
             { icon: Newspaper, href: "/news" },
             { icon: Trophy, href: "/rankings" },
+            { icon: Bookmark, href: "/shortlist", label: "Saved Colleges" },
           ].map((item, i) => (
             <Link
               key={i}
               href={item.href}
+              title={(item as any).label}
               className={cn(
                 "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
                 item.active
                   ? "bg-white text-black shadow-xl shadow-white/10"
-                  : "text-zinc-600 hover:bg-blue-500/10 hover:text-blue-400",
+                  : "text-zinc-600 hover:bg-amber-500/10 hover:text-amber-400",
               )}
             >
               <item.icon size={18} />
@@ -1201,13 +1204,14 @@ function ChatContent() {
           { icon: Brain, href: "/chat", active: true },
           { icon: Newspaper, href: "/news" },
           { icon: Trophy, href: "/rankings" },
+          { icon: Bookmark, href: "/shortlist" },
         ].map((item, i) => (
           <Link
             key={i}
             href={item.href}
             className={cn(
               "p-3 rounded-xl transition-all",
-              item.active ? "bg-white text-black" : "text-zinc-600",
+              item.active ? "bg-white text-black" : "text-zinc-600 hover:text-amber-400",
             )}
           >
             <item.icon size={20} />
