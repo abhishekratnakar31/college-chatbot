@@ -40,6 +40,20 @@ import {
   Info,
   Zap,
   Bookmark,
+  Crosshair,
+  LayoutGrid,
+  MessageCircle,
+  Database,
+  TrendingUp,
+  ShieldCheck,
+  Layers,
+  Users,
+  Mic,
+  Radio,
+  Twitter,
+  Github,
+  Linkedin,
+  ChevronDown,
 } from "lucide-react";
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
@@ -59,61 +73,25 @@ function formatRelativeTime(dateString: string | null) {
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-// ── Animated cycling word ────────────────────────────────────────────────────
-const CYCLE_WORDS = ["Search", "Explore", "Discover", "Analyse"];
-
-function CycleWord() {
-  const [index, setIndex] = useState(0);
-  useEffect(() => {
-    const id = setInterval(
-      () => setIndex((i) => (i + 1) % CYCLE_WORDS.length),
-      3000,
-    );
-    return () => clearInterval(id);
-  }, []);
-
-  return (
-    <span className="relative inline-block overflow-hidden align-bottom">
-      <AnimatePresence mode="wait">
-        <motion.span
-          key={CYCLE_WORDS[index]}
-          initial={{ y: 48, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -48, opacity: 0 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="inline-block text-white"
-        >
-          {CYCLE_WORDS[index]}
-        </motion.span>
-      </AnimatePresence>
-    </span>
-  );
-}
-
-// ── Hero Background ──────────────────────────────────────────────────────────
-function HeroBackground() {
-  const { scrollY } = useScroll();
-  const y = useTransform(scrollY, [0, 1000], [0, 200]);
+// ── Parallax Component ──────────────────────────────────────────────────────
+function ParallaxScroll({
+  children,
+  speed = 0.5,
+}: {
+  children: React.ReactNode;
+  speed?: number;
+}) {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+  const y = useTransform(scrollYProgress, [0, 1], [0, speed * 200]);
 
   return (
-    <div className="absolute inset-0 overflow-hidden hidden md:block">
-      <motion.div
-        style={{ y }}
-        initial={{ scale: 1.1, opacity: 0 }}
-        animate={{ scale: 1, opacity: 0.4 }}
-        transition={{ duration: 2, ease: "easeOut" }}
-        className="absolute inset-0"
-      >
-        <img
-          src="/monochrome_hero_abstract_1777281034931.png"
-          alt=""
-          className="w-full h-full object-cover"
-          draggable={false}
-        />
-      </motion.div>
-      <div className="absolute inset-0 bg-black/40" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,#0a0a0a_100%)]" />
-    </div>
+    <motion.div ref={ref} style={{ y }}>
+      {children}
+    </motion.div>
   );
 }
 
@@ -121,9 +99,11 @@ function HeroBackground() {
 function Reveal({
   children,
   delay = 0,
+  className,
 }: {
   children: React.ReactNode;
   delay?: number;
+  className?: string;
 }) {
   return (
     <motion.div
@@ -131,6 +111,7 @@ function Reveal({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
+      className={className}
     >
       {children}
     </motion.div>
@@ -247,24 +228,266 @@ function TopStudyPlaces() {
           <Reveal key={city.name} delay={i * 0.05}>
             <Link
               href={`/rankings?city=${encodeURIComponent(city.query)}&state=${encodeURIComponent(city.state)}`}
-              className="flex-shrink-0 w-48 aspect-[4/5] snap-start p-8 rounded-[2rem] bg-zinc-900/30 border border-zinc-800 hover:border-blue-500 hover:bg-blue-500/10 transition-all group flex flex-col items-center justify-center text-center gap-6"
+              className="flex-shrink-0 w-72 aspect-[3/4] snap-start p-10 rounded-[2.5rem] bg-[#0d0d0d] border border-zinc-800/50 hover:border-zinc-600 hover:bg-[#111111] transition-all duration-700 group flex flex-col items-center justify-between text-center relative overflow-hidden shadow-2xl"
             >
-              <div className="group-hover:scale-110 group-hover:text-blue-400 transition-all duration-500">
-                {city.icon}
+              {/* Decorative Background Glow */}
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.03)_0%,transparent_70%)]" />
+
+              <div className="relative z-10 w-full flex flex-col items-center gap-8">
+                <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center group-hover:scale-110 group-hover:border-zinc-700 transition-all duration-500 shadow-xl">
+                  {React.cloneElement(city.icon as React.ReactElement<any>, {
+                    className:
+                      "w-8 h-8 text-zinc-500 group-hover:text-white transition-colors",
+                  })}
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-serif font-medium text-zinc-200 group-hover:text-white transition-colors">
+                    {city.name}
+                  </h3>
+                  <div className="px-3 py-1 rounded-full bg-zinc-900/50 border border-zinc-800 text-[10px] font-black text-zinc-600 uppercase tracking-widest group-hover:text-zinc-400 transition-colors">
+                    {city.university}
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col gap-1 transition-all">
-                <span className="text-sm font-bold tracking-tight text-white">
-                  {city.name}
-                </span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-700 group-hover:text-zinc-500 transition-colors">
-                  {city.university}
-                </span>
+
+              <div className="relative z-10 w-full pt-8 border-t border-zinc-900/50 flex flex-col items-center gap-4">
+                <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.2em] group-hover:text-zinc-500 transition-colors">
+                  Institution Hub
+                </p>
+                <div className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0">
+                  <ArrowUpRight size={16} className="text-white" />
+                </div>
               </div>
             </Link>
           </Reveal>
         ))}
       </div>
     </div>
+  );
+}
+
+function ExperienceHub({ news, rankings }: { news: any[]; rankings: any[] }) {
+  const [activeTab, setActiveTab] = useState("Chat");
+  const tabs = [
+    {
+      id: "Chat",
+      icon: Brain,
+      label: "Neural Chat",
+      desc: "Interact with our RAG-powered engine to extract precise data from thousands of college prospectuses.",
+      detail:
+        "Neural Chat offers a unified interface for deep academic research. Seamlessly upload college prospectuses as PDFs, interact hands-free with Aura Voice, or activate Comparison Mode for side-by-side institutional analysis. Toggle Web Mode for real-time internet intelligence, ensuring you have every perspective.",
+    },
+    {
+      id: "News",
+      icon: Newspaper,
+      label: "Intelligence Feed",
+      desc: "A real-time pulse of Indian academia, tracking every major admission update and cutoff change.",
+      detail:
+        "Stay ahead with our Intelligence Feed, a real-time data layer tracking every major shift in Indian academia. From sudden admission notification drops to evolving cutoff trends, our AI aggregates and synthesizes information from official sources to keep you informed instantly.",
+    },
+    {
+      id: "Rankings",
+      icon: Trophy,
+      label: "Global Rankings",
+      desc: "Go beyond simple lists with verifiable innovation and placement-density metrics.",
+      detail:
+        "Navigate institutional excellence with our Global Rankings engine. We move beyond static lists by integrating verifiable placement-density metrics and innovation scores. Discover colleges that truly align with your research ambitions and career ROI through our data-driven academic leaderboard.",
+    },
+  ];
+
+  return (
+    <section className="w-full py-24 md:py-48 px-6 bg-[#0a0a0a]">
+      <div className="max-w-7xl mx-auto flex flex-col items-center">
+        <Reveal>
+          <div className="text-center mb-16 space-y-4">
+            <h2 className="text-4xl md:text-6xl font-serif font-medium text-white">
+              How you can use{" "}
+              <span className="italic text-zinc-600">AcademiaAI.</span>
+            </h2>
+          </div>
+        </Reveal>
+
+        {/* Tab Bar */}
+        <div className="bg-[#111111] p-1.5 rounded-[2rem] border border-zinc-800/50 flex flex-wrap justify-center gap-1 mb-16 relative z-10">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex items-center gap-3 px-6 py-3 rounded-full text-sm font-bold transition-all duration-500",
+                activeTab === tab.id
+                  ? "bg-zinc-200 text-black shadow-xl"
+                  : "text-zinc-500 hover:text-white hover:bg-zinc-800/50",
+              )}
+            >
+              <tab.icon size={18} />
+              {tab.id}
+            </button>
+          ))}
+        </div>
+
+        {/* Split Section: Text Left, Preview Right */}
+        <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-center">
+          {/* Left: Narrative */}
+          <div className="lg:col-span-5 space-y-10">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.5 }}
+                className="space-y-8"
+              >
+                <div className="space-y-4">
+                  <h3 className="text-4xl md:text-6xl font-serif font-medium text-white leading-tight">
+                    {tabs.find((t) => t.id === activeTab)?.label.split(" ")[0]}{" "}
+                    <br />
+                    <span className="text-zinc-600 italic">
+                      {
+                        tabs
+                          .find((t) => t.id === activeTab)
+                          ?.label.split(" ")[1]
+                      }
+                    </span>
+                  </h3>
+                  <p className="text-zinc-400 text-lg md:text-xl leading-relaxed font-medium">
+                    {tabs.find((t) => t.id === activeTab)?.desc}
+                  </p>
+                </div>
+
+                <p className="text-zinc-600 text-sm md:text-base leading-relaxed border-l border-zinc-800 pl-8">
+                  {tabs.find((t) => t.id === activeTab)?.detail}
+                </p>
+
+                <Link
+                  href={`/${activeTab.toLowerCase()}`}
+                  className="inline-flex h-12 items-center px-10 rounded-full border border-zinc-800 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:border-white transition-all shadow-xl"
+                >
+                  Explore {activeTab} Intelligence
+                </Link>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Right: Preview Window */}
+          <div className="lg:col-span-7 relative h-full">
+            <div className="aspect-[4/3] rounded-[3rem] bg-[#0d0d0d] border border-zinc-800/50 relative overflow-hidden group shadow-2xl">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.02)_0%,transparent_70%)]" />
+
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.05 }}
+                  transition={{ duration: 0.6, ease: "circOut" }}
+                  className="absolute inset-0 p-6 md:p-10 flex items-center justify-center"
+                >
+                  {/* Visual Preview */}
+                  <div className="w-full h-full relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[#b69cc4] bg-[linear-gradient(to_right,#ffffff15_1px,transparent_1px),linear-gradient(to_bottom,#ffffff15_1px,transparent_1px)] bg-[size:32px_32px] rounded-3xl border border-white/20 shadow-2xl p-6 md:p-12 overflow-hidden flex flex-col justify-center">
+                      {activeTab === "Chat" && (
+                        <div className="space-y-6">
+                          <div className="flex gap-4 items-start max-w-[85%]">
+                            <div className="w-8 h-8 rounded-full bg-black/10 flex items-center justify-center shrink-0">
+                              <Users size={14} className="text-black/50" />
+                            </div>
+                            <div className="bg-black p-5 rounded-2xl rounded-tl-none border border-white/5 shadow-2xl">
+                              <p className="text-xs md:text-sm text-zinc-300">
+                                Compare placements at IIT Delhi and BITS Pilani
+                                for CS.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-4 items-start ml-auto max-w-[85%] text-right">
+                            <div className="bg-black p-5 rounded-2xl rounded-tr-none border border-white/5 shadow-2xl">
+                              <p className="text-xs md:text-sm text-zinc-300 leading-relaxed">
+                                IIT Delhi shows a{" "}
+                                <span className="text-white font-bold">
+                                  12% higher
+                                </span>{" "}
+                                median package for 2024, but BITS has a{" "}
+                                <span className="text-white font-bold">
+                                  wider recruiter network
+                                </span>
+                                ...
+                              </p>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow-lg">
+                              <GraduationCap size={14} className="text-black" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {activeTab === "News" && (
+                        <div className="space-y-6">
+                          <div className="flex justify-between items-center px-2">
+                            <h4 className="text-[10px] font-black text-black/40 uppercase tracking-widest">
+                              Global Intelligence
+                            </h4>
+                            <Radio
+                              size={12}
+                              className="text-black/60 animate-pulse"
+                            />
+                          </div>
+                          <div className="space-y-4">
+                            {news.slice(0, 3).map((article, i) => (
+                              <div
+                                key={i}
+                                className="p-4 rounded-2xl bg-black border border-white/5 shadow-xl space-y-2"
+                              >
+                                <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-zinc-600">
+                                  <span>{article.source}</span>
+                                  <span>{article.time}</span>
+                                </div>
+                                <p className="text-xs font-bold text-zinc-300 line-clamp-1">
+                                  {article.title}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {activeTab === "Rankings" && (
+                        <div className="space-y-5">
+                          <h4 className="text-[10px] font-black text-black/40 uppercase tracking-widest px-2 mb-2">
+                            Live Leaderboard
+                          </h4>
+                          <div className="space-y-3">
+                            {rankings.slice(0, 4).map((college, i) => (
+                              <div
+                                key={i}
+                                className="flex items-center gap-4 p-4 rounded-2xl bg-black border border-white/5 shadow-xl group/rank hover:border-white/20 transition-all"
+                              >
+                                <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/5 flex items-center justify-center text-[10px] font-black text-zinc-500 group-hover/rank:text-white transition-all">
+                                  #{college.rank || i + 1}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-bold text-zinc-300 truncate">
+                                    {college.college}
+                                  </p>
+                                  <p className="text-[9px] font-black text-zinc-700 uppercase tracking-widest">
+                                    {college.city}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {/* Decorative Elements */}
+                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 blur-[80px] rounded-full" />
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -455,10 +678,22 @@ function NewsDashboard({ articles }: { articles: any[] }) {
 
 // ── Intelligence Section ───────────────────────────────────────────────────
 function IntelligenceSection({ news }: { news: any[] }) {
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"],
+  });
+  const y1 = useTransform(scrollYProgress, [0, 1], [0, -100]);
+  const y2 = useTransform(scrollYProgress, [0, 1], [0, 100]);
+
   return (
-    <div className="w-full py-20 md:py-48 px-6 bg-[#0a0a0a] relative overflow-hidden">
+    <div
+      ref={containerRef}
+      id="news"
+      className="w-full py-20 md:py-48 px-6 bg-[#0a0a0a] relative overflow-hidden"
+    >
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center relative z-10">
-        <div className="space-y-12">
+        <motion.div style={{ y: y1 }} className="space-y-12">
           <Reveal delay={0.1}>
             <h2 className="text-4xl sm:text-5xl md:text-8xl font-serif font-bold text-white tracking-tighter leading-[0.95]">
               Stay ahead with the <br />
@@ -483,19 +718,21 @@ function IntelligenceSection({ news }: { news: any[] }) {
               />
             </Link>
           </Reveal>
-        </div>
+        </motion.div>
 
-        <Reveal delay={0.4}>
-          <div className="relative group hidden md:block">
-            <NewsDashboard articles={news} />
-            {/* Ambient Glow behind dashboard */}
-            <div className="absolute -inset-10 bg-white/[0.02] rounded-full blur-[80px] pointer-events-none -z-10" />
-          </div>
-        </Reveal>
+        <motion.div
+          style={{ y: y2 }}
+          className="relative group hidden md:block"
+        >
+          <Reveal delay={0.4}>
+            <div className="relative group">
+              <NewsDashboard articles={news} />
+              {/* Ambient Glow behind dashboard */}
+              <div className="absolute -inset-10 bg-white/[0.02] rounded-full blur-[80px] pointer-events-none -z-10" />
+            </div>
+          </Reveal>
+        </motion.div>
       </div>
-
-      {/* Subtle Background Elements */}
-      <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-white/[0.01] to-transparent pointer-events-none" />
     </div>
   );
 }
@@ -583,18 +820,35 @@ function RankingsDashboard({ colleges }: { colleges: any[] }) {
 
 // ── Rankings Section ────────────────────────────────────────────────────────
 function RankingsSection({ rankings }: { rankings: any[] }) {
-  return (
-    <div className="w-full py-48 px-6 bg-[#0a0a0a] relative overflow-hidden">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center relative z-10">
-        <Reveal delay={0.4}>
-          <div className="relative group lg:order-1 hidden md:block">
-            <RankingsDashboard colleges={rankings} />
-            {/* Ambient Glow behind dashboard */}
-            <div className="absolute -inset-10 bg-white/[0.015] rounded-full blur-[80px] pointer-events-none -z-10" />
-          </div>
-        </Reveal>
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"],
+  });
+  const y1 = useTransform(scrollYProgress, [0, 1], [0, 150]);
+  const y2 = useTransform(scrollYProgress, [0, 1], [0, -50]);
 
-        <div className="space-y-12 lg:order-2">
+  return (
+    <div
+      ref={containerRef}
+      id="rankings"
+      className="w-full py-48 px-6 bg-[#0a0a0a] relative overflow-hidden"
+    >
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center relative z-10">
+        <motion.div
+          style={{ y: y1 }}
+          className="relative group lg:order-1 hidden md:block"
+        >
+          <Reveal delay={0.4}>
+            <div className="relative group">
+              <RankingsDashboard colleges={rankings} />
+              {/* Ambient Glow behind dashboard */}
+              <div className="absolute -inset-10 bg-white/[0.015] rounded-full blur-[80px] pointer-events-none -z-10" />
+            </div>
+          </Reveal>
+        </motion.div>
+
+        <motion.div style={{ y: y2 }} className="space-y-12 lg:order-2">
           <Reveal delay={0.1}>
             <h2 className="text-4xl sm:text-5xl md:text-8xl font-serif font-bold text-white tracking-tighter leading-[0.95]">
               Discover your <br />
@@ -619,45 +873,183 @@ function RankingsSection({ rankings }: { rankings: any[] }) {
               />
             </Link>
           </Reveal>
-        </div>
+        </motion.div>
       </div>
-
-      {/* Subtle Background Elements */}
-      <div className="absolute top-0 left-0 w-1/2 h-full bg-gradient-to-r from-white/[0.01] to-transparent pointer-events-none" />
     </div>
   );
 }
 
 // ── Quick Actions ────────────────────────────────────────────────────────────
-function QuickActions({ news, rankings }: { news: any[]; rankings: any[] }) {
+function InformationHub({ news, rankings }: { news: any[]; rankings: any[] }) {
   return (
-    <div className="w-full space-y-20 md:space-y-48 py-20 md:py-48 px-6 overflow-hidden">
-      <IntelligenceSection news={news} />
-      <RankingsSection rankings={rankings} />
+    <section className="w-full py-32 md:py-64 px-6 bg-[#0a0a0a]">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+          {/* Intelligence Terminal Visual (Voice + Filters) */}
+          <Reveal delay={0.2} className="order-2 lg:order-1">
+            <div className="relative aspect-square w-full max-w-lg mx-auto">
+              <div className="absolute inset-0 bg-[#b69cc4] bg-[linear-gradient(to_right,#ffffff15_1px,transparent_1px),linear-gradient(to_bottom,#ffffff15_1px,transparent_1px)] bg-[size:32px_32px] rounded-[3rem] border border-white/20 backdrop-blur-3xl overflow-hidden group shadow-2xl flex flex-col">
+                {/* Header/Status */}
+                <div className="p-6 border-b border-zinc-900 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">
+                      Neural-V1 Active
+                    </span>
+                  </div>
+                  <div className="flex gap-1">
+                    <div className="w-1 h-1 rounded-full bg-zinc-800" />
+                    <div className="w-1 h-1 rounded-full bg-zinc-800" />
+                  </div>
+                </div>
 
-      <div className="max-w-7xl mx-auto hidden">
-        <SectionCard
-          reverse
-          title={
-            <>
-              Discover your{" "}
-              <span className="text-zinc-300 ">perfect match</span>
-            </>
-          }
-          desc="Rankings based on verifiable innovation, placement metrics, and global impact."
-          href="/rankings"
-          image="/rankings_section.png"
-          icon={Trophy}
-        />
+                <div className="flex-1 grid grid-cols-12 overflow-hidden">
+                  {/* Left: Filter Sidebar */}
+                  <div className="col-span-4 border-r border-zinc-900 p-4 space-y-6 bg-black/20">
+                    <div className="space-y-3">
+                      <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">
+                        Field
+                      </p>
+                      <div className="px-3 py-2 rounded-lg bg-white text-black text-[9px] font-bold text-center">
+                        Engineering
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">
+                        Exam
+                      </p>
+                      <div className="grid grid-cols-1 gap-2">
+                        {["JEE Main", "JEE Adv"].map((exam) => (
+                          <div
+                            key={exam}
+                            className="px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 text-[8px] font-bold text-center"
+                          >
+                            {exam}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">
+                        Category
+                      </p>
+                      <div className="px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 text-[9px] font-bold text-center">
+                        General
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Voice Hub */}
+                  <div className="col-span-8 relative flex flex-col items-center justify-center p-8">
+                    {/* Ripple Rings */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      {[1, 2, 3].map((i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1.5, opacity: 0 }}
+                          transition={{
+                            duration: 3,
+                            repeat: Infinity,
+                            delay: i * 0.8,
+                          }}
+                          className="absolute w-32 h-32 rounded-full border border-zinc-800"
+                        />
+                      ))}
+                    </div>
+
+                    {/* Mic Button */}
+                    <div className="relative z-10 w-24 h-24 rounded-full bg-zinc-900 border border-zinc-800 flex flex-col items-center justify-center shadow-2xl group-hover:border-zinc-700 transition-all">
+                      <Mic size={24} className="text-white mb-2" />
+                      <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter">
+                        Tap to Speak
+                      </span>
+                    </div>
+
+                    <div className="mt-8 text-center space-y-1">
+                      <p className="text-[10px] font-bold text-white tracking-tight">
+                        System Ready
+                      </p>
+                      <p className="text-[8px] text-zinc-500 leading-relaxed max-w-[140px]">
+                        Initialize analysis across national pathways.
+                      </p>
+                    </div>
+
+                    {/* Analyze Button */}
+                    <div className="mt-10 w-full">
+                      <div className="w-full py-3 rounded-xl bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest text-center shadow-[0_0_30px_rgba(37,99,235,0.3)]">
+                        Analyze Signal
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ambient Glow */}
+                <div className="absolute bottom-0 right-0 w-48 h-48 bg-blue-500/[0.05] blur-[80px] rounded-full" />
+              </div>
+            </div>
+          </Reveal>
+
+          <Reveal className="order-1 lg:order-2">
+            <div className="space-y-8 lg:pl-16">
+              <h2 className="text-4xl md:text-7xl font-serif font-medium text-white tracking-tight leading-[1.1]">
+                Eliminate guesswork. <br />
+                <span className="text-zinc-600 italic">
+                  Predict with precision.
+                </span>
+              </h2>
+              <div className="space-y-6 max-w-xl">
+                <p className="text-zinc-400 text-xl leading-relaxed font-medium">
+                  Our Neural Predictor is an advanced inference engine that
+                  cross-references your profile with 15+ years of institutional
+                  cutoff shifts and enrollment behaviors.
+                </p>
+                <p className="text-zinc-600 text-base leading-relaxed border-l border-zinc-800 pl-6">
+                  By modeling thousands of variables—from category shifts to
+                  regional demand—Aura identifies patterns traditional search
+                  misses, giving you a{" "}
+                  <span className="text-white font-bold">94% accurate</span>{" "}
+                  success probability.
+                </p>
+              </div>
+              <Link
+                href="/predictor"
+                className="inline-flex items-center gap-4 text-xs font-black text-white uppercase tracking-[0.2em] group"
+              >
+                Check My Chances{" "}
+                <ArrowRight
+                  size={16}
+                  className="group-hover:translate-x-1 transition-transform"
+                />
+              </Link>
+
+              {/* Motive Summary */}
+              <div className="pt-12 border-t border-zinc-900 mt-12">
+                <div className="space-y-4 max-w-lg">
+                  <div className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">
+                    Our Motive
+                  </div>
+                  <p className="text-zinc-400 text-base leading-relaxed italic">
+                    "To democratize academic intelligence. We believe every
+                    student deserves access to the same high-resolution data and
+                    predictive insights once reserved for institutional
+                    insiders. AcademiaAI is our commitment to building a more
+                    transparent, data-driven, and equitable path to education."
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
 // ── Footer ───────────────────────────────────────────────────────────────────
 function Footer() {
   return (
-    <footer className="bg-black border-t border-zinc-900 pt-20 md:pt-32 pb-16 px-6 md:px-8">
+    <footer className="bg-[#0a0a0a] border-t border-zinc-900 pt-20 md:pt-32 pb-16 px-6 md:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-16 mb-24">
           <div className="col-span-1 md:col-span-1">
@@ -678,13 +1070,19 @@ function Footer() {
               Platform
             </h4>
             <ul className="space-y-4">
-              {["AI Chatbot", "Latest News", "Rankings"].map((item) => (
-                <li key={item}>
+              {[
+                { label: "AI Chatbot", href: "/chat" },
+                { label: "Latest News", href: "#news" },
+                { label: "Global Rankings", href: "#rankings" },
+                { label: "Smart Predictor", href: "/predictor" },
+                { label: "My Vault", href: "/shortlist" }
+              ].map((item) => (
+                <li key={item.label}>
                   <Link
-                    href={`/${item.toLowerCase().replace(" ", "")}`}
-                    className="text-zinc-500 hover:text-blue-400 text-sm transition-colors font-semibold"
+                    href={item.href}
+                    className="text-zinc-500 hover:text-white text-sm transition-colors font-semibold"
                   >
-                    {item}
+                    {item.label}
                   </Link>
                 </li>
               ))}
@@ -772,7 +1170,19 @@ export default function HeroPage() {
   const [uploadProgressText, setUploadProgressText] = useState("");
   const [news, setNews] = useState<any[]>([]);
   const [rankings, setRankings] = useState<any[]>([]);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
+        setActiveMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAttachedFile(e.target.files?.[0] ?? null);
@@ -842,10 +1252,10 @@ export default function HeroPage() {
   };
 
   const SUGGESTIONS = [
+    "Predict my chances",
     "IIT Bombay CS cutoff",
     "NIT Trichy placements",
     "Top MBA colleges",
-    "JEE Advanced eligibility",
   ];
 
   useEffect(() => {
@@ -870,293 +1280,369 @@ export default function HeroPage() {
   const heroY = useTransform(scrollY, [0, 500], [0, -100]);
 
   return (
-    <div className="relative min-h-screen bg-[#0a0a0a] overflow-x-hidden selection:bg-white selection:text-black font-sans text-white">
-      {/* Liquid Glass Distortion Filter */}
-      <svg width="0" height="0" style={{ position: "absolute" }}>
-        <defs>
-          <filter
-            id="glass-distortion"
-            x="0%"
-            y="0%"
-            width="100%"
-            height="100%"
-          >
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.02 0.02"
-              numOctaves="2"
-              seed="92"
-              result="noise"
-            />
-            <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
-            <feDisplacementMap
-              in="SourceGraphic"
-              in2="blurred"
-              scale="200"
-              xChannelSelector="R"
-              yChannelSelector="G"
-            />
-          </filter>
-        </defs>
-      </svg>
-
-      <header className="fixed top-0 left-0 right-0 h-20 border-b border-transparent md:border-zinc-900/10 flex items-center justify-between px-6 md:px-10 z-[100] bg-black/50 backdrop-blur-xl md:backdrop-blur-none md:bg-transparent transition-all">
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.1)] group-hover:scale-105 transition-all shrink-0">
-            <GraduationCap className="text-black w-6 h-6" />
-          </div>
-          <span className="text-xl font-serif font-bold text-white tracking-tighter whitespace-nowrap">
-            Academia<span className="text-zinc-500">AI</span>
-          </span>
-        </Link>
-        <div className="flex items-center gap-4 md:gap-10">
-          <Link
-            href="/news"
-            className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-blue-400 transition-colors"
-          >
-            News
-          </Link>
-          <Link
-            href="/rankings"
-            className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-blue-400 transition-colors"
-          >
-            Rankings
-          </Link>
-          <Link
-            href="/shortlist"
-            className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-amber-400 transition-colors"
-          >
-            Saved Colleges
-          </Link>
-        </div>
-      </header>
-
-      {/* Mobile Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-lg border-t border-zinc-900 flex items-center justify-around z-[200] px-6">
-        {[
-          { icon: GraduationCap, href: "/", active: true },
-          { icon: Brain, href: "/chat" },
-          { icon: Newspaper, href: "/news" },
-          { icon: Trophy, href: "/rankings" },
-          { icon: Bookmark, href: "/shortlist" },
-        ].map((item, i) => (
-          <Link
-            key={i}
-            href={item.href}
-            className={cn(
-              "p-3 rounded-xl transition-all",
-              item.active ? "bg-white text-black" : "text-zinc-600 hover:text-amber-400",
-            )}
-          >
-            <item.icon size={20} />
-          </Link>
-        ))}
-      </nav>
-
-      <section className="relative flex items-center justify-center min-h-screen px-4 overflow-hidden pt-20">
-        <HeroBackground />
-
-        {/* Main Content - Centered */}
-        <motion.div
-          style={{ y: heroY }}
-          className="relative z-10 w-full max-w-5xl mx-auto text-center"
-        >
-          {/* Hero Text - Moved Above Search */}
-          <div className="mb-10 md:mb-16">
-            <Reveal>
-              <h1 className="text-4xl md:text-6xl font-serif font-bold tracking-tighter leading-tight mb-4 text-white">
-                <CycleWord />{" "}
-                <span className="text-zinc-700">Every College.</span>
-              </h1>
-            </Reveal>
-            <Reveal delay={0.2}>
-              <p className="text-sm md:text-lg text-zinc-400 leading-relaxed font-medium max-w-2xl mx-auto opacity-80">
-                Live admissions, placements, and academic intelligence across
-                India's top institutions.
-              </p>
-            </Reveal>
-          </div>
-
-          <Reveal delay={0.4}>
-            <form onSubmit={handleSubmit} className="relative group">
-              <div className="relative flex items-center liquid-glass-container rounded-full transition-all duration-500 shadow-2xl shadow-black/5 p-1 md:p-2 border-2 border-transparent group-focus-within:border-white/10">
-                <Search className="absolute left-6 md:left-8 w-5 h-5 md:w-8 md:h-8 text-zinc-300 pointer-events-none" />
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Ask anything about colleges..."
-                  className="w-full bg-transparent pl-12 md:pl-20 pr-4 py-4 md:py-10 text-xl md:text-4xl text-white placeholder:text-zinc-600 outline-none font-serif font-medium"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className={cn(
-                    "p-3 md:p-10 mr-1 md:mr-2 text-zinc-300 hover:text-blue-400 transition-colors",
-                    attachedFile && "text-white",
-                  )}
-                >
-                  <Paperclip className="w-5 h-5 md:w-8 md:h-8" />
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUploading}
-                  className="px-5 md:px-14 py-3 md:py-6 mr-7 bg-white text-black font-bold text-xs md:text-xl rounded-full hover:bg-blue-500 hover:text-white transition-all active:scale-95 shadow-xl disabled:opacity-50"
-                >
-                  {isUploading ? uploadProgressText || "Indexing..." : "Search"}
-                </button>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                onChange={handleFileChange}
-                accept=".pdf"
+    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden selection:bg-white selection:text-black font-sans text-white">
+      <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative no-scrollbar">
+        {/* Liquid Glass Distortion Filter */}
+        <svg width="0" height="0" style={{ position: "absolute" }}>
+          <defs>
+            <filter
+              id="glass-distortion"
+              x="0%"
+              y="0%"
+              width="100%"
+              height="100%"
+            >
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency="0.02 0.02"
+                numOctaves="2"
+                seed="92"
+                result="noise"
               />
-            </form>
-            {attachedFile && (
-              <div className="mt-4 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-black bg-zinc-50 py-2 px-4 rounded-full mx-auto w-fit">
-                <FileText size={14} /> {attachedFile.name}
-                <button
-                  onClick={() => setAttachedFile(null)}
-                  className="ml-2 hover:text-zinc-400"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            )}
-            <div className="flex flex-wrap justify-center gap-2 md:gap-3 mt-6 md:mt-10">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() =>
-                    (window.location.href = `/chat?q=${encodeURIComponent(s)}&mode=web`)
-                  }
-                  className="px-4 md:px-6 py-2 md:py-3 rounded-full border border-zinc-800 bg-zinc-900/50 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-zinc-500 hover:text-blue-400 hover:border-blue-500 transition-all"
-                >
-                  {s}
-                </button>
-              ))}
+              <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
+              <feDisplacementMap
+                in="SourceGraphic"
+                in2="blurred"
+                scale="200"
+                xChannelSelector="R"
+                yChannelSelector="G"
+              />
+            </filter>
+          </defs>
+        </svg>
+
+        <header ref={headerRef} className="fixed top-0 left-0 right-0 h-20 border-b border-white/5 flex items-center justify-between px-6 md:px-12 z-[200] bg-[#0a0a0a]/80 backdrop-blur-xl">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.1)] group-hover:scale-105 transition-all shrink-0">
+              <GraduationCap className="text-black w-5 h-5" />
             </div>
-          </Reveal>
-        </motion.div>
-      </section>
+            <span className="text-xl font-serif font-bold text-white tracking-tight">
+              Academia<span className="text-zinc-500 italic">AI</span>
+            </span>
+          </Link>
 
-      <TopStudyPlaces />
-      
-      {/* Feature Explanations Section */}
-      <section className="w-full max-w-4xl mx-auto py-24 md:py-32 px-6 space-y-24 md:space-y-32">
-        <Reveal>
-          <div className="text-left">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 mb-6">Interactive Chat</h3>
-            <p className="text-2xl md:text-4xl font-serif font-medium text-white leading-snug md:leading-tight">
-              Engage in intelligent conversations with our AI-driven academic advisor. From understanding cut-off trends to exploring placement statistics, get instant, data-backed answers to all your college-related queries in real-time.
-            </p>
-          </div>
-        </Reveal>
-
-        <Reveal delay={0.1}>
-          <div className="text-right">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6">Voice Intelligence</h3>
-            <p className="text-2xl md:text-4xl font-serif font-medium text-zinc-400 leading-snug md:leading-tight">
-              Speak your mind. Our voice-enabled interface allows you to interact naturally with the platform. Ask questions about your future campus while on the go, and receive spoken insights that make academic research feel effortless.
-            </p>
-          </div>
-        </Reveal>
-
-        <Reveal delay={0.2}>
-          <div className="text-left">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 mb-6">PDF Synthesis</h3>
-            <p className="text-2xl md:text-4xl font-serif font-medium text-white leading-snug md:leading-tight">
-              Unlock the knowledge trapped in documents. Upload prospectuses, brochures, or research papers, and let AcademiaAI synthesize the most relevant information for you, turning complex PDFs into clear, actionable summaries.
-            </p>
-          </div>
-        </Reveal>
-
-        <Reveal delay={0.3}>
-          <div className="text-right">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6">Institution Comparison</h3>
-            <p className="text-2xl md:text-4xl font-serif font-medium text-zinc-400 leading-snug md:leading-tight">
-              Make informed decisions with side-by-side comparisons. Evaluate multiple institutions across various parameters like innovation scores, campus life, and industry readiness to find the college that perfectly aligns with your aspirations.
-            </p>
-          </div>
-        </Reveal>
-      </section>
-
-      <QuickActions news={news} rankings={rankings} />
-
-      <div className="w-full py-64 px-6 bg-[#0a0a0a] relative overflow-hidden">
-        <Reveal>
-          <div className="max-w-6xl mx-auto relative text-center space-y-16">
-            <div className="flex justify-center items-center gap-8 mb-12">
-              <h3 className="text-white text-5xl md:text-7xl font-bold tracking-tighter">
-                Academia<span className="text-zinc-600 italic">AI</span>
-              </h3>
-            </div>
-
-            <div className="space-y-8">
-              <h2 className="text-6xl md:text-[12rem] font-serif font-bold text-white tracking-tighter leading-[0.85]">
-                Join <span className="text-zinc-700 italic">&</span> <br />
-                Get Started
-              </h2>
-              <p className="text-zinc-500 text-2xl md:text-3xl max-w-3xl mx-auto font-medium leading-relaxed">
-                Experience the next generation of academic intelligence. <br />
-                Data-driven decisions start here.
-              </p>
-            </div>
-
-            <div className="flex flex-col items-center gap-16">
-              <Link
-                href="/chat"
-                className="px-12 py-8 md:px-20 md:py-10 bg-white text-black font-black uppercase tracking-[0.4em] text-sm rounded-2xl hover:bg-blue-500 hover:text-white transition-all inline-flex items-center gap-8 group/btn shadow-[0_30px_70px_rgba(255,255,255,0.15)] hover:scale-105 active:scale-95"
+          {/* Desktop Nav - Moved to Right */}
+          <nav className="hidden lg:flex items-center gap-10 ml-auto">
+            {/* Platform Dropdown */}
+            <div className="relative py-4">
+              <button 
+                onClick={() => setActiveMenu(activeMenu === "platform" ? null : "platform")}
+                className={cn(
+                  "flex items-center gap-1.5 text-[13px] font-semibold transition-colors",
+                  activeMenu === "platform" ? "text-white" : "text-zinc-400 hover:text-white"
+                )}
               >
-                Enter Platform
-                <ArrowRight
-                  size={24}
-                  className="group-hover/btn:translate-x-3 transition-transform"
+                Platform
+                <ChevronDown 
+                  size={14} 
+                  className={cn(
+                    "transition-transform duration-300",
+                    activeMenu === "platform" ? "rotate-180 text-white" : "text-zinc-600"
+                  )} 
                 />
-              </Link>
-
-              {/* Social Proof / Stats */}
-              <div className="flex flex-wrap justify-center gap-12 pt-16 border-t border-zinc-900/50 w-full max-w-2xl mx-auto">
-                <div className="w-px h-12 bg-zinc-900" />
-                <div className="text-center">
-                  <p className="text-black text-4xl font-serif font-bold tracking-tighter">
-                    {" "}
-                    100+
-                  </p>
-                  <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mt-2">
-                    Colleges
-                  </p>
-                </div>
-                <div className="w-px h-12 bg-zinc-900" />
-                <div className="text-center">
-                  <p className="text-black text-4xl font-serif font-bold tracking-tighter">
-                    24/7
-                  </p>
-                  <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mt-2">
-                    Live Intel
-                  </p>
+              </button>
+              
+              {/* Dropdown Menu with Overlapping Roll-Down */}
+              <div className={cn(
+                "absolute top-[70px] left-1/2 -translate-x-1/2 pointer-events-none z-[300] transition-all",
+                activeMenu === "platform" && "pointer-events-auto"
+              )}>
+                <div className={cn(
+                  "opacity-0 overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.2,1,0.2,1)] w-72",
+                  activeMenu === "platform" ? "max-h-[500px] opacity-100" : "max-h-0"
+                )}>
+                  <div className="bg-[#0d0d0d] border border-zinc-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-3xl p-2 m-2">
+                    {[
+                      { label: "Neural Chat", href: "/chat", desc: "AI-powered research engine" },
+                      { label: "Smart Predictor", href: "/predictor", desc: "Advanced success modeling" }
+                    ].map((link) => (
+                      <Link 
+                        key={link.label} 
+                        href={link.href}
+                        className="block p-4 rounded-xl hover:bg-zinc-900 transition-colors group/item pointer-events-auto"
+                      >
+                        <p className="text-[13px] font-bold text-white mb-1">{link.label}</p>
+                        <p className="text-[11px] text-zinc-500 group-hover/item:text-zinc-400 leading-tight">{link.desc}</p>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Expansive Ambient Glows */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/[0.03] rounded-full blur-[150px] pointer-events-none -z-10" />
-          </div>
-        </Reveal>
-      </div>
+          </nav>
+        </header>
 
-      <Footer />
-      <style jsx global>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
+        {/* Mobile Navigation */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0a0a0a]/80 backdrop-blur-lg border-t border-zinc-900 flex items-center justify-around z-[200] px-6">
+          {[
+            { icon: GraduationCap, href: "/", active: true },
+            { icon: Brain, href: "/chat" },
+            { icon: Bookmark, href: "/shortlist" },
+            { icon: LayoutGrid, href: "/tools", label: "Tools" },
+          ].map((item: any, i) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={i}
+                href={item.href}
+                className={cn(
+                  "p-3 rounded-xl transition-all",
+                  item.active
+                    ? "bg-white text-black"
+                    : "text-zinc-600 hover:text-blue-400",
+                )}
+              >
+                <Icon size={20} />
+              </Link>
+            );
+          })}
+        </nav>
+
+        <section className="relative flex items-center min-h-screen px-6 md:px-24 overflow-hidden pt-20 bg-[#0a0a0a]">
+          <div className="relative z-10 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <motion.div style={{ y: heroY }} className="space-y-10 text-left">
+              <div className="space-y-6">
+                <Reveal>
+                  <h1 className="text-5xl md:text-8xl font-serif font-medium tracking-tight leading-[1.1] text-white">
+                    Explore your
+                    <br />
+                    <span className="italic text-zinc-400">next big step.</span>
+                  </h1>
+                </Reveal>
+                <Reveal delay={0.2}>
+                  <p className="text-lg md:text-xl text-zinc-500 leading-relaxed font-medium max-w-xl opacity-90">
+                    Tackle any big, bold, bewildering academic challenge with
+                    AcademiaAI.
+                  </p>
+                </Reveal>
+              </div>
+
+              <Reveal delay={0.4}>
+                <div className="space-y-6">
+                  <form
+                    onSubmit={handleSubmit}
+                    className="relative group max-w-2xl"
+                  >
+                    <div className="relative flex items-center bg-[#141414] rounded-2xl border border-zinc-800 transition-all duration-300 focus-within:border-zinc-700 p-2">
+                      <input
+                        type="text"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="How can I help you today?"
+                        className="w-full bg-transparent pl-4 pr-4 py-4 text-lg md:text-xl text-white placeholder:text-zinc-600 outline-none font-medium"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isUploading}
+                        className="px-6 py-3 bg-[#b69cc4] text-black font-bold text-sm rounded-xl hover:opacity-90 transition-all active:scale-95 flex items-center gap-2 shadow-[0_0_20px_rgba(182,156,196,0.2)]"
+                      >
+                        {isUploading ? "..." : "Ask Academia"}
+                        <ArrowRight size={18} />
+                      </button>
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileChange}
+                      accept=".pdf"
+                    />
+                  </form>
+
+                  <div className="flex flex-wrap gap-3">
+                    {[
+                      { label: "Compare", icon: Crosshair },
+                      { label: "Research", icon: Search },
+                    ].map((item) => (
+                      <button
+                        key={item.label}
+                        onClick={() => {
+                          window.location.href = `/chat?q=${item.label}&mode=web`;
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg border border-zinc-800 bg-[#141414] text-xs font-bold text-zinc-500 hover:text-white hover:border-zinc-700 transition-all"
+                      >
+                        <item.icon size={14} />
+                        {item.label}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg border border-zinc-800 bg-[#141414] text-xs font-bold text-zinc-500 hover:text-white hover:border-zinc-700 transition-all"
+                    >
+                      <Paperclip size={14} />
+                      Upload PDF
+                    </button>
+                  </div>
+                </div>
+              </Reveal>
+            </motion.div>
+
+            {/* Right Illustration: Neural Knowledge Graph */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1 }}
+              className="hidden lg:block relative"
+            >
+              <div className="relative aspect-square w-full max-w-xl ml-auto flex items-center justify-center">
+                <div className="relative w-full h-full flex items-center justify-center">
+                  {/* Central Core: Academia AI */}
+                  <motion.div
+                    animate={{ y: [-5, 5, -5] }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    className="z-20 px-8 py-4 rounded-2xl bg-white/5 backdrop-blur-3xl border border-white/10 shadow-[0_0_50px_rgba(182,156,196,0.15)] flex items-center justify-center"
+                  >
+                    <h2 className="text-2xl font-serif font-medium text-white tracking-tight">
+                      Academia <span className="text-[#b69cc4] italic">AI</span>
+                    </h2>
+                  </motion.div>
+
+                  {/* Floating Nodes & Connectors */}
+                  {[
+                    { label: "Admissions", x: "80%", y: "40%", delay: 0.1 },
+                    { label: "Cutoffs", x: "70%", y: "15%", delay: 0.3 },
+                    { label: "Campus Life", x: "30%", y: "15%", delay: 0.5 },
+                    { label: "Scholarship", x: "15%", y: "40%", delay: 0.7 },
+                    { label: "Placements", x: "25%", y: "75%", delay: 0.9 },
+                    { label: "Rankings", x: "75%", y: "75%", delay: 1.1 },
+                  ].map((node, i) => (
+                    <div key={i}>
+                      {/* Connecting Path */}
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
+                        <motion.path
+                          d={`M 280 280 L ${node.x} ${node.y}`}
+                          stroke="#b69cc4"
+                          strokeWidth="0.5"
+                          strokeDasharray="4 4"
+                          initial={{ pathLength: 0, opacity: 0 }}
+                          animate={{ pathLength: 1, opacity: 0.2 }}
+                          transition={{ duration: 1.5, delay: node.delay }}
+                        />
+                      </svg>
+
+                      {/* Node Chip */}
+                      <motion.div
+                        style={{ left: node.x, top: node.y }}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.8, delay: node.delay }}
+                        className="absolute -translate-x-1/2 -translate-y-1/2 px-4 py-2 rounded-full bg-zinc-900/50 border border-zinc-800 backdrop-blur-xl group hover:border-[#b69cc4] transition-all cursor-default shadow-xl"
+                      >
+                        <span className="text-[10px] font-black text-zinc-500 group-hover:text-white uppercase tracking-widest transition-colors">
+                          {node.label}
+                        </span>
+                      </motion.div>
+                    </div>
+                  ))}
+
+                  {/* Ambient Intelligence Field */}
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(182,156,196,0.05)_0%,transparent_70%)]" />
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 60,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                    className="absolute w-[80%] h-[80%] border border-white/[0.03] rounded-full"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Philosophy Section: The Death of Filters */}
+        <section className="w-full py-64 md:py-[400px] min-h-[900px] lg:min-h-screen px-6 bg-[#0a0a0a] relative flex flex-col items-start justify-center overflow-hidden">
+          <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12">
+            <div className="lg:col-span-10 space-y-12 text-left">
+              <Reveal>
+                <h2 className="text-4xl md:text-8xl font-serif font-medium text-white leading-[1.05] tracking-tight">
+                  Beyond the{" "}
+                  <span className="text-[#b69cc4] italic">noise</span> <br />
+                  of infinite filters.
+                </h2>
+              </Reveal>
+
+              <div className="space-y-10 max-w-4xl">
+                <Reveal delay={0.2}>
+                  <p className="text-zinc-400 text-xl md:text-4xl leading-tight font-medium">
+                    AcademiaAI transforms the hunt for your future into a{" "}
+                    <span className="text-white italic">
+                      natural conversation
+                    </span>
+                    .
+                  </p>
+                </Reveal>
+
+                <Reveal delay={0.3}>
+                  <p className="text-zinc-600 text-base md:text-2xl leading-relaxed">
+                    We’ve stripped away the clinical friction of traditional
+                    search to build a partner that understands your ambitions as
+                    clearly as a mentor. No more rigid databases—just a
+                    human-centric dialogue that turns overwhelming institutional
+                    data into your next big breakthrough.
+                  </p>
+                </Reveal>
+              </div>
+            </div>
+          </div>
+
+          {/* Atmospheric Depth */}
+          <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#b69cc4]/[0.02] blur-[160px] rounded-full pointer-events-none" />
+        </section>
+
+        {/* CTA: Start Chatting Box */}
+        <section className="w-full pb-32 px-6 bg-[#0a0a0a] relative">
+          <div className="max-w-7xl mx-auto">
+            <Reveal delay={0.6}>
+              <div className="w-full p-8 md:p-12 rounded-[2.5rem] bg-[#b69cc4] flex flex-col md:flex-row items-center justify-between gap-8 shadow-[0_0_50px_rgba(182,156,196,0.3)]">
+                <div className="space-y-2">
+                  <h3 className="text-2xl md:text-4xl font-serif font-medium text-black tracking-tight">
+                    Ready to experience the future of education?
+                  </h3>
+                  <p className="text-black/60 text-lg md:text-xl font-medium">
+                    Start a dialogue that matters.
+                  </p>
+                </div>
+
+                <a
+                  href="/chat"
+                  className="group px-8 py-4 bg-black text-white font-bold text-lg rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-2xl whitespace-nowrap"
+                >
+                  Start Chatting
+                  <ArrowRight
+                    size={20}
+                    className="group-hover:translate-x-1 transition-transform"
+                  />
+                </a>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        <ExperienceHub news={news} rankings={rankings} />
+
+        <InformationHub news={news} rankings={rankings} />
+
+        <Footer />
+        <style jsx global>{`
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+          .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+        `}</style>
+      </div>
     </div>
   );
 }

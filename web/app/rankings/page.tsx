@@ -4,7 +4,8 @@ import {
   GraduationCap, Trophy, ArrowUpDown, ChevronDown, Landmark, 
   Filter, ChevronUp, ChevronRight, Brain, Newspaper, IndianRupee, 
   MapPin, Check, Star, ExternalLink, Search, X, FlaskConical,
-  Scale, Palette, Stethoscope, Building2, Leaf, Pill, Info
+  Scale, Palette, Stethoscope, Building2, Leaf, Pill, Info,
+  LayoutGrid
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, useCallback, Suspense } from "react";
@@ -143,7 +144,7 @@ function imgSeed(name: string): number {
 import { useShortlist } from "../context/ShortlistContext";
 import { Bookmark } from "lucide-react";
 
-function CollegeRow({ college, index }: { college: College; index: number }) {
+function CollegeRow({ college, index }: { college: any; index: number }) {
   const slug = toSlug(college.college ?? "");
   const { addToShortlist, removeFromShortlist, isInShortlist } = useShortlist();
   const isSaved = isInShortlist(college.id);
@@ -159,6 +160,7 @@ function CollegeRow({ college, index }: { college: College; index: number }) {
   };
 
   const isTop3 = (college.nirf_rank ?? 999) <= 3;
+  const lastUpdated = college.last_updated ? new Date(college.last_updated).toLocaleDateString() : "Never";
 
   return (
     <motion.div
@@ -185,16 +187,18 @@ function CollegeRow({ college, index }: { college: College; index: number }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-6">
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm sm:text-lg font-serif font-bold text-white group-hover:text-blue-400 transition-colors truncate">
-                {college.college}
-              </h3>
-              <div className="flex items-center gap-4 mt-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-sm sm:text-lg font-serif font-bold text-white group-hover:text-blue-400 transition-colors truncate">
+                  {college.college}
+                </h3>
+              </div>
+              <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5 text-white/30">
                   <MapPin size={12} className="shrink-0" />
                   <span className="text-[10px] sm:text-[11px] font-medium truncate">{college.city}, {college.state}</span>
                 </div>
-                <span className="text-[10px] text-white/20 font-black uppercase tracking-widest">
-                  {college.nirf_category}
+                <span className="text-[9px] text-white/10 font-black uppercase tracking-widest">
+                  Updated: {lastUpdated}
                 </span>
               </div>
             </div>
@@ -345,13 +349,12 @@ function RankingsContent() {
         <div className="flex flex-col gap-4">
           {[
             { icon: Brain, href: "/chat", label: "Chat" },
-            { icon: Newspaper, href: "/news", label: "News" },
-            { icon: Trophy, href: "/rankings", label: "Rankings", active: true },
             { icon: Bookmark, href: "/shortlist", label: "Saved Colleges" },
-          ].map((item) => (
+            { icon: LayoutGrid, href: "/tools", label: "Tools" },
+          ].map((item: any) => (
             <Link key={item.label} href={item.href} title={item.label} className={cn(
               "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
-              item.active ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.15)]" : "text-zinc-600 hover:text-amber-400 hover:bg-amber-500/10"
+              item.active ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.15)]" : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10"
             )}>
               <item.icon size={18} />
             </Link>
@@ -364,11 +367,10 @@ function RankingsContent() {
         {[
           { icon: GraduationCap, href: "/" },
           { icon: Brain, href: "/chat" },
-          { icon: Newspaper, href: "/news" },
-          { icon: Trophy, href: "/rankings", active: true },
           { icon: Bookmark, href: "/shortlist" },
-        ].map((item, i) => (
-          <Link key={i} href={item.href} className={cn("p-3 rounded-xl transition-all", item.active ? "bg-white text-black" : "text-zinc-600 hover:text-amber-400")}>
+          { icon: LayoutGrid, href: "/tools" },
+        ].map((item: any, i) => (
+          <Link key={i} href={item.href} className={cn("p-3 rounded-xl transition-all", item.active ? "bg-white text-black" : "text-zinc-600 hover:text-blue-400")}>
             <item.icon size={20} />
           </Link>
         ))}

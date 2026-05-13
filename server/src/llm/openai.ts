@@ -31,7 +31,12 @@ export async function generateStream(messages: ChatMessage[]) {
 /**
  * Standard non-streaming chat completion
  */
-export async function generateChatCompletion(messages: ChatMessage[], model = "openai/gpt-4o-mini") {
+export async function generateChatCompletion(
+  messages: ChatMessage[], 
+  model = "openai/gpt-4o-mini", 
+  maxTokens = 1000,
+  jsonMode = false
+) {
   const response = await fetchWithTimeout(
     "https://openrouter.ai/api/v1/chat/completions",
     {
@@ -43,7 +48,8 @@ export async function generateChatCompletion(messages: ChatMessage[], model = "o
       body: JSON.stringify({
         model,
         messages,
-        max_tokens: 500,
+        max_tokens: maxTokens,
+        response_format: jsonMode ? { type: "json_object" } : undefined
       }),
     }
   );

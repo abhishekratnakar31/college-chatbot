@@ -107,6 +107,44 @@ export async function initAchievementsTable() {
 
 
 
+export async function initPredictionsTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS predictions (
+      id          SERIAL PRIMARY KEY,
+      rank        INT NOT NULL,
+      category    TEXT NOT NULL,
+      exam_type   TEXT NOT NULL,
+      gender      TEXT,
+      state       TEXT,
+      results     JSONB NOT NULL,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  console.log("PostgreSQL Predictions Table Initialized.");
+}
+
+export async function initCutoffsTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS college_cutoffs (
+      id          SERIAL PRIMARY KEY,
+      college     TEXT NOT NULL,
+      branch      TEXT NOT NULL,
+      exam_type   TEXT NOT NULL,
+      category    TEXT NOT NULL,
+      gender      TEXT DEFAULT 'Gender-Neutral',
+      quota       TEXT DEFAULT 'OS',
+      closing_rank INT NOT NULL,
+      year        INT DEFAULT 2024,
+      round       INT DEFAULT 6,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  // Index for fast retrieval based on rank and exam
+  await sql`CREATE INDEX IF NOT EXISTS idx_cutoffs_rank_exam ON college_cutoffs (exam_type, closing_rank)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_cutoffs_college ON college_cutoffs (college)`;
+  console.log("PostgreSQL Cutoffs Table Initialized.");
+}
+
 export async function initDB() {
   try {
     // Core Facts table (Structured data)
@@ -125,8 +163,11 @@ export async function initDB() {
     // College achievements & rankings table
     await initAchievementsTable();
 
-    // Scholarships table removal (feature decommissioned)
+    // Predictions table
+    await initPredictionsTable();
 
+    // Cutoffs table
+    await initCutoffsTable();
 
     console.log("PostgreSQL Database Initialized.");
   } catch (err) {

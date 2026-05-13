@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   GraduationCap, Brain, Newspaper, MapPin, ExternalLink,
-  Star, ChevronLeft, Zap, Users, Bookmark,
+  Star, ChevronLeft, Users, Bookmark,
   BookOpen, Award, Globe, Lightbulb, Rocket, Building2, ArrowRight,
   MessageSquare, Cpu, DollarSign, Info, FileText, LayoutGrid, Landmark,
 } from "lucide-react";
@@ -18,6 +18,11 @@ import { useShortlist } from "../../context/ShortlistContext";
 
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4006").replace("localhost", "127.0.0.1");
+
+function toSlug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
 
 interface CollegeDetail {
   college: string;
@@ -41,6 +46,8 @@ interface CollegeDetail {
   aliases?: string[];
   logo_url?: string;
   campus_image_url?: string;
+  courses?: any[];
+  last_updated?: string;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -198,13 +205,50 @@ export default function CollegeDetailView({
   newsData?: any[];
 }) {
   const router = useRouter();
+  const [localCollege, setLocalCollege] = useState(college);
   const [activeTab, setActiveTab] = useState<Tab>("College Info");
+  const [isSyncing, setIsSyncing] = useState(false);
   const { addToShortlist, removeFromShortlist, isInShortlist } = useShortlist();
   
-  const seed = imgSeed(college.college);
-  const clgAssets = getCollegeAssets(college.college, college.website);
-  const collegeId = (college as any).id || seed;
+  const seed = imgSeed(localCollege.college);
+  const clgAssets = getCollegeAssets(localCollege.college, localCollege.website);
+  const collegeId = (localCollege as any).id || seed;
   const isSaved = isInShortlist(collegeId);
+
+  // Silent Background Sync
+  useEffect(() => {
+    const triggerSync = async () => {
+      // Check if data is stale via backend flag
+      try {
+        const res = await fetch(`${API_URL}/api/colleges/${toSlug(localCollege.college)}`);
+        const data = await res.json();
+        
+        if (data.syncRequired) {
+          setIsSyncing(true);
+          // Trigger the sync call silently
+          await fetch(`${API_URL}/api/rankings/sync`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ college: localCollege.college })
+          });
+          
+          // Wait for scraper to finish and fetch again
+          setTimeout(async () => {
+            const freshRes = await fetch(`${API_URL}/api/colleges/${toSlug(localCollege.college)}`);
+            const freshData = await freshRes.json();
+            if (freshData.college) {
+              setLocalCollege(freshData.college);
+            }
+            setIsSyncing(false);
+          }, 8000); // Give scraper some time
+        }
+      } catch (err) {
+        console.error("Silent sync failed:", err);
+      }
+    };
+
+    triggerSync();
+  }, [localCollege.college]);
 
   const toggleSave = () => {
     if (isSaved) {
@@ -212,19 +256,19 @@ export default function CollegeDetailView({
     } else {
       addToShortlist({
         id: collegeId,
-        college: college.college,
-        city: college.city || "",
-        state: college.state || "",
-        nirf_rank: college.nirf_rank,
-        avg_package: college.avg_package,
-        nirf_category: college.nirf_category,
+        college: localCollege.college,
+        city: localCollege.city || "",
+        state: localCollege.state || "",
+        nirf_rank: localCollege.nirf_rank,
+        avg_package: localCollege.avg_package,
+        nirf_category: localCollege.nirf_category || "Engineering",
         logo: clgAssets.logo
       });
     }
   };
 
-  const gradColor = CATEGORY_COLORS[college.nirf_category ?? ""] ?? "from-zinc-950/90 via-zinc-900/60 to-black/90";
-  const metaInfo = getCollegeMeta(college.college, college.nirf_category);
+  const gradColor = CATEGORY_COLORS[localCollege.nirf_category ?? ""] ?? "from-zinc-950/90 via-zinc-900/60 to-black/90";
+  const metaInfo = getCollegeMeta(localCollege.college, localCollege.nirf_category);
 
   // ── Review Data Generator ──
   const getReviewsList = () => {
@@ -296,7 +340,10 @@ export default function CollegeDetailView({
 
   // ── Course Data Generator ──
   const getCoursesList = () => {
-    const cat = college.nirf_category || "Engineering";
+    if (localCollege.courses && Array.isArray(localCollege.courses) && localCollege.courses.length > 0) {
+      return localCollege.courses;
+    }
+    const cat = localCollege.nirf_category || "Engineering";
     switch (cat) {
       case "Engineering": return [
         { name: "B.E. / B.Tech", count: "12 courses", fees: "2.1 L - 8.5 L", eligibility: "10+2 : 75 %", exams: "JEE Main, JEE Advanced" },
@@ -345,8 +392,6 @@ export default function CollegeDetailView({
     ];
   };
 
-
-
   return (
     <PageShell>
       <div className="relative w-full pt-8 pb-16 sm:pt-12 sm:pb-20 overflow-hidden">
@@ -358,62 +403,46 @@ export default function CollegeDetailView({
         <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-8">
           <div className="flex items-center gap-2 text-[11px] text-white/40 mb-10 sm:mb-16">
             <button onClick={() => router.back()} className="flex items-center gap-1 hover:text-blue-400 transition-colors">
-              <ChevronLeft size={13} /> Rankings
+              <ChevronLeft size={14} /> Back to Search
             </button>
             <span>/</span>
-            <span className="text-white/70">{college.nirf_category}</span>
-            <span>/</span>
-            <span className="text-white truncate">{college.college}</span>
+            <span className="truncate max-w-[200px]">{localCollege.college}</span>
+            {isSyncing && (
+              <span className="flex items-center gap-2 ml-4 text-white/20 font-bold animate-pulse">
+                Refreshing Intel...
+              </span>
+            )}
           </div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-            className="flex flex-col sm:flex-row items-start sm:items-end gap-6 sm:gap-8">
+            className="flex flex-col lg:flex-row lg:items-end justify-between gap-12">
             
-            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 shadow-2xl backdrop-blur-xl group relative overflow-hidden">
-              {clgAssets.logo ? (
-                <Image 
-                  src={clgAssets.logo} 
-                  alt="Logo" 
-                  fill 
-                  className="object-contain p-4 group-hover:scale-110 transition-transform duration-500" 
-                />
-              ) : (
-                <span className="text-5xl sm:text-7xl font-black text-white/80 font-serif shadow-black drop-shadow-xl">
-                  {college.college[0]}
-                </span>
-              )}
-            </div>
-
-            <div className="flex-1 min-w-0 space-y-4 pb-1">
-              <div className="flex flex-wrap gap-2 items-center">
-                {college.nirf_rank && (
-                  <span className="px-3 py-1.5 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg">
-                    NIRF #{college.nirf_rank}
-                  </span>
-                )}
-                <span className="px-3 py-1.5 bg-white/10 text-white/90 text-[10px] font-bold uppercase tracking-widest rounded-lg border border-white/20 backdrop-blur-md">
-                  {college.nirf_category}
-                </span>
-                {college.global_rank && (
-                  <span className="px-3 py-1.5 bg-white/5 text-white/70 text-[10px] font-bold rounded-lg border border-white/10 backdrop-blur-md">
-                    QS #{college.global_rank} World
+            <div className="space-y-8 flex-1">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white rounded-[2rem] flex items-center justify-center shadow-2xl p-4 sm:p-6 border border-white/10 group overflow-hidden relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <img src={clgAssets.logo} alt={localCollege.college} className="w-full h-full object-contain relative z-10" />
+                </div>
+                {localCollege.nirf_rank && (
+                  <span className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-2xl text-xs font-black uppercase tracking-[0.2em] backdrop-blur-md shadow-lg">
+                    NIRF Rank #{localCollege.nirf_rank}
                   </span>
                 )}
               </div>
 
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-serif font-bold text-white tracking-tight leading-tight drop-shadow-2xl">
-                {college.college}
+                {localCollege.college}
               </h1>
 
               <div className="flex flex-wrap items-center gap-5 text-sm text-white/60">
-                {(college.city || college.state) && (
+                {(localCollege.city || localCollege.state) && (
                   <span className="flex items-center gap-1.5">
                     <MapPin size={15} className="text-white/40" />
-                    {[college.city, college.state].filter(Boolean).join(", ")}
+                    {[localCollege.city, localCollege.state].filter(Boolean).join(", ")}
                   </span>
                 )}
-                {college.website && (
-                  <a href={college.website} target="_blank" rel="noopener noreferrer"
+                {localCollege.website && (
+                  <a href={localCollege.website} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-1.5 hover:text-blue-400 transition-colors">
                     <Globe size={15} />Official Website<ExternalLink size={12} />
                   </a>
@@ -423,7 +452,7 @@ export default function CollegeDetailView({
               <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pt-4 mt-2 border-t border-white/10">
                 <div className="flex flex-wrap items-center gap-2.5 text-xs">
                   <span className="flex items-center gap-1 text-white/60 font-bold bg-white/5 border border-white/10 px-2 py-1 rounded-md backdrop-blur-md">
-                    <Star size={12} className="fill-white/40" /> {college.user_rating || "4.5"} /5 <span className="text-white/20 font-normal">({college.total_reviews || "120"} Reviews)</span>
+                    <Star size={12} className="fill-white/40" /> {localCollege.user_rating || "4.5"} /5 <span className="text-white/20 font-normal">({localCollege.total_reviews || "120"} Reviews)</span>
                   </span>
                   <span className="text-white/70 font-bold bg-white/5 border border-white/10 px-2 py-1 rounded-md backdrop-blur-md">
                     {metaInfo.acc}
@@ -473,17 +502,17 @@ export default function CollegeDetailView({
                 <div className="py-8 border-b border-white/5 space-y-4">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">About the Institution</p>
                   <p className="text-sm text-white/70 leading-relaxed">
-                    Established in {metaInfo.estd}, {college.college} is a premier {metaInfo.type.toLowerCase()} located in {college.city || "India"}. 
+                    Established in {metaInfo.estd}, {localCollege.college} is a premier {metaInfo.type.toLowerCase()} located in {localCollege.city || "India"}. 
                     Recognized with an {metaInfo.acc} rating, the institution offers world-class academic programs, cutting-edge research facilities, 
                     and a vibrant campus life. It is highly regarded for its rigorous curriculum, distinguished faculty, and exceptional placement 
                     records, making it a top choice for students nationwide.
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-white/5">
                     {[
-                      { label: "Category",     value: college.nirf_category },
-                      { label: "City",         value: college.city },
-                      { label: "State",        value: college.state },
-                      { label: "Global Rank",  value: college.global_rank ? `QS #${college.global_rank}` : undefined },
+                      { label: "Category",     value: localCollege.nirf_category },
+                      { label: "City",         value: localCollege.city },
+                      { label: "State",        value: localCollege.state },
+                      { label: "Global Rank",  value: localCollege.global_rank ? `QS #${localCollege.global_rank}` : undefined },
                     ].filter(r => r.value).map(({ label, value }) => (
                       <div key={label}>
                         <p className="text-[10px] text-white/30 uppercase tracking-wider mb-1">{label}</p>
@@ -613,14 +642,14 @@ export default function CollegeDetailView({
                           <tr key={i} className="border-b border-white/5 hover:bg-blue-500/[0.05] transition-colors">
                             <td className="p-4 align-top">
                               <p className="text-sm font-bold text-white/90">{c.name}</p>
-                              <p className="text-[10px] text-white/30 mt-1">({c.count})</p>
+                              {c.count && <p className="text-[10px] text-white/30 mt-1">({c.count})</p>}
                             </td>
                             <td className="p-4 align-top">
-                              <p className="text-sm font-medium text-white/80">{c.fees}</p>
+                              <p className="text-sm font-medium text-white/80">{c.fees || "N/A"}</p>
                             </td>
                             <td className="p-4 align-top">
-                              <p className="text-sm text-white/70">{c.eligibility}</p>
-                              <p className="text-[10px] text-white/40 mt-1.5">Exams : <span className="text-white/60 font-medium">{c.exams}</span></p>
+                              <p className="text-sm text-white/70">{c.eligibility || "Check Website"}</p>
+                              {c.exams && <p className="text-[10px] text-white/40 mt-1.5">Exams : <span className="text-white/60 font-medium">{c.exams}</span></p>}
                             </td>
                           </tr>
                         ))}

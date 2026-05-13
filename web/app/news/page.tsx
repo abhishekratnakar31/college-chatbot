@@ -27,7 +27,8 @@ import {
   HelpCircle,
   Grid,
   CloudSun,
-  Bookmark
+  Bookmark,
+  LayoutGrid
 } from "lucide-react";
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
@@ -250,8 +251,7 @@ export default function NewsPage() {
           {[
             { icon: Brain, href: "/chat", label: "Chat" },
             { icon: Newspaper, href: "/news", label: "News", active: true },
-            { icon: Trophy, href: "/rankings", label: "Rankings" },
-            { icon: Bookmark, href: "/shortlist", label: "Saved Colleges" },
+            { icon: LayoutGrid, href: "/tools", label: "Tools" },
           ].map((item) => (
             <Link 
               key={item.label} 
@@ -261,7 +261,7 @@ export default function NewsPage() {
                 "w-10 h-10 rounded-2xl flex items-center justify-center transition-all", 
                 item.active 
                   ? "bg-white text-black shadow-xl shadow-white/10" 
-                  : "text-zinc-600 hover:text-amber-400 hover:bg-amber-500/10"
+                  : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10"
               )}
             >
               <item.icon size={18} />
@@ -276,15 +276,14 @@ export default function NewsPage() {
           { icon: GraduationCap, href: "/" },
           { icon: Brain, href: "/chat" },
           { icon: Newspaper, href: "/news", active: true },
-          { icon: Trophy, href: "/rankings" },
-          { icon: Bookmark, href: "/shortlist" }
+          { icon: LayoutGrid, href: "/tools" },
         ].map((item, i) => (
           <Link 
             key={i} 
             href={item.href} 
             className={cn(
               "p-3 rounded-xl transition-all", 
-              item.active ? "bg-white text-black" : "text-zinc-600 hover:text-amber-400"
+              item.active ? "bg-white text-black" : "text-zinc-600 hover:text-blue-400"
             )}
           >
             <item.icon size={20} />

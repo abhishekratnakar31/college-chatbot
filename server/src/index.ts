@@ -14,9 +14,10 @@ import { ttsRoute } from "./routes/tts.js";
 import multipart from "@fastify/multipart";
 import { uploadRoute } from "./routes/upload.js";
 import { contactRoute } from "./routes/contact.js";
+import { cutoffRoute } from "./routes/cutoff.js";
 import { registerRateLimiter } from "./guardrails/index.js";
 import { startNewsCron } from "./jobs/newsCron.js";
-import { seedCollegeAchievements } from "./lib/collegeSeeds.js";
+import { seedCollegeAchievements, seedCutoffs } from "./lib/collegeSeeds.js";
 
 import { qdrant } from "./lib/qdrant.js";
 import { initDB } from "./lib/db.js";
@@ -73,6 +74,7 @@ await app.register(rankingsRoute);
 await app.register(ttsRoute);
 await app.register(contactRoute);
 await app.register(uploadRoute);
+await app.register(cutoffRoute);
 
 async function initVectorDB() {
   const collections = await qdrant.getCollections();
@@ -192,6 +194,7 @@ try {
     try {
       await initVectorDB();
       await seedCollegeAchievements();
+      await seedCutoffs();
       startNewsCron();
       isReady = true; // Signal readiness — all services are warm
       app.log.info("✅ All background services (VectorDB, Seeding, Cron) initialized. Server is READY.");

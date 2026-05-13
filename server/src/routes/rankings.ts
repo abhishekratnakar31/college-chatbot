@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { sql } from "../lib/db.js";
 import { getKnownColleges } from "../lib/collegeSeeds.js";
+import { scrapeCollegeIntelligence } from "../services/rankScraper.js";
 
 /**
  * Detects which known colleges are mentioned in text.
@@ -45,6 +46,7 @@ type CollegeRow = {
   hackathons_won: number;
   startups_incubated: number;
   awards: string[];
+  last_updated?: Date;
 };
 
 /** Fuzzy-search for a single college by name or alias */
@@ -167,15 +169,14 @@ export async function rankingsRoute(app: FastifyInstance) {
     reply.send({ colleges });
   });
 
-  // ── GET /rankings/categories ───────────────────────────────────────────────
-  app.get("/rankings/categories", async (_request, reply) => {
-    const rows = await sql<{ nirf_category: string; count: string }[]>`
-      SELECT nirf_category, COUNT(*)::text as count
-      FROM college_achievements
-      GROUP BY nirf_category
-      ORDER BY nirf_category
-    `;
-    reply.send({ categories: rows });
+  // ── GET /rankings/sync ─────────────────────────────────────────────────────
+  // Manually trigger a live web sync for a college
+  app.post("/rankings/sync", async (request, reply) => {
+    const { college } = request.body as { college: string };
+    if (!college) return reply.status(400).send({ error: "College name is required" });
+
+    const result = await scrapeCollegeIntelligence(college);
+    reply.send(result);
   });
 
   // ── GET /rankings/college/:name ────────────────────────────────────────────
@@ -187,6 +188,14 @@ export async function rankingsRoute(app: FastifyInstance) {
       reply.status(404).send({ error: "College not found" });
       return;
     }
+
+    // Auto-sync if data is older than 7 days
+    const isStale = !row.last_updated || (Date.now() - new Date(row.last_updated).getTime() > 1000 * 60 * 60 * 24 * 7);
+    if (isStale) {
+      console.log(`[Rankings] Data for ${name} is stale. Triggering background sync...`);
+      scrapeCollegeIntelligence(row.college).catch(console.error);
+    }
+
     reply.send({ college: { ...row, innovation_score: computeInnovationScore(row) } });
   });
 
@@ -254,6 +263,17 @@ export async function rankingsRoute(app: FastifyInstance) {
       reply.status(404).send({ error: `College not found for slug: ${slug}` });
       return;
     }
+
+    // Auto-sync check: Stale if > 24h or courses missing
+    const isStale = !row.last_updated || 
+                    (Date.now() - new Date(row.last_updated).getTime() > 1000 * 60 * 60 * 24) ||
+                    !(row as any).courses || (row as any).courses.length === 0;
+
+    if (isStale) {
+      console.log(`[Rankings] Data for ${name} is stale or incomplete. Triggering background sync...`);
+      scrapeCollegeIntelligence(row.college).catch(console.error);
+    }
+
     reply.send({ college: { ...row, innovation_score: computeInnovationScore(row) } });
   });
 

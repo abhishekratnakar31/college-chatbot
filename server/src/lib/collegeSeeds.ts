@@ -792,6 +792,34 @@ export const COLLEGE_SEEDS: CollegeSeed[] = [
   },
 ];
 
+export async function seedCutoffs(): Promise<void> {
+  const result = await sql`SELECT count(*) as count FROM college_cutoffs` as any;
+  if (parseInt(result[0].count) > 0) return;
+
+  const cutoffs = [
+    { college: "IIT Madras", branch: "Computer Science and Engineering", exam_type: "JEE Advanced", category: "Open", closing_rank: 148, year: 2024 },
+    { college: "IIT Madras", branch: "Electrical Engineering", exam_type: "JEE Advanced", category: "Open", closing_rank: 615, year: 2024 },
+    { college: "IIT Delhi", branch: "Computer Science and Engineering", exam_type: "JEE Advanced", category: "Open", closing_rank: 115, year: 2024 },
+    { college: "IIT Bombay", branch: "Computer Science and Engineering", exam_type: "JEE Adv", category: "Open", closing_rank: 67, year: 2024 },
+    { college: "NIT Trichy", branch: "Computer Science and Engineering", exam_type: "JEE Main", category: "Open", closing_rank: 714, year: 2024 },
+    { college: "NIT Trichy", branch: "Electronics and Communication", exam_type: "JEE Main", category: "Open", closing_rank: 2500, year: 2024 },
+    { college: "BITS Pilani", branch: "Computer Science", exam_type: "BITSAT", category: "Open", closing_rank: 331, year: 2024 },
+    { college: "AIIMS Delhi", branch: "MBBS", exam_type: "NEET", category: "Open", closing_rank: 50, year: 2024 },
+    { college: "VIT Vellore", branch: "Computer Science", exam_type: "VITEEE", category: "Open", closing_rank: 1500, year: 2024 },
+    { college: "Jadavpur University", branch: "Computer Science", exam_type: "WBJEE", category: "Open", closing_rank: 10, year: 2024 },
+    { college: "COEP Pune", branch: "Computer Science", exam_type: "MHTCET", category: "Open", closing_rank: 50, year: 2024 },
+    { college: "RVCE Bangalore", branch: "Computer Science", exam_type: "COMEDK", category: "Open", closing_rank: 240, year: 2024 }
+  ];
+
+  for (const c of cutoffs) {
+    await sql`
+      INSERT INTO college_cutoffs (college, branch, exam_type, category, closing_rank, year)
+      VALUES (${c.college}, ${c.branch}, ${c.exam_type}, ${c.category}, ${c.closing_rank}, ${c.year})
+    `;
+  }
+  console.log("PostgreSQL Cutoffs Seeded.");
+}
+
 /**
  * Upsert all college seeds into the college_achievements table.
  * Uses ON CONFLICT DO NOTHING — won't overwrite AI-extracted increments.

@@ -1176,9 +1176,8 @@ function ChatContent() {
         <div className="flex flex-col gap-4">
           {[
             { icon: Brain, href: "/chat", active: true },
-            { icon: Newspaper, href: "/news" },
-            { icon: Trophy, href: "/rankings" },
             { icon: Bookmark, href: "/shortlist", label: "Saved Colleges" },
+            { icon: LayoutGrid, href: "/tools", label: "Tools" },
           ].map((item, i) => (
             <Link
               key={i}
@@ -1188,7 +1187,7 @@ function ChatContent() {
                 "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
                 item.active
                   ? "bg-white text-black shadow-xl shadow-white/10"
-                  : "text-zinc-600 hover:bg-amber-500/10 hover:text-amber-400",
+                  : "text-zinc-600 hover:bg-blue-500/10 hover:text-blue-400",
               )}
             >
               <item.icon size={18} />
@@ -1202,16 +1201,15 @@ function ChatContent() {
         {[
           { icon: GraduationCap, href: "/" },
           { icon: Brain, href: "/chat", active: true },
-          { icon: Newspaper, href: "/news" },
-          { icon: Trophy, href: "/rankings" },
           { icon: Bookmark, href: "/shortlist" },
+          { icon: LayoutGrid, href: "/tools" },
         ].map((item, i) => (
           <Link
             key={i}
             href={item.href}
             className={cn(
               "p-3 rounded-xl transition-all",
-              item.active ? "bg-white text-black" : "text-zinc-600 hover:text-amber-400",
+              item.active ? "bg-white text-black" : "text-zinc-600 hover:text-blue-400",
             )}
           >
             <item.icon size={20} />
