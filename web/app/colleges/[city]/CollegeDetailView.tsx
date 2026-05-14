@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   GraduationCap, Brain, Newspaper, MapPin, ExternalLink,
-  Star, ChevronLeft, Users, Bookmark,
+  Star, ChevronRight, Users, Bookmark,
   BookOpen, Award, Globe, Lightbulb, Rocket, Building2, ArrowRight,
   MessageSquare, Cpu, DollarSign, Info, FileText, LayoutGrid, Landmark,
 } from "lucide-react";
@@ -401,12 +401,13 @@ export default function CollegeDetailView({
         </div>
 
         <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-8">
-          <div className="flex items-center gap-2 text-[11px] text-white/40 mb-10 sm:mb-16">
-            <button onClick={() => router.back()} className="flex items-center gap-1 hover:text-blue-400 transition-colors">
-              <ChevronLeft size={14} /> Back to Search
-            </button>
-            <span>/</span>
-            <span className="truncate max-w-[200px]">{localCollege.college}</span>
+          {/* ── Breadcrumbs ── */}
+          <div className="flex items-center gap-2 text-[10px] font-bold text-white/20 uppercase tracking-widest mb-10 sm:mb-16">
+            <Link href="/" className="hover:text-blue-400 transition-colors">Home</Link>
+            <ChevronRight size={10} />
+            <Link href="/rankings" className="hover:text-blue-400 transition-colors">Rankings</Link>
+            <ChevronRight size={10} />
+            <span className="text-white/40 truncate max-w-[300px]">{localCollege.college}</span>
             {isSyncing && (
               <span className="flex items-center gap-2 ml-4 text-white/20 font-bold animate-pulse">
                 Refreshing Intel...

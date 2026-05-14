@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft, Mail, Send, CheckCircle2, AlertCircle, Clock, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Mail, Send, CheckCircle2, AlertCircle, Clock, ShieldCheck, ChevronRight } from "lucide-react";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
@@ -41,16 +41,21 @@ export default function ContactPage() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)]" />
       </div>
 
+      {/* ── Header & Breadcrumbs ── */}
       <nav className="relative z-10 p-8 md:p-12">
-        <Link 
-          href="/" 
-          className="inline-flex items-center gap-4 text-zinc-500 hover:text-blue-400 transition-all group"
-        >
-          <div className="w-10 h-10 rounded-full border border-zinc-900 flex items-center justify-center group-hover:border-blue-500 transition-colors">
-            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[10px] font-bold text-white/20 uppercase tracking-widest">
+            <Link href="/" className="hover:text-blue-400 transition-colors">Home</Link>
+            <ChevronRight size={10} />
+            <span className="text-white/40">Support</span>
+            <ChevronRight size={10} />
+            <span className="text-white/60">Contact Support</span>
           </div>
-          <span className="text-[10px] font-black uppercase tracking-[0.4em]">Back to Portal</span>
-        </Link>
+          <div className="hidden md:flex items-center gap-4 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400">Support Systems Online</span>
+          </div>
+        </div>
       </nav>
 
       <main className="relative z-10 max-w-7xl mx-auto px-6 py-12 md:py-24 grid lg:grid-cols-[1fr_500px] gap-24 items-start">
@@ -70,28 +75,24 @@ export default function ContactPage() {
                 <span className="text-zinc-800 italic">Support</span>
               </h1>
               <p className="text-zinc-500 text-xl md:text-2xl font-medium max-w-xl leading-relaxed">
-                Connect with our specialized intelligence team for technical inquiries or error reporting.
+                Connect with our specialized intelligence team for technical inquiries, data discrepancies, or error reporting.
               </p>
             </div>
           </header>
 
-          <div className="grid sm:grid-cols-2 gap-8 pt-12 border-t border-zinc-900/50">
+          <div className="grid sm:grid-cols-2 gap-12 pt-12 border-t border-zinc-900/50">
             <div className="space-y-4">
-              <div className="flex items-center gap-3 text-white font-bold text-sm">
-                <Clock size={16} className="text-zinc-600" />
-                Response SLA
-              </div>
-              <p className="text-zinc-600 text-sm leading-relaxed">
-                Our intelligence engineers typically respond to high-priority error reports within 2-4 hours.
-              </p>
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">01 / Issue Categorization</h3>
+              <ul className="space-y-2 text-xs text-zinc-500 font-medium">
+                <li>• <span className="text-white">Critical:</span> Platform downtime or prediction failures.</li>
+                <li>• <span className="text-white">Data:</span> Discrepancies in college rankings or cutoffs.</li>
+                <li>• <span className="text-white">Feature:</span> Integration requests for new institutional tools.</li>
+              </ul>
             </div>
             <div className="space-y-4">
-              <div className="flex items-center gap-3 text-white font-bold text-sm">
-                <ShieldCheck size={16} className="text-zinc-600" />
-                Secure Data
-              </div>
-              <p className="text-zinc-600 text-sm leading-relaxed">
-                All communications are encrypted and handled strictly within our academic integrity guidelines.
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">02 / Technical Requirements</h3>
+              <p className="text-zinc-600 text-xs leading-relaxed">
+                When reporting errors, please include the <span className="text-white">Neural-V8</span> version number and the specific query path utilized.
               </p>
             </div>
           </div>

@@ -471,57 +471,33 @@ export default function PredictorPage() {
   };
 
   return (
-    <div className="flex h-screen bg-black text-white font-sans selection:bg-blue-500/30 overflow-hidden">
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-16 border-r border-white/5 flex-col items-center py-6 gap-6 z-[100] bg-[#0a0a0a] shrink-0">
-        <Link href="/" className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center hover:scale-110 transition-transform shadow-xl shadow-white/5">
-          <GraduationCap className="text-black w-5 h-5" />
-        </Link>
-        <div className="flex flex-col gap-4">
-          {[
-            { icon: Brain, href: "/chat", label: "Chat" },
-            { icon: Bookmark, href: "/shortlist", label: "Saved Colleges" },
-            { icon: LayoutGrid, href: "/tools", label: "Tools", active: true },
-          ].map((item: any) => (
-            <Link 
-              key={item.label} 
-              href={item.href} 
-              title={item.label}
-              className={cn(
-                "w-10 h-10 rounded-2xl flex items-center justify-center transition-all", 
-                item.active 
-                  ? "bg-white text-black shadow-xl shadow-white/10" 
-                  : "text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10"
-              )}
-            >
-              <item.icon size={18} />
-            </Link>
-          ))}
-        </div>
-      </aside>
+    <div className="flex flex-col min-h-screen bg-black text-white font-sans selection:bg-blue-500/30">
 
-      {/* Mobile Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-950/90 via-zinc-900/60 to-black/90 backdrop-blur-lg border-t border-white/5 flex items-center justify-around z-[200] px-6">
+      <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-[#121212]/90 border border-white/10 rounded-full px-2 py-2 flex items-center gap-1 shadow-2xl backdrop-blur-xl">
         {[
-          { icon: GraduationCap, href: "/" },
-          { icon: Brain, href: "/chat" },
-          { icon: Bookmark, href: "/shortlist" },
-          { icon: LayoutGrid, href: "/tools", active: true },
+          { icon: GraduationCap, href: "/", label: "Home" },
+          { icon: Brain, href: "/chat", label: "Chat" },
+          { icon: Bookmark, href: "/shortlist", label: "Saved" },
+          { icon: LayoutGrid, href: "/tools", active: true, label: "Apps" },
         ].map((item: any, i) => (
-          <Link 
-            key={i} 
-            href={item.href} 
+          <Link
+            key={i}
+            href={item.href}
             className={cn(
-              "p-3 rounded-xl transition-all", 
-              item.active ? "bg-white text-black" : "text-zinc-600 hover:text-blue-400"
+              "flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300",
+              item.active
+                ? "bg-white text-black shadow-xl shadow-white/10"
+                : "text-zinc-500 hover:text-white",
             )}
           >
             <item.icon size={20} />
+            {item.active && (
+              <span className="text-[13px] font-bold">{item.label}</span>
+            )}
           </Link>
         ))}
       </nav>
 
-      <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar relative">
         {/* Collapsible Sidebar (Manual Tuning) */}
         <AnimatePresence>
           {isSidebarOpen && (
@@ -695,8 +671,19 @@ export default function PredictorPage() {
           </div>
         </nav>
 
-      <main className="pt-32 pb-24 px-6">
+      <main className="pt-12 pb-24 px-6">
         <div className="max-w-7xl mx-auto">
+          {/* ── Breadcrumbs ── */}
+          <div className="mb-12">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-white/20 uppercase tracking-widest">
+              <Link href="/" className="hover:text-blue-400 transition-colors">Home</Link>
+              <ChevronRight size={10} />
+              <Link href="/tools" className="hover:text-blue-400 transition-colors">Tools</Link>
+              <ChevronRight size={10} />
+              <span className="text-white/40">Neural Predictor 2026</span>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
             
             {/* Left side: Neural Voice Intelligence */}
@@ -932,7 +919,6 @@ export default function PredictorPage() {
           </div>
         </div>
       </main>
-      </div>
 
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }

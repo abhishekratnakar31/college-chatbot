@@ -562,7 +562,7 @@ function SectionCard({
 // ── News Dashboard Component ────────────────────────────────────────────────
 function NewsDashboard({ articles }: { articles: any[] }) {
   return (
-    <div className="relative aspect-auto md:aspect-[4/3] min-h-[400px] md:min-h-0 rounded-[2rem] md:rounded-[3.5rem] overflow-hidden border border-zinc-800 bg-black/40 backdrop-blur-3xl p-6 md:p-8 flex flex-col gap-6 shadow-2xl shadow-black">
+    <div className="relative aspect-auto md:aspect-[4/3] min-h-[400px] md:min-h-0 rounded-[2rem] md:rounded-[3.5rem] overflow-hidden border border-zinc-800 bg-[#0d0d0d] p-6 md:p-8 flex flex-col gap-6 shadow-2xl shadow-black">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
         {/* Current News */}
         <div className="bg-zinc-900/40 rounded-3xl p-6 border border-zinc-800/50 flex flex-col gap-4 overflow-hidden h-full">
@@ -740,7 +740,7 @@ function IntelligenceSection({ news }: { news: any[] }) {
 // ── Rankings Dashboard Component ─────────────────────────────────────────────
 function RankingsDashboard({ colleges }: { colleges: any[] }) {
   return (
-    <div className="relative aspect-auto md:aspect-[4/3] min-h-[400px] md:min-h-0 rounded-[2rem] md:rounded-[3.5rem] overflow-hidden border border-zinc-800 bg-black/40 backdrop-blur-3xl p-6 md:p-10 flex flex-col gap-8 shadow-2xl shadow-black">
+    <div className="relative aspect-auto md:aspect-[4/3] min-h-[400px] md:min-h-0 rounded-[2rem] md:rounded-[3.5rem] overflow-hidden border border-zinc-800 bg-[#0d0d0d] p-6 md:p-10 flex flex-col gap-8 shadow-2xl shadow-black">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
@@ -888,7 +888,7 @@ function InformationHub({ news, rankings }: { news: any[]; rankings: any[] }) {
           {/* Intelligence Terminal Visual (Voice + Filters) */}
           <Reveal delay={0.2} className="order-2 lg:order-1">
             <div className="relative aspect-square w-full max-w-lg mx-auto">
-              <div className="absolute inset-0 bg-[#b69cc4] bg-[linear-gradient(to_right,#ffffff15_1px,transparent_1px),linear-gradient(to_bottom,#ffffff15_1px,transparent_1px)] bg-[size:32px_32px] rounded-[3rem] border border-white/20 backdrop-blur-3xl overflow-hidden group shadow-2xl flex flex-col">
+              <div className="absolute inset-0 bg-[#b69cc4] bg-[linear-gradient(to_right,#ffffff15_1px,transparent_1px),linear-gradient(to_bottom,#ffffff15_1px,transparent_1px)] bg-[size:32px_32px] rounded-[3rem] border border-white/20 overflow-hidden group shadow-2xl flex flex-col">
                 {/* Header/Status */}
                 <div className="p-6 border-b border-zinc-900 flex justify-between items-center">
                   <div className="flex items-center gap-2">
@@ -1022,22 +1022,6 @@ function InformationHub({ news, rankings }: { news: any[]; rankings: any[] }) {
                   className="group-hover:translate-x-1 transition-transform"
                 />
               </Link>
-
-              {/* Motive Summary */}
-              <div className="pt-12 border-t border-zinc-900 mt-12">
-                <div className="space-y-4 max-w-lg">
-                  <div className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">
-                    Our Motive
-                  </div>
-                  <p className="text-zinc-400 text-base leading-relaxed italic">
-                    "To democratize academic intelligence. We believe every
-                    student deserves access to the same high-resolution data and
-                    predictive insights once reserved for institutional
-                    insiders. AcademiaAI is our commitment to building a more
-                    transparent, data-driven, and equitable path to education."
-                  </p>
-                </div>
-              </div>
             </div>
           </Reveal>
         </div>
@@ -1075,7 +1059,7 @@ function Footer() {
                 { label: "Latest News", href: "#news" },
                 { label: "Global Rankings", href: "#rankings" },
                 { label: "Smart Predictor", href: "/predictor" },
-                { label: "My Vault", href: "/shortlist" }
+                { label: "My Vault", href: "/shortlist" },
               ].map((item) => (
                 <li key={item.label}>
                   <Link
@@ -1143,18 +1127,6 @@ function Footer() {
             </div>
           </div>
 
-          <div className="max-w-md p-8 bg-zinc-900/30 rounded-3xl border border-zinc-800/50">
-            <p className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-              <Info size={14} className="text-zinc-500" />
-              Platform Guidelines
-            </p>
-            <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">
-              AcademiaAI is an AI-powered intelligence platform. While we strive
-              for absolute accuracy, always verify critical admission dates and
-              cutoffs with official university portals. Use the platform
-              responsibly to explore and discover academia.
-            </p>
-          </div>
         </div>
       </div>
     </footer>
@@ -1171,12 +1143,16 @@ export default function HeroPage() {
   const [news, setNews] = useState<any[]>([]);
   const [rankings, setRankings] = useState<any[]>([]);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [mode, setMode] = useState<"web" | "compare" | "pdf">("web");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
+      if (
+        headerRef.current &&
+        !headerRef.current.contains(event.target as Node)
+      ) {
         setActiveMenu(null);
       }
     };
@@ -1185,12 +1161,16 @@ export default function HeroPage() {
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAttachedFile(e.target.files?.[0] ?? null);
+    const file = e.target.files?.[0];
+    if (file) {
+      setAttachedFile(file);
+      setMode("pdf");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (attachedFile) {
+    if (mode === "pdf" && attachedFile) {
       setIsUploading(true);
       setUploadProgressText("Initializing...");
       let uploadedFileUrl = "";
@@ -1246,8 +1226,12 @@ export default function HeroPage() {
       window.location.href = `/chat?${params.toString()}`;
       return;
     }
-    if (query.trim()) {
-      window.location.href = `/chat?q=${encodeURIComponent(query)}&mode=web`;
+
+    if (query.trim() || mode === "compare" || mode === "pdf") {
+      const params = new URLSearchParams();
+      if (query.trim()) params.set("q", query.trim());
+      params.set("mode", mode);
+      window.location.href = `/chat?${params.toString()}`;
     }
   };
 
@@ -1283,35 +1267,11 @@ export default function HeroPage() {
     <div className="flex h-screen bg-[#0a0a0a] overflow-hidden selection:bg-white selection:text-black font-sans text-white">
       <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative no-scrollbar">
         {/* Liquid Glass Distortion Filter */}
-        <svg width="0" height="0" style={{ position: "absolute" }}>
-          <defs>
-            <filter
-              id="glass-distortion"
-              x="0%"
-              y="0%"
-              width="100%"
-              height="100%"
-            >
-              <feTurbulence
-                type="fractalNoise"
-                baseFrequency="0.02 0.02"
-                numOctaves="2"
-                seed="92"
-                result="noise"
-              />
-              <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
-              <feDisplacementMap
-                in="SourceGraphic"
-                in2="blurred"
-                scale="200"
-                xChannelSelector="R"
-                yChannelSelector="G"
-              />
-            </filter>
-          </defs>
-        </svg>
 
-        <header ref={headerRef} className="fixed top-0 left-0 right-0 h-20 border-b border-white/5 flex items-center justify-between px-6 md:px-12 z-[200] bg-[#0a0a0a]/80 backdrop-blur-xl">
+        <header
+          ref={headerRef}
+          className="fixed top-0 left-0 right-0 h-20 border-b border-white/5 flex items-center justify-between px-6 md:px-12 z-[200] bg-[#0a0a0a]"
+        >
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
             <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.1)] group-hover:scale-105 transition-all shrink-0">
@@ -1326,61 +1286,84 @@ export default function HeroPage() {
           <nav className="hidden lg:flex items-center gap-10 ml-auto">
             {/* Platform Dropdown */}
             <div className="relative py-4">
-              <button 
-                onClick={() => setActiveMenu(activeMenu === "platform" ? null : "platform")}
+              <button
+                onClick={() =>
+                  setActiveMenu(activeMenu === "platform" ? null : "platform")
+                }
                 className={cn(
                   "flex items-center gap-1.5 text-[13px] font-semibold transition-colors",
-                  activeMenu === "platform" ? "text-white" : "text-zinc-400 hover:text-white"
+                  activeMenu === "platform"
+                    ? "text-white"
+                    : "text-zinc-400 hover:text-white",
                 )}
               >
                 Platform
-                <ChevronDown 
-                  size={14} 
+                <ChevronDown
+                  size={14}
                   className={cn(
                     "transition-transform duration-300",
-                    activeMenu === "platform" ? "rotate-180 text-white" : "text-zinc-600"
-                  )} 
+                    activeMenu === "platform"
+                      ? "rotate-180 text-white"
+                      : "text-zinc-600",
+                  )}
                 />
               </button>
-              
+
               {/* Dropdown Menu with Overlapping Roll-Down */}
-              <div className={cn(
-                "absolute top-[70px] left-1/2 -translate-x-1/2 pointer-events-none z-[300] transition-all",
-                activeMenu === "platform" && "pointer-events-auto"
-              )}>
-                <div className={cn(
-                  "opacity-0 overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.2,1,0.2,1)] w-72",
-                  activeMenu === "platform" ? "max-h-[500px] opacity-100" : "max-h-0"
-                )}>
-                  <div className="bg-[#0d0d0d] border border-zinc-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-3xl p-2 m-2">
+              <div
+                className={cn(
+                  "absolute top-[70px] left-1/2 -translate-x-1/2 pointer-events-none z-[300] transition-all",
+                  activeMenu === "platform" && "pointer-events-auto",
+                )}
+              >
+                <div
+                  className={cn(
+                    "opacity-0 overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.2,1,0.2,1)] w-72",
+                    activeMenu === "platform"
+                      ? "max-h-[500px] opacity-100"
+                      : "max-h-0",
+                  )}
+                >
+                  <div className="bg-[#0d0d0d] border border-zinc-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-2 m-2">
                     {[
-                      { label: "Neural Chat", href: "/chat", desc: "AI-powered research engine" },
-                      { label: "Smart Predictor", href: "/predictor", desc: "Advanced success modeling" }
+                      {
+                        label: "Neural Chat",
+                        href: "/chat",
+                        desc: "AI-powered research engine",
+                      },
+                      {
+                        label: "Smart Predictor",
+                        href: "/predictor",
+                        desc: "Advanced success modeling",
+                      },
                     ].map((link) => (
-                      <Link 
-                        key={link.label} 
+                      <Link
+                        key={link.label}
                         href={link.href}
                         className="block p-4 rounded-xl hover:bg-zinc-900 transition-colors group/item pointer-events-auto"
                       >
-                        <p className="text-[13px] font-bold text-white mb-1">{link.label}</p>
-                        <p className="text-[11px] text-zinc-500 group-hover/item:text-zinc-400 leading-tight">{link.desc}</p>
+                        <p className="text-[13px] font-bold text-white mb-1">
+                          {link.label}
+                        </p>
+                        <p className="text-[11px] text-zinc-500 group-hover/item:text-zinc-400 leading-tight">
+                          {link.desc}
+                        </p>
                       </Link>
                     ))}
                   </div>
                 </div>
               </div>
             </div>
-
           </nav>
         </header>
 
         {/* Mobile Navigation */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0a0a0a]/80 backdrop-blur-lg border-t border-zinc-900 flex items-center justify-around z-[200] px-6">
+        <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-[#121212]/90 border border-white/10 rounded-full px-2 py-2 flex items-center gap-1 shadow-2xl backdrop-blur-xl">
           {[
-            { icon: GraduationCap, href: "/", active: true },
-            { icon: Brain, href: "/chat" },
-            { icon: Bookmark, href: "/shortlist" },
-            { icon: LayoutGrid, href: "/tools", label: "Tools" },
+            { icon: GraduationCap, href: "/", active: true, label: "Home" },
+            { icon: Brain, href: "/chat", label: "Chat" },
+            { icon: Bookmark, href: "/shortlist", label: "Saved" },
+            { icon: LayoutGrid, href: "/tools", label: "Apps" },
           ].map((item: any, i) => {
             const Icon = item.icon;
             return (
@@ -1388,13 +1371,16 @@ export default function HeroPage() {
                 key={i}
                 href={item.href}
                 className={cn(
-                  "p-3 rounded-xl transition-all",
+                  "flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300",
                   item.active
-                    ? "bg-white text-black"
-                    : "text-zinc-600 hover:text-blue-400",
+                    ? "bg-white text-black shadow-xl shadow-white/10"
+                    : "text-zinc-500 hover:text-white",
                 )}
               >
                 <Icon size={20} />
+                {item.active && (
+                  <span className="text-[13px] font-bold">{item.label}</span>
+                )}
               </Link>
             );
           })}
@@ -1431,7 +1417,13 @@ export default function HeroPage() {
                         type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="How can I help you today?"
+                        placeholder={
+                          mode === "compare"
+                            ? "Which colleges should I compare?"
+                            : mode === "pdf"
+                              ? "Ask something about your document..."
+                              : "How can I help you today?"
+                        }
                         className="w-full bg-transparent pl-4 pr-4 py-4 text-lg md:text-xl text-white placeholder:text-zinc-600 outline-none font-medium"
                       />
                       <button
@@ -1439,7 +1431,11 @@ export default function HeroPage() {
                         disabled={isUploading}
                         className="px-6 py-3 bg-[#b69cc4] text-black font-bold text-sm rounded-xl hover:opacity-90 transition-all active:scale-95 flex items-center gap-2 shadow-[0_0_20px_rgba(182,156,196,0.2)]"
                       >
-                        {isUploading ? "..." : "Ask Academia"}
+                        {isUploading
+                          ? "..."
+                          : mode === "compare"
+                            ? "Compare"
+                            : "Ask Academia"}
                         <ArrowRight size={18} />
                       </button>
                     </div>
@@ -1454,23 +1450,40 @@ export default function HeroPage() {
 
                   <div className="flex flex-wrap gap-3">
                     {[
-                      { label: "Compare", icon: Crosshair },
-                      { label: "Research", icon: Search },
+                      {
+                        label: "Compare",
+                        icon: Crosshair,
+                        mode: "compare" as const,
+                      },
+                      { label: "Research", icon: Search, mode: "web" as const },
                     ].map((item) => (
                       <button
                         key={item.label}
-                        onClick={() => {
-                          window.location.href = `/chat?q=${item.label}&mode=web`;
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg border border-zinc-800 bg-[#141414] text-xs font-bold text-zinc-500 hover:text-white hover:border-zinc-700 transition-all"
+                        type="button"
+                        onClick={() => setMode(item.mode)}
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-xs font-bold",
+                          mode === item.mode
+                            ? "border-white bg-white text-black"
+                            : "border-zinc-800 bg-[#141414] text-zinc-500 hover:text-white hover:border-zinc-700",
+                        )}
                       >
                         <item.icon size={14} />
                         {item.label}
                       </button>
                     ))}
                     <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg border border-zinc-800 bg-[#141414] text-xs font-bold text-zinc-500 hover:text-white hover:border-zinc-700 transition-all"
+                      type="button"
+                      onClick={() => {
+                        setMode("pdf");
+                        fileInputRef.current?.click();
+                      }}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-xs font-bold",
+                        mode === "pdf"
+                          ? "border-white bg-white text-black"
+                          : "border-zinc-800 bg-[#141414] text-zinc-500 hover:text-white hover:border-zinc-700",
+                      )}
                     >
                       <Paperclip size={14} />
                       Upload PDF
@@ -1497,7 +1510,7 @@ export default function HeroPage() {
                       repeat: Infinity,
                       ease: "easeInOut",
                     }}
-                    className="z-20 px-8 py-4 rounded-2xl bg-white/5 backdrop-blur-3xl border border-white/10 shadow-[0_0_50px_rgba(182,156,196,0.15)] flex items-center justify-center"
+                    className="z-20 px-8 py-4 rounded-2xl bg-[#141414] border border-white/10 shadow-[0_0_50px_rgba(182,156,196,0.15)] flex items-center justify-center"
                   >
                     <h2 className="text-2xl font-serif font-medium text-white tracking-tight">
                       Academia <span className="text-[#b69cc4] italic">AI</span>
@@ -1533,7 +1546,7 @@ export default function HeroPage() {
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.8, delay: node.delay }}
-                        className="absolute -translate-x-1/2 -translate-y-1/2 px-4 py-2 rounded-full bg-zinc-900/50 border border-zinc-800 backdrop-blur-xl group hover:border-[#b69cc4] transition-all cursor-default shadow-xl"
+                        className="absolute -translate-x-1/2 -translate-y-1/2 px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 group hover:border-[#b69cc4] transition-all cursor-default shadow-xl"
                       >
                         <span className="text-[10px] font-black text-zinc-500 group-hover:text-white uppercase tracking-widest transition-colors">
                           {node.label}
@@ -1631,6 +1644,27 @@ export default function HeroPage() {
         <ExperienceHub news={news} rankings={rankings} />
 
         <InformationHub news={news} rankings={rankings} />
+
+        {/* Motive Section */}
+        <section className="w-full py-24 md:py-48 px-6 bg-[#0a0a0a] border-t border-white/5">
+          <div className="max-w-7xl mx-auto">
+            <Reveal>
+              <div className="space-y-10 max-w-5xl">
+                <div className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">
+                  Our Motive
+                </div>
+                <blockquote className="text-zinc-400 text-lg md:text-3xl font-medium leading-relaxed tracking-tight italic">
+                  "To <span className="text-white">democratize</span> academic
+                  intelligence. We believe every student deserves access to the
+                  same high-resolution data and predictive insights once
+                  reserved for institutional insiders. AcademiaAI is our
+                  commitment to building a more transparent, data-driven, and
+                  equitable path to education."
+                </blockquote>
+              </div>
+            </Reveal>
+          </div>
+        </section>
 
         <Footer />
         <style jsx global>{`

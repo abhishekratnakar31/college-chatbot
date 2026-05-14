@@ -450,7 +450,7 @@ const ChatInput = ({
           </motion.div>
         )}
 
-        <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 group-focus-within:border-zinc-700 group-focus-within:bg-zinc-900 rounded-full transition-all duration-500 shadow-2xl shadow-black/20 overflow-hidden px-2 sm:px-4 py-1.5 sm:py-2">
+        <div className="bg-zinc-900 border border-zinc-800/50 group-focus-within:border-zinc-700 group-focus-within:bg-zinc-900 rounded-full transition-all duration-500 shadow-2xl shadow-black/20 overflow-hidden px-2 sm:px-4 py-1.5 sm:py-2">
           <div className="flex items-center gap-1 sm:gap-2">
             {/* Left Action: Plus Menu & Attach */}
             <div className="flex items-center gap-0.5">
@@ -1139,33 +1139,6 @@ function ChatContent() {
 
   return (
     <div className="flex h-screen bg-[#0a0a0a] text-white selection:bg-white selection:text-black overflow-hidden font-sans">
-      <svg width="0" height="0" style={{ position: "absolute" }}>
-        <defs>
-          <filter
-            id="glass-distortion"
-            x="0%"
-            y="0%"
-            width="100%"
-            height="100%"
-          >
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.02 0.02"
-              numOctaves="2"
-              seed="92"
-              result="noise"
-            />
-            <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
-            <feDisplacementMap
-              in="SourceGraphic"
-              in2="blurred"
-              scale="200"
-              xChannelSelector="R"
-              yChannelSelector="G"
-            />
-          </filter>
-        </defs>
-      </svg>
       <aside className="hidden md:flex w-16 border-r border-zinc-900 flex-col items-center py-6 gap-6 z-[100] bg-black">
         <Link
           href="/"
@@ -1196,23 +1169,27 @@ function ChatContent() {
         </div>
       </aside>
 
-      {/* Mobile Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-lg border-t border-zinc-900 flex items-center justify-around z-[200] px-6">
+      <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-[#121212]/90 border border-white/10 rounded-full px-2 py-2 flex items-center gap-1 shadow-2xl backdrop-blur-xl">
         {[
-          { icon: GraduationCap, href: "/" },
-          { icon: Brain, href: "/chat", active: true },
-          { icon: Bookmark, href: "/shortlist" },
-          { icon: LayoutGrid, href: "/tools" },
+          { icon: GraduationCap, href: "/", label: "Home" },
+          { icon: Brain, href: "/chat", active: true, label: "Chat" },
+          { icon: Bookmark, href: "/shortlist", label: "Saved" },
+          { icon: LayoutGrid, href: "/tools", label: "Apps" },
         ].map((item, i) => (
           <Link
             key={i}
             href={item.href}
             className={cn(
-              "p-3 rounded-xl transition-all",
-              item.active ? "bg-white text-black" : "text-zinc-600 hover:text-blue-400",
+              "flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300",
+              item.active
+                ? "bg-white text-black shadow-xl shadow-white/10"
+                : "text-zinc-500 hover:text-white",
             )}
           >
             <item.icon size={20} />
+            {item.active && (
+              <span className="text-[13px] font-bold">{item.label}</span>
+            )}
           </Link>
         ))}
       </nav>

@@ -43,6 +43,17 @@ export default function ShortlistPage() {
 
       {/* Main Content */}
       <main className="md:pl-16 min-h-screen pb-24">
+        {/* ── Breadcrumbs ── */}
+        <div className="px-6 sm:px-12 pt-8 pb-4">
+          <div className="flex items-center gap-2 text-[10px] font-bold text-white/20 uppercase tracking-widest">
+            <Link href="/" className="hover:text-blue-400 transition-colors">Home</Link>
+            <ChevronRight size={10} />
+            <Link href="/tools" className="hover:text-blue-400 transition-colors">Tools</Link>
+            <ChevronRight size={10} />
+            <span className="text-white/40">Academic Vault</span>
+          </div>
+        </div>
+
         <header className="px-6 sm:px-12 py-8 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#050505]/80 backdrop-blur-xl z-50">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-amber-500/10 rounded-2xl flex items-center justify-center border border-amber-500/20">
@@ -157,18 +168,29 @@ export default function ShortlistPage() {
         </div>
       </main>
 
-      {/* Mobile Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-lg border-t border-white/5 flex items-center justify-around z-[200] px-6">
+      <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-[#121212]/90 border border-white/10 rounded-full px-2 py-2 flex items-center gap-1 shadow-2xl backdrop-blur-xl">
         {[
-          { icon: GraduationCap, href: "/" },
-          { icon: Brain, href: "/chat" },
-          { icon: Bookmark, href: "/shortlist", active: true },
-          { icon: LayoutGrid, href: "/tools" },
+          { icon: GraduationCap, href: "/", label: "Home" },
+          { icon: Brain, href: "/chat", label: "Chat" },
+          { icon: Bookmark, href: "/shortlist", active: true, label: "Saved" },
+          { icon: LayoutGrid, href: "/tools", label: "Apps" },
         ].map((item: any, i) => {
           const Icon = item.icon;
           return (
-            <Link key={i} href={item.href} className={cn("p-3 rounded-xl transition-all", item.active ? "bg-white text-black" : "text-zinc-600 hover:text-blue-400")}>
+            <Link
+              key={i}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300",
+                item.active
+                  ? "bg-white text-black shadow-xl shadow-white/10"
+                  : "text-zinc-500 hover:text-white",
+              )}
+            >
               <Icon size={20} />
+              {item.active && (
+                <span className="text-[13px] font-bold">{item.label}</span>
+              )}
             </Link>
           );
         })}

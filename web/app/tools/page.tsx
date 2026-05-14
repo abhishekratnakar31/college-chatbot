@@ -110,6 +110,15 @@ export default function ToolsHub() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
+        {/* ── Breadcrumbs ── */}
+        <div className="px-6 md:px-16 pt-8">
+          <div className="flex items-center gap-2 text-[10px] font-bold text-white/20 uppercase tracking-widest">
+            <Link href="/" className="hover:text-blue-400 transition-colors">Home</Link>
+            <ChevronRight size={10} />
+            <span className="text-white/40">Intelligence Hub</span>
+          </div>
+        </div>
+
         {/* Header */}
         <header className="h-24 md:h-32 flex items-end justify-between px-6 md:px-16 pb-6 md:pb-10 bg-[#0d0d0d] z-50">
           <div>
@@ -247,9 +256,8 @@ export default function ToolsHub() {
           </div>
         </div>
 
-        {/* Mobile Navigation - Pill Style */}
-        <div className="md:hidden fixed bottom-8 left-0 right-0 flex justify-center z-[200] px-6">
-          <nav className="bg-[#1a1a1a]/95 backdrop-blur-2xl border border-white/5 rounded-full p-2 flex items-center gap-1 shadow-2xl">
+        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-[#121212]/90 border border-white/10 rounded-full px-2 py-2 flex items-center gap-1 shadow-2xl backdrop-blur-xl">
+          <nav className="flex items-center gap-1">
             {[
               { icon: GraduationCap, href: "/", label: "Home" },
               { icon: Brain, href: "/chat", label: "Chat" },
@@ -262,19 +270,14 @@ export default function ToolsHub() {
                 className={cn(
                   "flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300",
                   item.active
-                    ? "bg-white text-black shadow-lg"
-                    : "text-zinc-600 hover:text-white",
+                    ? "bg-white text-black shadow-xl shadow-white/10"
+                    : "text-zinc-500 hover:text-white",
                 )}
               >
-                <item.icon size={18} />
-                <span
-                  className={cn(
-                    "text-xs font-bold",
-                    item.active ? "block" : "hidden",
-                  )}
-                >
-                  {item.label}
-                </span>
+                <item.icon size={20} />
+                {item.active && (
+                  <span className="text-[13px] font-bold">{item.label}</span>
+                )}
               </Link>
             ))}
           </nav>
