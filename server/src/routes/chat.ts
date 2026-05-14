@@ -66,20 +66,21 @@ export async function chatRoute(app: FastifyInstance) {
       }
       // ── END INPUT GUARDRAILS ──────────────────────────────────────────────
 
-      // ── LANGUAGE DETECTION ──────────────────────────────────────────────
-      // 1. Accept an explicit override from the frontend (user chose from selector).
-      // 2. Otherwise, auto-detect from the (PII-scrubbed) input text.
-      // All detection is synchronous, ~0ms, no API cost.
-      const langCode = (body.language && isValidLangCode(body.language))
+      const inputLangCode = detectLanguage(currentInput);
+      const responseLangCode = (body.language && isValidLangCode(body.language))
         ? body.language
-        : detectLanguage(currentInput);
+        : inputLangCode;
 
-      const langMeta = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
-      const detectedLangName = langMeta?.name ?? "English";
-      const respondInstruction = getRespondInInstruction(langCode);
+      const inputLangMeta = SUPPORTED_LANGUAGES.find(l => l.code === inputLangCode);
+      const responseLangMeta = SUPPORTED_LANGUAGES.find(l => l.code === responseLangCode);
+      
+      const inputLangName = inputLangMeta?.name ?? "English";
+      const responseLangName = responseLangMeta?.name ?? "English";
+      
+      const respondInstruction = getRespondInInstruction(responseLangCode);
 
-      if (langCode !== "en") {
-        console.log(`[Language] Detected: ${detectedLangName} (${langCode}) — ${body.language ? "user-selected" : "auto-detected"}`);
+      if (responseLangCode !== "en" || inputLangCode !== "en") {
+        console.log(`[Language] Input: ${inputLangName} (${inputLangCode}), Response: ${responseLangName} (${responseLangCode}) — ${body.language ? "user-selected" : "auto-detected"}`);
       }
       // ── END LANGUAGE DETECTION ───────────────────────────────────────────
 
@@ -187,7 +188,7 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
 
       const { query: rawOptimizedQuery, intent: intentResult, variants: queryVariantsFromRouter } = await generateOptimizedQueryAndIntent(
         history,
-        detectedLangName,
+        inputLangName,
         body.contextHint
       );
 
@@ -433,14 +434,29 @@ ${rankingsContext ? `
 COLLEGE RANKINGS & ACHIEVEMENTS (VERIFIED — NIRF 2024 Official Data):
 ${rankingsContext}
 When answering ranking or achievement questions, always use this verified data and label it as [Verified Data].` : ""}
-${respondInstruction ? `
-${respondInstruction}` : ""}
-Context:
 ${context}
+${respondInstruction ? `
+---
+${respondInstruction}` : ""}
 `,
         },
         ...history.slice(-5) // Pass the last few messages for context, history already includes the current user message
       ];
+      
+      // Reinforce language instruction at the very end of the prompt for maximum adherence
+      if (respondInstruction && messages.length > 0) {
+        const lastMessage = messages[messages.length - 1];
+        // Using a type guard and explicit check to satisfy TypeScript
+        if (lastMessage && lastMessage.role === "user") {
+          lastMessage.content += `\n\n[STRICT RULE: Respond entirely in ${responseLangName}. Do not use English.]`;
+        } else if (lastMessage) {
+          // Fallback: append as a separate system message if the last message isn't from the user
+          messages.push({
+            role: "system",
+            content: `CRITICAL: ${respondInstruction}`
+          });
+        }
+      }
 
       const stream = await generateStream(messages);
 
@@ -491,6 +507,7 @@ ${context}
         response: assistantReply,
         contextChunksFound,
         mode,
+        language: responseLangCode
       });
 
       if (outputCheck.triggered.length > 0) {

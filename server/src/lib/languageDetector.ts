@@ -142,13 +142,14 @@ export function getRespondInInstruction(lang: SupportedLang): string {
   const langFull = meta ? `${meta.name} (${meta.native})` : lang;
 
   return [
-    `LANGUAGE INSTRUCTION: The user is communicating in ${langFull}.`,
-    `You MUST respond entirely in ${meta?.name ?? lang}.`,
-    `Keep all of the following in their original form (do NOT translate):`,
-    `- College and university names (e.g. IIT Bombay, Anna University)`,
-    `- Acronyms and abbreviations (e.g. NIRF, IIT, NIT, BTech, MTech, MBA)`,
-    `- Numbers, percentages, fee amounts, and package figures`,
+    `STRICT LANGUAGE PROTOCOL: The user has explicitly requested the response in ${langFull}.`,
+    `Regardless of the language of the previous messages or the retrieved context, you MUST generate your entire response in ${meta?.name ?? lang}.`,
+    `DO NOT use English except for:`,
+    `- Official college/university names (e.g. IIT Bombay, Anna University)`,
+    `- Academic acronyms (e.g. NIRF, BTech, MBA)`,
+    `- Numbers and monetary figures (e.g. ₹45L, 98.5%)`,
     `- Source citations like [Source ID: 1]`,
+    `Verify that your output is in ${meta?.name ?? lang} before responding.`,
   ].join(" ");
 }
 

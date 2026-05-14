@@ -1087,7 +1087,7 @@ function ChatContent() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "The server encountered an error. Please try again.");
+        throw new Error(errorData.error || errorData.message || "The server encountered an error. Please try again.");
       }
       
       const reader = response.body?.getReader();

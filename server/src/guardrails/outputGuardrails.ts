@@ -17,6 +17,8 @@ export interface OutputGuardrailOptions {
   contextChunksFound: number;
   /** The active mode ("pdf" | "web" | "compare") */
   mode: "pdf" | "web" | "compare";
+  /** The response language code */
+  language?: string;
 }
 
 export interface OutputGuardrailResult {
@@ -143,6 +145,7 @@ export function runOutputGuardrails(
   if (opts.contextChunksFound === 0) {
     const disclaimer = opts.mode === "pdf" ? LOW_CONFIDENCE_DISCLAIMER_PDF : LOW_CONFIDENCE_DISCLAIMER_WEB;
     const alreadyHasDisclaimer = text.includes(disclaimer) || text.includes(HALLUCINATION_DISCLAIMER);
+    
     if (!alreadyHasDisclaimer) {
       console.warn(
         `[GUARDRAIL][OUTPUT] No RAG context found (${opts.mode}) — appending low-confidence annotation`
