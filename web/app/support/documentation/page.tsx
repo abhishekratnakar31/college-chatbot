@@ -221,7 +221,7 @@ export default function DocumentationPage() {
               },
               { 
                 category: "Intelligence Layer", 
-                techs: ["Gemini 1.5 Pro", "Neural-V8", "Sentence Transformers", "LangChain"],
+                techs: ["gpt-4o-mini", "Neural-V8", "Sentence Transformers", "LangChain"],
                 desc: "Sophisticated RAG pipeline with multi-modal reasoning capabilities."
               },
               { 
