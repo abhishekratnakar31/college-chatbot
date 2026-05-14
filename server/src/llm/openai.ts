@@ -199,7 +199,11 @@ export async function evaluateIntent(messages: ChatMessage[]): Promise<string> {
     "fees", "placement", "ranking", "admission", "cutoff", "eligibility", 
     "course", "curriculum", "syllabus", "hostel", "scholarship", "internship",
     "better", "best", "worst", "versus", " vs ", "difference", "compare",
-    "univer", "clg", "collge", "college", "institute", "faculty"
+    "univer", "clg", "collge", "college", "institute", "faculty",
+    "hackathon", "fest", "event", "workshop", "campus", "tech", "seminar",
+    "alumni", "club", "society", "mess", "sports", "gym", "library", "attendance",
+    "exam", "test", "result", "mark", "grade", "rule", "policy", "dress",
+    "wifi", "lab", "research", "founder", "history", "degree", "diploma"
   ];
   if (academicKeywords.some(kw => sanitizedInput.toLowerCase().includes(kw))) {
     return "VALID";
@@ -222,18 +226,19 @@ export async function evaluateIntent(messages: ChatMessage[]): Promise<string> {
 Your job is to evaluate if the user's query is within the academic scope.
 
 VALID SCOPE:
-- College/University information (Fees, Placements, Rankings, Admissions, Courses, Campus facilities, official student life).
-- Subjective comparisons between institutions (e.g., "which is better", "A vs B").
-- Short follow-ups like "its fees", "what about placements", "show rankings", "which is best" are VALID if they refer to a college.
+- Institutional Info: Fees, Placements, Rankings, Admissions, Courses, Degrees, and History.
+- Campus Life: Hostels, Mess/Food facilities, Clubs, Societies, Sports, Gyms, and Libraries.
+- Student Activities: Hackathons, Fests, Workshops, Seminars, and Technical events.
+- Administration: Attendance rules, Grading systems, Exam schedules, Results, and Policies.
+- People: Faculty profiles, Alumni networks, and Founder information.
+- Comparisons: Subjective and objective analysis between any educational institutions.
 
 OUT OF SCOPE:
-- General life advice (health, medical, recipes, relationships, workout).
-- Social/Behavioral issues (fights, bullying, dating, gossip, illegal acts).
-- Irrelevant topics (weather, sports, movies, politics).
+- General life advice (non-campus medical, non-campus recipes, dating outside college context).
+- Illegal acts, behavioral gossip, or irrelevant pop culture (movies, politics).
 
 RULE:
-- If the query is about comparing institutions or discussing academic metrics, it is ALWAYS 'VALID'.
-- Do not let previous off-topic queries poison the evaluation of a NEW on-topic query.
+- If the query is related to ANY aspect of an educational institution (Academic, Social, or Administrative), it is 'VALID'.
 - Reply EXACTLY 'VALID' or 'OUT_OF_DOMAIN'.`,
           },
           ...messages.slice(-3).map(m => m === messages[messages.length-1] ? { ...m, content: sanitizedInput } : m),
@@ -271,7 +276,11 @@ export async function generateOptimizedQueryAndIntent(
     "fees", "placement", "ranking", "admission", "cutoff", "eligibility", 
     "course", "curriculum", "syllabus", "hostel", "scholarship", "internship",
     "better", "best", "worst", "versus", " vs ", "difference", "compare",
-    "univer", "clg", "collge", "college", "institute", "faculty"
+    "univer", "clg", "collge", "college", "institute", "faculty",
+    "hackathon", "fest", "event", "workshop", "campus", "tech", "seminar",
+    "alumni", "club", "society", "mess", "sports", "gym", "library", "attendance",
+    "exam", "test", "result", "mark", "grade", "rule", "policy", "dress",
+    "wifi", "lab", "research", "founder", "history", "degree", "diploma"
   ];
   const isLikelyAcademic = academicKeywords.some(kw => sanitizedInput.toLowerCase().includes(kw));
 
@@ -302,7 +311,8 @@ RULES:
 1. 'intent': 'VALID' if the query is about colleges, admissions, programs, or institutional info. 'OUT_OF_DOMAIN' otherwise.
 2. 'query': A clean, keyword-dense search query optimized for a vector database. ${langRule}
 3. 'variants': Array of 2 alternative phrasings using synonyms (e.g. "fees" vs "tuition").
-4. Output ONLY a JSON object: {"intent": "VALID"|"OUT_OF_DOMAIN", "query": "string", "variants": ["str1", "str2"]}${contextRule}`,
+4. Output ONLY a JSON object: {"intent": "VALID"|"OUT_OF_DOMAIN", "query": "string", "variants": ["str1", "str2"]}
+   - Institutional info, campus life, events, and alumni are always VALID.${contextRule}`,
             },
             ...messages.slice(-3).map(m => m === messages[messages.length-1] ? { ...m, content: sanitizedInput } : m),
           ],
