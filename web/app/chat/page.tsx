@@ -339,12 +339,12 @@ const ChatInput = ({
         <AnimatePresence>
           {chatMode === "compare" && isFocusMenuOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
               className={cn(
-                "absolute right-0 w-64 p-4 bg-zinc-900 border border-zinc-800 rounded-3xl z-50 shadow-2xl",
-                menuSide === "top" ? "bottom-full mb-4" : "top-full mt-4",
+                "absolute left-10 w-64 p-4 bg-zinc-900 border border-zinc-800 rounded-3xl z-50 shadow-2xl",
+                "top-full mt-2"
               )}
             >
               <div className="flex flex-col gap-1 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
@@ -463,6 +463,18 @@ const ChatInput = ({
               >
                 <Plus size={22} />
               </button>
+              {chatMode === "compare" && (
+                <button
+                  onClick={() => setIsFocusMenuOpen(!isFocusMenuOpen)}
+                  className={cn(
+                    "p-2 hover:bg-zinc-800 rounded-full transition-colors shrink-0",
+                    isFocusMenuOpen || selectedCriteria.length > 0 ? "text-white" : "text-zinc-500",
+                  )}
+                  title="Focus Parameters"
+                >
+                  <SlidersHorizontal size={20} />
+                </button>
+              )}
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="p-2 hover:bg-zinc-800 text-zinc-500 hover:text-white rounded-full transition-colors shrink-0"
