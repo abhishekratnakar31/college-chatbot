@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --primary: #ffffff;
-  --primary-hover: #e4e4e7;
-  --bg-main: #0a0a0a;
-  --bg-chat: #0a0a0a;
-  --text-main: #ffffff;
-  --text-muted: #a1a1aa;
-  --glass: rgba(0, 0, 0, 0.5);
-  --border-subtle: #18181b;
+  --primary: #000000;
+  --primary-hover: #1f1f1f;
+  --bg-main: #f3f4f6;
+  --bg-chat: #f3f4f6;
+  --text-main: #000000;
+  --text-muted: #4b5563;
+  --glass: rgba(255, 255, 255, 0.85);
+  --border-subtle: #000000;
   --transition-smooth: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -34,7 +34,8 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -42,27 +43,29 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #e4e4e7;
-  border-radius: 20px;
+  background: #000000;
+  border: 1px solid #f3f4f6;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #d4d4d8;
+  background: #1f1f1f;
 }
 
-/* Premium Utilities */
+/* Brutalist Utilities */
 .glass-morphism {
-  background: #121212;
-  border-bottom: 1px solid #1e1e1e;
+  background: #ffffff;
+  border-bottom: 2px solid #000000;
 }
 
 .dark-glass {
-  background: #0d0d0d;
-  border: 1px solid #1e1e1e;
+  background: #ffffff;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #000000;
 }
 
 .text-reveal {
-  background: linear-gradient(to right, #000 50%, #71717a 100%);
+  background: linear-gradient(to right, #000000 50%, #4b5563 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -72,7 +75,7 @@ body {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-8px);
+    transform: translateY(-4px);
   }
   100% {
     transform: translateY(0px);
@@ -84,60 +87,60 @@ body {
 }
 
 .shadow-premium {
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+  box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.15);
 }
 
 .shadow-glow {
-  box-shadow: 0 0 20px -5px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 4px 0px 0px #b69cc4;
 }
 
 .mask-fade-bottom {
-  mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 90%, transparent 100%);
 }
 
 .border-subtle {
-  border: 1px solid var(--border-subtle);
+  border: 2px solid #000000;
 }
 
 .prose-premium :where(h1, h2, h3, h4, h5, h6) {
   font-family: var(--font-serif);
   letter-spacing: -0.025em;
+  font-weight: 900;
+  color: #000000;
 }
 
 .prose-premium :where(p) {
   line-height: 1.625;
-  color: #d4d4d8; /* zinc-300 */
+  color: #1f2937; /* zinc-800 equivalent */
 }
 
-/* Table styling for premium markdown */
+/* Table styling for brutalist markdown */
 .prose-premium table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: collapse;
   margin: 2em 0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
+  border: 2px solid #000000;
+  background: #ffffff;
+  box-shadow: 4px 4px 0px 0px #b69cc4;
 }
 
 .prose-premium th {
-  background: rgba(255, 255, 255, 0.08);
+  background: #f3f4f6;
   padding: 14px 20px;
   text-align: left;
-  font-weight: 800;
-  color: white;
+  font-weight: 900;
+  color: #000000;
   text-transform: uppercase;
   font-size: 12px;
-  letter-spacing: 0.15em;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  letter-spacing: 0.1em;
+  border-bottom: 2px solid #000000;
 }
 
 .prose-premium td {
   padding: 14px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 2px solid #e5e7eb;
   font-size: 16px;
-  color: #e4e4e7;
+  color: #1f2937;
 }
 
 .prose-premium tr:last-child td {
@@ -145,32 +148,77 @@ body {
 }
 
 .prose-premium tr:hover td {
-  background: rgba(255, 255, 255, 0.03);
+  background: #f9fafb;
 }
-/* Liquid Glass Card */
-/* Solid Card */
+
+/* Brutalist Cards and Inputs */
 .liquid-glass-card {
-  border-radius: 28px;
-  background: #141414;
-  border: 1px solid #1e1e1e;
-  box-shadow: 0px 10px 30px -10px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
+  background: #ffffff;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #b69cc4;
 }
 
 .premium-input {
-  background: #121212;
-  border: 1px solid #1e1e1e;
-  transition: all 0.3s var(--transition-smooth);
+  background: #ffffff;
+  border: 2px solid #000000;
+  color: #000000;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .premium-input:focus-within {
-  background: #161616;
-  border-color: #3f3f46;
+  background: #ffffff;
+  border-color: #000000;
+  box-shadow: 4px 4px 0px 0px #b69cc4;
 }
 
 .liquid-glass-container {
   position: relative;
   overflow: hidden;
-  background: #0a0a0a;
-  border: 1px solid #1e1e1e;
+  background: #f3f4f6;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #000000;
+}
+
+/* Standard Brutalist classes */
+.brutalist-card {
+  background: #ffffff;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px 0px #b69cc4;
+  transition: all 0.2s ease;
+}
+
+.brutalist-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px #b69cc4;
+}
+
+.brutalist-btn {
+  background: #b69cc4;
+  color: #000000;
+  font-weight: 900;
+  border: 2px solid #000000;
+  box-shadow: 3px 3px 0px 0px #000000;
+  transition: all 0.15s ease;
+}
+
+.brutalist-btn:hover:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0px 0px #000000;
+}
+
+.brutalist-btn:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 0px 0px 0px 0px #000000;
+}
+
+.brutalist-input {
+  background: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
+  transition: all 0.2s ease;
+}
+
+.brutalist-input:focus {
+  outline: none;
+  box-shadow: 4px 4px 0px 0px #b69cc4;
 }

@@ -47,19 +47,19 @@ export default async function Page({ params }: { params: Promise<{ city: string 
 
 function NotFoundView({ slug }: { slug: string }) {
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-8">
+    <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-8 text-black">
       <div className="max-w-md w-full text-center space-y-6">
-        <div className="w-20 h-20 bg-white/5 rounded-3xl flex items-center justify-center mx-auto border border-white/10">
-          <Building2 size={32} className="text-white/20" />
+        <div className="w-20 h-20 bg-white border-2 border-black rounded-xl flex items-center justify-center mx-auto shadow-[2px_2px_0px_0px_#000000]">
+          <Building2 size={32} className="text-black" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-serif font-bold text-white">College Not Found</h2>
-          <p className="text-white/40 text-sm">
-            We couldn't find <strong className="text-white/70">{slug?.replace(/-/g, " ")}</strong> in our database.
+          <h2 className="text-2xl font-serif font-black text-black">College Not Found</h2>
+          <p className="text-zinc-600 text-sm font-medium">
+            We couldn't find <strong className="text-black font-extrabold">{slug?.replace(/-/g, " ")}</strong> in our database.
           </p>
         </div>
         <div className="flex justify-center pt-4">
-          <Link href="/rankings" className="px-8 py-3 bg-white text-black text-sm font-black rounded-2xl hover:scale-105 transition-transform">
+          <Link href="/rankings" className="px-8 py-3 bg-[#b69cc4] hover:bg-[#a387b3] border-2 border-black text-black text-sm font-black uppercase tracking-widest rounded-xl hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none transition-all">
             Browse All Institutions
           </Link>
         </div>

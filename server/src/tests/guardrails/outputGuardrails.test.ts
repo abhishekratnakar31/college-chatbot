@@ -147,7 +147,7 @@ describe("Low-Confidence Annotation", () => {
     });
     expect(result.triggered).toContain("LOW_CONFIDENCE");
     expect(result.wasModified).toBe(true);
-    expect(result.finalResponse).toContain("No relevant information was found");
+    expect(result.finalResponse).toContain("uploaded documents");
   });
 
   it("appends low-confidence note when contextChunksFound is 0 (web mode)", () => {

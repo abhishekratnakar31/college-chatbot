@@ -5,7 +5,7 @@ export async function getEmbedding(text: string): Promise<number[]> {
 
 export async function getEmbeddings(texts: string[], maxRetries = 4): Promise<number[][]> {
   let retryCount = 0;
-  let delayMs = 2000; // Start with 2 seconds
+  let delayMs = process.env.NODE_ENV === "test" ? 0 : 2000; // Start with 2 seconds (0 for tests)
 
   while (retryCount <= maxRetries) {
     try {

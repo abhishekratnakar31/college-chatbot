@@ -8,6 +8,14 @@ import {
   useTransform,
 } from "framer-motion";
 import Link from "next/link";
+import { useAuth } from "./context/AuthContext";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+};
 
 import {
   ArrowRight,
@@ -22,6 +30,7 @@ import {
   X,
   Trophy,
   Brain,
+  Loader2,
   FlaskConical,
   HeartPulse,
   Landmark,
@@ -196,10 +205,10 @@ function TopStudyPlaces() {
       <Reveal>
         <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-8 md:gap-0 mb-12 md:mb-16">
           <div className="max-w-xl">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-white tracking-tight mb-4">
+            <h2 className="text-4xl md:text-5xl font-serif font-black text-black tracking-tight mb-4">
               Top Study Places
             </h2>
-            <p className="text-zinc-400 text-lg font-medium">
+            <p className="text-zinc-700 text-lg font-medium">
               Discover your future academic home in India's leading education
               hubs.
             </p>
@@ -207,13 +216,13 @@ function TopStudyPlaces() {
           <div className="flex gap-3">
             <button
               onClick={() => scroll("left")}
-              className="w-12 h-12 rounded-full border border-zinc-800 flex items-center justify-center hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all shadow-sm"
+              className="w-12 h-12 rounded-full border-2 border-black bg-white text-black flex items-center justify-center hover:bg-[#b69cc4] hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
             >
               <ChevronLeft size={20} />
             </button>
             <button
               onClick={() => scroll("right")}
-              className="w-12 h-12 rounded-full border border-zinc-800 flex items-center justify-center hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all shadow-sm"
+              className="w-12 h-12 rounded-full border-2 border-black bg-white text-black flex items-center justify-center hover:bg-[#b69cc4] hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
             >
               <ChevronRight size={20} />
             </button>
@@ -228,35 +237,32 @@ function TopStudyPlaces() {
           <Reveal key={city.name} delay={i * 0.05}>
             <Link
               href={`/rankings?city=${encodeURIComponent(city.query)}&state=${encodeURIComponent(city.state)}`}
-              className="flex-shrink-0 w-72 aspect-[3/4] snap-start p-10 rounded-[2.5rem] bg-[#0d0d0d] border border-zinc-800/50 hover:border-zinc-600 hover:bg-[#111111] transition-all duration-700 group flex flex-col items-center justify-between text-center relative overflow-hidden shadow-2xl"
+              className="flex-shrink-0 w-72 aspect-[3/4] snap-start p-10 rounded-[2.5rem] bg-white border-2 border-black hover:bg-[#f9fafb] transition-all duration-500 group flex flex-col items-center justify-between text-center relative overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             >
-              {/* Decorative Background Glow */}
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.03)_0%,transparent_70%)]" />
-
               <div className="relative z-10 w-full flex flex-col items-center gap-8">
-                <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center group-hover:scale-110 group-hover:border-zinc-700 transition-all duration-500 shadow-xl">
+                <div className="w-16 h-16 rounded-2xl bg-[#f3f4f6] border-2 border-black flex items-center justify-center group-hover:scale-110 transition-all duration-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                   {React.cloneElement(city.icon as React.ReactElement<any>, {
                     className:
-                      "w-8 h-8 text-zinc-500 group-hover:text-white transition-colors",
+                      "w-8 h-8 text-black group-hover:text-black transition-colors",
                   })}
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-serif font-medium text-zinc-200 group-hover:text-white transition-colors">
+                  <h3 className="text-2xl font-serif font-black text-black">
                     {city.name}
                   </h3>
-                  <div className="px-3 py-1 rounded-full bg-zinc-900/50 border border-zinc-800 text-[10px] font-black text-zinc-600 uppercase tracking-widest group-hover:text-zinc-400 transition-colors">
+                  <div className="px-3 py-1 rounded-full bg-[#f3f4f6] border-2 border-black text-[10px] font-black text-black uppercase tracking-widest">
                     {city.university}
                   </div>
                 </div>
               </div>
 
-              <div className="relative z-10 w-full pt-8 border-t border-zinc-900/50 flex flex-col items-center gap-4">
-                <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.2em] group-hover:text-zinc-500 transition-colors">
+              <div className="relative z-10 w-full pt-8 border-t-2 border-black flex flex-col items-center gap-4">
+                <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.2em]">
                   Institution Hub
                 </p>
-                <div className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0">
-                  <ArrowUpRight size={16} className="text-white" />
+                <div className="w-10 h-10 rounded-full border-2 border-black bg-[#b69cc4] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  <ArrowUpRight size={16} className="text-black" />
                 </div>
               </div>
             </Link>
@@ -297,28 +303,28 @@ function ExperienceHub({ news, rankings }: { news: any[]; rankings: any[] }) {
   ];
 
   return (
-    <section className="w-full py-24 md:py-48 px-6 bg-[#0a0a0a]">
+    <section className="w-full py-24 md:py-48 px-6 bg-[#f3f4f6]">
       <div className="max-w-7xl mx-auto flex flex-col items-center">
         <Reveal>
           <div className="text-center mb-16 space-y-4">
-            <h2 className="text-4xl md:text-6xl font-serif font-medium text-white">
+            <h2 className="text-4xl md:text-6xl font-serif font-black text-black">
               How you can use{" "}
-              <span className="italic text-zinc-600">AcademiaAI.</span>
+              <span className="italic text-[#b69cc4]">AcademiaAI.</span>
             </h2>
           </div>
         </Reveal>
 
         {/* Tab Bar */}
-        <div className="bg-[#111111] p-1.5 rounded-[2rem] border border-zinc-800/50 flex flex-wrap justify-center gap-1 mb-16 relative z-10">
+        <div className="bg-white p-1.5 rounded-full border-2 border-black flex flex-wrap justify-center gap-1 mb-16 relative z-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-3 px-6 py-3 rounded-full text-sm font-bold transition-all duration-500",
+                "flex items-center gap-3 px-6 py-3 rounded-full text-sm font-black transition-all duration-300",
                 activeTab === tab.id
-                  ? "bg-zinc-200 text-black shadow-xl"
-                  : "text-zinc-500 hover:text-white hover:bg-zinc-800/50",
+                  ? "bg-[#b69cc4] text-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                  : "text-zinc-600 hover:text-black hover:bg-zinc-100",
               )}
             >
               <tab.icon size={18} />
@@ -330,7 +336,7 @@ function ExperienceHub({ news, rankings }: { news: any[]; rankings: any[] }) {
         {/* Split Section: Text Left, Preview Right */}
         <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-center">
           {/* Left: Narrative */}
-          <div className="lg:col-span-5 space-y-10">
+          <div className="lg:col-span-5 space-y-10 text-left">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -341,10 +347,10 @@ function ExperienceHub({ news, rankings }: { news: any[]; rankings: any[] }) {
                 className="space-y-8"
               >
                 <div className="space-y-4">
-                  <h3 className="text-4xl md:text-6xl font-serif font-medium text-white leading-tight">
+                  <h3 className="text-4xl md:text-6xl font-serif font-black text-black leading-tight">
                     {tabs.find((t) => t.id === activeTab)?.label.split(" ")[0]}{" "}
                     <br />
-                    <span className="text-zinc-600 italic">
+                    <span className="text-[#b69cc4] italic">
                       {
                         tabs
                           .find((t) => t.id === activeTab)
@@ -352,18 +358,18 @@ function ExperienceHub({ news, rankings }: { news: any[]; rankings: any[] }) {
                       }
                     </span>
                   </h3>
-                  <p className="text-zinc-400 text-lg md:text-xl leading-relaxed font-medium">
+                  <p className="text-zinc-700 text-lg md:text-xl leading-relaxed font-medium">
                     {tabs.find((t) => t.id === activeTab)?.desc}
                   </p>
                 </div>
 
-                <p className="text-zinc-600 text-sm md:text-base leading-relaxed border-l border-zinc-800 pl-8">
+                <p className="text-zinc-600 text-sm md:text-base leading-relaxed border-l-2 border-black pl-8">
                   {tabs.find((t) => t.id === activeTab)?.detail}
                 </p>
 
                 <Link
                   href={`/${activeTab.toLowerCase()}`}
-                  className="inline-flex h-12 items-center px-10 rounded-full border border-zinc-800 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:border-white transition-all shadow-xl"
+                  className="inline-flex h-12 items-center px-10 rounded-full border-2 border-black bg-white text-black text-xs font-black uppercase tracking-widest hover:bg-[#b69cc4] transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
                 >
                   Explore {activeTab} Intelligence
                 </Link>
@@ -373,9 +379,7 @@ function ExperienceHub({ news, rankings }: { news: any[]; rankings: any[] }) {
 
           {/* Right: Preview Window */}
           <div className="lg:col-span-7 relative h-full">
-            <div className="aspect-[4/3] rounded-[3rem] bg-[#0d0d0d] border border-zinc-800/50 relative overflow-hidden group shadow-2xl">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.02)_0%,transparent_70%)]" />
-
+            <div className="aspect-[4/3] rounded-[3rem] bg-white border-2 border-black relative overflow-hidden group shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}
@@ -387,62 +391,62 @@ function ExperienceHub({ news, rankings }: { news: any[]; rankings: any[] }) {
                 >
                   {/* Visual Preview */}
                   <div className="w-full h-full relative overflow-hidden">
-                    <div className="absolute inset-0 bg-[#b69cc4] bg-[linear-gradient(to_right,#ffffff15_1px,transparent_1px),linear-gradient(to_bottom,#ffffff15_1px,transparent_1px)] bg-[size:32px_32px] rounded-3xl border border-white/20 shadow-2xl p-6 md:p-12 overflow-hidden flex flex-col justify-center">
+                    <div className="absolute inset-0 bg-[#b69cc4] bg-[linear-gradient(to_right,#00000010_1px,transparent_1px),linear-gradient(to_bottom,#00000010_1px,transparent_1px)] bg-[size:32px_32px] rounded-3xl border-2 border-black p-6 md:p-12 overflow-hidden flex flex-col justify-center">
                       {activeTab === "Chat" && (
-                        <div className="space-y-6">
+                        <div className="space-y-6 text-left">
                           <div className="flex gap-4 items-start max-w-[85%]">
-                            <div className="w-8 h-8 rounded-full bg-black/10 flex items-center justify-center shrink-0">
-                              <Users size={14} className="text-black/50" />
+                            <div className="w-8 h-8 rounded-full bg-white border border-black flex items-center justify-center shrink-0">
+                              <Users size={14} className="text-black" />
                             </div>
-                            <div className="bg-black p-5 rounded-2xl rounded-tl-none border border-white/5 shadow-2xl">
-                              <p className="text-xs md:text-sm text-zinc-300">
+                            <div className="bg-white p-5 rounded-2xl rounded-tl-none border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                              <p className="text-xs md:text-sm text-black font-semibold">
                                 Compare placements at IIT Delhi and BITS Pilani
                                 for CS.
                               </p>
                             </div>
                           </div>
-                          <div className="flex gap-4 items-start ml-auto max-w-[85%] text-right">
-                            <div className="bg-black p-5 rounded-2xl rounded-tr-none border border-white/5 shadow-2xl">
-                              <p className="text-xs md:text-sm text-zinc-300 leading-relaxed">
+                          <div className="flex gap-4 items-start ml-auto max-w-[85%] text-right justify-end">
+                            <div className="bg-zinc-50 p-5 rounded-2xl rounded-tr-none border-2 border-black">
+                              <p className="text-xs md:text-sm text-black font-medium leading-relaxed">
                                 IIT Delhi shows a{" "}
-                                <span className="text-white font-bold">
+                                <span className="text-black font-black underline">
                                   12% higher
                                 </span>{" "}
                                 median package for 2024, but BITS has a{" "}
-                                <span className="text-white font-bold">
+                                <span className="text-black font-black underline">
                                   wider recruiter network
                                 </span>
                                 ...
                               </p>
                             </div>
-                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow-lg">
+                            <div className="w-8 h-8 rounded-full bg-white border-2 border-black flex items-center justify-center shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                               <GraduationCap size={14} className="text-black" />
                             </div>
                           </div>
                         </div>
                       )}
                       {activeTab === "News" && (
-                        <div className="space-y-6">
+                        <div className="space-y-6 text-left">
                           <div className="flex justify-between items-center px-2">
-                            <h4 className="text-[10px] font-black text-black/40 uppercase tracking-widest">
+                            <h4 className="text-[10px] font-black text-black uppercase tracking-widest">
                               Global Intelligence
                             </h4>
                             <Radio
                               size={12}
-                              className="text-black/60 animate-pulse"
+                              className="text-black animate-pulse"
                             />
                           </div>
                           <div className="space-y-4">
                             {news.slice(0, 3).map((article, i) => (
                               <div
                                 key={i}
-                                className="p-4 rounded-2xl bg-black border border-white/5 shadow-xl space-y-2"
+                                className="p-4 rounded-2xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-2"
                               >
-                                <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-zinc-600">
+                                <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-zinc-500">
                                   <span>{article.source}</span>
                                   <span>{article.time}</span>
                                 </div>
-                                <p className="text-xs font-bold text-zinc-300 line-clamp-1">
+                                <p className="text-xs font-bold text-black line-clamp-1">
                                   {article.title}
                                 </p>
                               </div>
@@ -451,24 +455,24 @@ function ExperienceHub({ news, rankings }: { news: any[]; rankings: any[] }) {
                         </div>
                       )}
                       {activeTab === "Rankings" && (
-                        <div className="space-y-5">
-                          <h4 className="text-[10px] font-black text-black/40 uppercase tracking-widest px-2 mb-2">
+                        <div className="space-y-5 text-left">
+                          <h4 className="text-[10px] font-black text-black uppercase tracking-widest px-2 mb-2">
                             Live Leaderboard
                           </h4>
                           <div className="space-y-3">
                             {rankings.slice(0, 4).map((college, i) => (
                               <div
                                 key={i}
-                                className="flex items-center gap-4 p-4 rounded-2xl bg-black border border-white/5 shadow-xl group/rank hover:border-white/20 transition-all"
+                                className="flex items-center gap-4 p-4 rounded-2xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group/rank transition-all"
                               >
-                                <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/5 flex items-center justify-center text-[10px] font-black text-zinc-500 group-hover/rank:text-white transition-all">
+                                <div className="w-8 h-8 rounded-lg bg-[#f3f4f6] border border-black flex items-center justify-center text-[10px] font-black text-black">
                                   #{college.rank || i + 1}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold text-zinc-300 truncate">
+                                  <p className="text-xs font-bold text-black truncate">
                                     {college.college}
                                   </p>
-                                  <p className="text-[9px] font-black text-zinc-700 uppercase tracking-widest">
+                                  <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">
                                     {college.city}
                                   </p>
                                 </div>
@@ -478,8 +482,6 @@ function ExperienceHub({ news, rankings }: { news: any[]; rankings: any[] }) {
                         </div>
                       )}
                     </div>
-                    {/* Decorative Elements */}
-                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 blur-[80px] rounded-full" />
                   </div>
                 </motion.div>
               </AnimatePresence>
@@ -562,10 +564,10 @@ function SectionCard({
 // ── News Dashboard Component ────────────────────────────────────────────────
 function NewsDashboard({ articles }: { articles: any[] }) {
   return (
-    <div className="relative aspect-auto md:aspect-[4/3] min-h-[400px] md:min-h-0 rounded-[2rem] md:rounded-[3.5rem] overflow-hidden border border-zinc-800 bg-[#0d0d0d] p-6 md:p-8 flex flex-col gap-6 shadow-2xl shadow-black">
+    <div className="relative aspect-auto md:aspect-[4/3] min-h-[400px] md:min-h-0 rounded-[2rem] md:rounded-[3.5rem] overflow-hidden border-2 border-black bg-white p-6 md:p-8 flex flex-col gap-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-black">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
         {/* Current News */}
-        <div className="bg-zinc-900/40 rounded-3xl p-6 border border-zinc-800/50 flex flex-col gap-4 overflow-hidden h-full">
+        <div className="bg-zinc-50 rounded-3xl p-6 border-2 border-black flex flex-col gap-4 overflow-hidden h-full">
           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2">
             Current News
           </h3>
@@ -586,18 +588,18 @@ function NewsDashboard({ articles }: { articles: any[] }) {
                         <p
                           className={cn(
                             "text-[11px] font-bold leading-tight line-clamp-2",
-                            i === 0 ? "text-white" : "text-zinc-400",
+                            i === 0 ? "text-black" : "text-zinc-700",
                           )}
                         >
                           {news.title}
                         </p>
                         {collegeLabel && (
-                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-zinc-800 text-[7px] font-black text-zinc-500 uppercase tracking-tighter">
+                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-white border border-black text-[7px] font-black text-black uppercase tracking-tighter">
                             {collegeLabel}
                           </span>
                         )}
                       </div>
-                      <p className="text-[9px] text-zinc-600 font-medium uppercase tracking-tighter">
+                      <p className="text-[9px] text-zinc-500 font-medium uppercase tracking-tighter">
                         {news.source} •{" "}
                         {formatRelativeTime(
                           news.published_at || news.created_at,
@@ -608,16 +610,16 @@ function NewsDashboard({ articles }: { articles: any[] }) {
                 })
               : [1, 2, 3].map((i) => (
                   <div key={i} className="space-y-2 animate-pulse">
-                    <div className="h-3 bg-zinc-800 rounded w-full" />
-                    <div className="h-2 bg-zinc-800 rounded w-1/2" />
+                    <div className="h-3 bg-zinc-200 rounded w-full" />
+                    <div className="h-2 bg-zinc-200 rounded w-1/2" />
                   </div>
                 ))}
           </div>
-          <div className="pt-4 border-t border-zinc-800/50 flex items-center justify-between mt-auto">
-            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-              <Newspaper size={14} className="text-zinc-500" />
+          <div className="pt-4 border-t-2 border-black flex items-center justify-between mt-auto">
+            <div className="w-8 h-8 rounded-lg bg-[#b69cc4] border border-black flex items-center justify-center">
+              <Newspaper size={14} className="text-black" />
             </div>
-            <span className="text-[9px] font-black text-zinc-700 uppercase tracking-widest">
+            <span className="text-[9px] font-black text-black uppercase tracking-widest">
               Live Updates
             </span>
           </div>
@@ -625,7 +627,7 @@ function NewsDashboard({ articles }: { articles: any[] }) {
 
         {/* Admission Updates */}
         <div className="space-y-6">
-          <div className="bg-zinc-900/40 rounded-3xl p-6 border border-zinc-800/50 flex flex-col items-center justify-center text-center gap-4 h-full">
+          <div className="bg-zinc-50 rounded-3xl p-6 border-2 border-black flex flex-col items-center justify-center text-center gap-4 h-full">
             <div className="relative w-24 h-24 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90">
                 <circle
@@ -635,7 +637,7 @@ function NewsDashboard({ articles }: { articles: any[] }) {
                   stroke="currentColor"
                   strokeWidth="8"
                   fill="transparent"
-                  className="text-zinc-800"
+                  className="text-zinc-200"
                 />
                 <motion.circle
                   cx="48"
@@ -648,12 +650,12 @@ function NewsDashboard({ articles }: { articles: any[] }) {
                   initial={{ strokeDashoffset: 251.2 }}
                   animate={{ strokeDashoffset: 251.2 * 0.28 }}
                   transition={{ duration: 1.5, ease: "easeOut" }}
-                  className="text-white"
+                  className="text-[#b69cc4]"
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-black text-white">+12%</span>
-                <span className="text-[8px] font-black text-zinc-600 uppercase">
+                <span className="text-xl font-black text-black">+12%</span>
+                <span className="text-[8px] font-black text-zinc-500 uppercase">
                   Growth
                 </span>
               </div>
@@ -662,16 +664,13 @@ function NewsDashboard({ articles }: { articles: any[] }) {
               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
                 Admission Rate
               </p>
-              <p className="text-lg font-serif font-bold italic text-white mt-1">
+              <p className="text-lg font-serif font-black italic text-black mt-1">
                 94% Enrollment
               </p>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Decorative Overlay */}
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.05)_0%,transparent_70%)]" />
     </div>
   );
 }
@@ -690,18 +689,18 @@ function IntelligenceSection({ news }: { news: any[] }) {
     <div
       ref={containerRef}
       id="news"
-      className="w-full py-20 md:py-48 px-6 bg-[#0a0a0a] relative overflow-hidden"
+      className="w-full py-20 md:py-48 px-6 bg-[#f3f4f6] relative overflow-hidden"
     >
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center relative z-10">
-        <motion.div style={{ y: y1 }} className="space-y-12">
+        <motion.div style={{ y: y1 }} className="space-y-12 text-left">
           <Reveal delay={0.1}>
-            <h2 className="text-4xl sm:text-5xl md:text-8xl font-serif font-bold text-white tracking-tighter leading-[0.95]">
+            <h2 className="text-4xl sm:text-5xl md:text-8xl font-serif font-black text-black tracking-tighter leading-[0.95]">
               Stay ahead with the <br />
-              <span className="text-zinc-600 italic">latest buzz.</span>
+              <span className="text-[#b69cc4] italic font-medium">latest buzz.</span>
             </h2>
           </Reveal>
           <Reveal delay={0.2}>
-            <p className="text-zinc-500 text-2xl font-medium max-w-xl leading-relaxed">
+            <p className="text-zinc-700 text-2xl font-medium max-w-xl leading-relaxed">
               Latest news and articles on admissions, cut-offs, and results
               across 100+ premier Indian institutions.
             </p>
@@ -709,7 +708,7 @@ function IntelligenceSection({ news }: { news: any[] }) {
           <Reveal delay={0.3}>
             <Link
               href="/news"
-              className="inline-flex items-center gap-4 px-8 py-5 md:px-12 md:py-6 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-blue-500 hover:text-white transition-all hover:scale-105 shadow-2xl shadow-white/10 group/btn"
+              className="inline-flex items-center gap-4 px-8 py-5 md:px-12 md:py-6 bg-black text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-[#b69cc4] hover:text-black border-2 border-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] group/btn"
             >
               Explore Full Feed
               <ArrowRight
@@ -727,8 +726,6 @@ function IntelligenceSection({ news }: { news: any[] }) {
           <Reveal delay={0.4}>
             <div className="relative group">
               <NewsDashboard articles={news} />
-              {/* Ambient Glow behind dashboard */}
-              <div className="absolute -inset-10 bg-white/[0.02] rounded-full blur-[80px] pointer-events-none -z-10" />
             </div>
           </Reveal>
         </motion.div>
@@ -740,47 +737,47 @@ function IntelligenceSection({ news }: { news: any[] }) {
 // ── Rankings Dashboard Component ─────────────────────────────────────────────
 function RankingsDashboard({ colleges }: { colleges: any[] }) {
   return (
-    <div className="relative aspect-auto md:aspect-[4/3] min-h-[400px] md:min-h-0 rounded-[2rem] md:rounded-[3.5rem] overflow-hidden border border-zinc-800 bg-[#0d0d0d] p-6 md:p-10 flex flex-col gap-8 shadow-2xl shadow-black">
+    <div className="relative aspect-auto md:aspect-[4/3] min-h-[400px] md:min-h-0 rounded-[2rem] md:rounded-[3.5rem] overflow-hidden border-2 border-black bg-white p-6 md:p-10 flex flex-col gap-8 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-black">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
             Live Leaderboard
           </h3>
-          <p className="text-xl font-serif font-bold text-white mt-1 italic">
+          <p className="text-xl font-serif font-black text-black mt-1 italic">
             Top Performers 2025
           </p>
         </div>
-        <Trophy size={24} className="text-zinc-700" />
+        <Trophy size={24} className="text-black" />
       </div>
 
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6">
         {colleges.length > 0
           ? colleges.map((college, i) => (
               <div key={college.id} className="flex items-center gap-6 group">
-                <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xs font-black text-white group-hover:bg-blue-500 transition-colors flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-white border-2 border-black flex items-center justify-center text-xs font-black text-black group-hover:bg-[#b69cc4] transition-colors flex-shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                   #{i + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-zinc-300 group-hover:text-blue-400 transition-colors truncate">
+                  <p className="text-sm font-black text-black group-hover:text-[#b69cc4] transition-colors truncate">
                     {college.college}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest truncate">
+                    <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest truncate">
                       {college.city}, {college.state}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-1.5">
-                    <div className="h-1 flex-1 bg-zinc-900 rounded-full overflow-hidden">
+                    <div className="h-2 flex-1 bg-zinc-100 rounded-full border border-black overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{
                           width: `${(college.innovation_score / 100) * 100}%`,
                         }}
                         transition={{ duration: 1, delay: i * 0.05 }}
-                        className="h-full bg-white/20"
+                        className="h-full bg-[#b69cc4]"
                       />
                     </div>
-                    <span className="text-[10px] font-black text-zinc-600">
+                    <span className="text-[10px] font-black text-black">
                       {college.innovation_score}
                     </span>
                   </div>
@@ -789,28 +786,28 @@ function RankingsDashboard({ colleges }: { colleges: any[] }) {
             ))
           : [1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="flex items-center gap-6 animate-pulse">
-                <div className="w-10 h-10 rounded-xl bg-zinc-900" />
+                <div className="w-10 h-10 rounded-xl bg-zinc-200" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-3 bg-zinc-900 rounded w-1/2" />
-                  <div className="h-1 bg-zinc-900 rounded w-full" />
+                  <div className="h-3 bg-zinc-200 rounded w-1/2" />
+                  <div className="h-1 bg-zinc-200 rounded w-full" />
                 </div>
               </div>
             ))}
       </div>
 
-      <div className="pt-6 border-t border-zinc-900 flex items-center justify-between">
+      <div className="pt-6 border-t-2 border-black flex items-center justify-between">
         <div className="flex -space-x-2">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="w-6 h-6 rounded-full border-2 border-black bg-zinc-800"
+              className="w-6 h-6 rounded-full border-2 border-black bg-[#b69cc4]"
             />
           ))}
-          <div className="w-6 h-6 rounded-full border-2 border-black bg-zinc-900 flex items-center justify-center text-[8px] font-black text-zinc-500">
+          <div className="w-6 h-6 rounded-full border-2 border-black bg-white flex items-center justify-center text-[8px] font-black text-black">
             +12
           </div>
         </div>
-        <span className="text-[9px] font-black text-zinc-700 uppercase tracking-widest">
+        <span className="text-[9px] font-black text-black uppercase tracking-widest">
           Global Index Verified
         </span>
       </div>
@@ -832,7 +829,7 @@ function RankingsSection({ rankings }: { rankings: any[] }) {
     <div
       ref={containerRef}
       id="rankings"
-      className="w-full py-48 px-6 bg-[#0a0a0a] relative overflow-hidden"
+      className="w-full py-48 px-6 bg-[#f3f4f6] relative overflow-hidden"
     >
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center relative z-10">
         <motion.div
@@ -842,21 +839,19 @@ function RankingsSection({ rankings }: { rankings: any[] }) {
           <Reveal delay={0.4}>
             <div className="relative group">
               <RankingsDashboard colleges={rankings} />
-              {/* Ambient Glow behind dashboard */}
-              <div className="absolute -inset-10 bg-white/[0.015] rounded-full blur-[80px] pointer-events-none -z-10" />
             </div>
           </Reveal>
         </motion.div>
 
-        <motion.div style={{ y: y2 }} className="space-y-12 lg:order-2">
+        <motion.div style={{ y: y2 }} className="space-y-12 lg:order-2 text-left">
           <Reveal delay={0.1}>
-            <h2 className="text-4xl sm:text-5xl md:text-8xl font-serif font-bold text-white tracking-tighter leading-[0.95]">
+            <h2 className="text-4xl sm:text-5xl md:text-8xl font-serif font-black text-black tracking-tighter leading-[0.95]">
               Discover your <br />
-              <span className="text-zinc-600 italic">perfect match.</span>
+              <span className="text-[#b69cc4] italic font-medium">perfect match.</span>
             </h2>
           </Reveal>
           <Reveal delay={0.2}>
-            <p className="text-zinc-500 text-2xl font-medium max-w-xl leading-relaxed">
+            <p className="text-zinc-700 text-2xl font-medium max-w-xl leading-relaxed">
               Rankings based on verifiable innovation, placement metrics, and
               global impact.
             </p>
@@ -864,7 +859,7 @@ function RankingsSection({ rankings }: { rankings: any[] }) {
           <Reveal delay={0.3}>
             <Link
               href="/rankings"
-              className="inline-flex items-center gap-4 px-8 py-5 md:px-12 md:py-6 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-blue-500 hover:text-white transition-all hover:scale-105 shadow-2xl shadow-white/10 group/btn"
+              className="inline-flex items-center gap-4 px-8 py-5 md:px-12 md:py-6 bg-black text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-[#b69cc4] hover:text-black border-2 border-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] group/btn"
             >
               View Rankings
               <ArrowRight
@@ -882,47 +877,47 @@ function RankingsSection({ rankings }: { rankings: any[] }) {
 // ── Quick Actions ────────────────────────────────────────────────────────────
 function InformationHub({ news, rankings }: { news: any[]; rankings: any[] }) {
   return (
-    <section className="w-full py-32 md:py-64 px-6 bg-[#0a0a0a]">
+    <section className="w-full py-32 md:py-64 px-6 bg-[#f3f4f6]">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
           {/* Intelligence Terminal Visual (Voice + Filters) */}
           <Reveal delay={0.2} className="order-2 lg:order-1">
             <div className="relative aspect-square w-full max-w-lg mx-auto">
-              <div className="absolute inset-0 bg-[#b69cc4] bg-[linear-gradient(to_right,#ffffff15_1px,transparent_1px),linear-gradient(to_bottom,#ffffff15_1px,transparent_1px)] bg-[size:32px_32px] rounded-[3rem] border border-white/20 overflow-hidden group shadow-2xl flex flex-col">
+              <div className="absolute inset-0 bg-[#b69cc4] bg-[linear-gradient(to_right,#00000010_1px,transparent_1px),linear-gradient(to_bottom,#00000010_1px,transparent_1px)] bg-[size:32px_32px] rounded-[3rem] border-2 border-black overflow-hidden group shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col">
                 {/* Header/Status */}
-                <div className="p-6 border-b border-zinc-900 flex justify-between items-center">
+                <div className="p-6 border-b-2 border-black flex justify-between items-center bg-white">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">
+                    <span className="text-[10px] font-black text-black uppercase tracking-[0.2em]">
                       Neural-V1 Active
                     </span>
                   </div>
                   <div className="flex gap-1">
-                    <div className="w-1 h-1 rounded-full bg-zinc-800" />
-                    <div className="w-1 h-1 rounded-full bg-zinc-800" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-black" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-black" />
                   </div>
                 </div>
 
-                <div className="flex-1 grid grid-cols-12 overflow-hidden">
+                <div className="flex-1 grid grid-cols-12 overflow-hidden bg-white/50">
                   {/* Left: Filter Sidebar */}
-                  <div className="col-span-4 border-r border-zinc-900 p-4 space-y-6 bg-black/20">
+                  <div className="col-span-4 border-r-2 border-black p-4 space-y-6 bg-white/80">
                     <div className="space-y-3">
-                      <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">
+                      <p className="text-[8px] font-black text-zinc-700 uppercase tracking-widest">
                         Field
                       </p>
-                      <div className="px-3 py-2 rounded-lg bg-white text-black text-[9px] font-bold text-center">
+                      <div className="px-3 py-2 rounded-lg bg-[#b69cc4] border border-black text-black text-[9px] font-black text-center shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
                         Engineering
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">
+                      <p className="text-[8px] font-black text-zinc-700 uppercase tracking-widest">
                         Exam
                       </p>
                       <div className="grid grid-cols-1 gap-2">
                         {["JEE Main", "JEE Adv"].map((exam) => (
                           <div
                             key={exam}
-                            className="px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 text-[8px] font-bold text-center"
+                            className="px-2 py-1.5 rounded-lg bg-white border border-black text-black text-[8px] font-bold text-center shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
                           >
                             {exam}
                           </div>
@@ -930,17 +925,17 @@ function InformationHub({ news, rankings }: { news: any[]; rankings: any[] }) {
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">
+                      <p className="text-[8px] font-black text-zinc-700 uppercase tracking-widest">
                         Category
                       </p>
-                      <div className="px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 text-[9px] font-bold text-center">
+                      <div className="px-3 py-2 rounded-lg bg-white border border-black text-black text-[9px] font-bold text-center shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
                         General
                       </div>
                     </div>
                   </div>
 
                   {/* Right: Voice Hub */}
-                  <div className="col-span-8 relative flex flex-col items-center justify-center p-8">
+                  <div className="col-span-8 relative flex flex-col items-center justify-center p-8 bg-white/20">
                     {/* Ripple Rings */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       {[1, 2, 3].map((i) => (
@@ -953,68 +948,65 @@ function InformationHub({ news, rankings }: { news: any[]; rankings: any[] }) {
                             repeat: Infinity,
                             delay: i * 0.8,
                           }}
-                          className="absolute w-32 h-32 rounded-full border border-zinc-800"
+                          className="absolute w-32 h-32 rounded-full border border-black/20"
                         />
                       ))}
                     </div>
 
                     {/* Mic Button */}
-                    <div className="relative z-10 w-24 h-24 rounded-full bg-zinc-900 border border-zinc-800 flex flex-col items-center justify-center shadow-2xl group-hover:border-zinc-700 transition-all">
-                      <Mic size={24} className="text-white mb-2" />
-                      <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter">
+                    <div className="relative z-10 w-24 h-24 rounded-full bg-white border-2 border-black flex flex-col items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">
+                      <Mic size={24} className="text-black mb-2" />
+                      <span className="text-[7px] font-black text-black uppercase tracking-tighter">
                         Tap to Speak
                       </span>
                     </div>
 
                     <div className="mt-8 text-center space-y-1">
-                      <p className="text-[10px] font-bold text-white tracking-tight">
+                      <p className="text-[10px] font-black text-black tracking-tight uppercase">
                         System Ready
                       </p>
-                      <p className="text-[8px] text-zinc-500 leading-relaxed max-w-[140px]">
+                      <p className="text-[8px] text-zinc-600 leading-relaxed max-w-[140px]">
                         Initialize analysis across national pathways.
                       </p>
                     </div>
 
                     {/* Analyze Button */}
                     <div className="mt-10 w-full">
-                      <div className="w-full py-3 rounded-xl bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest text-center shadow-[0_0_30px_rgba(37,99,235,0.3)]">
+                      <div className="w-full py-3 rounded-xl bg-black border-2 border-black text-white text-[9px] font-black uppercase tracking-widest text-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-[#b69cc4] hover:text-black transition-all">
                         Analyze Signal
                       </div>
                     </div>
                   </div>
                 </div>
-
-                {/* Ambient Glow */}
-                <div className="absolute bottom-0 right-0 w-48 h-48 bg-blue-500/[0.05] blur-[80px] rounded-full" />
               </div>
             </div>
           </Reveal>
 
           <Reveal className="order-1 lg:order-2">
-            <div className="space-y-8 lg:pl-16">
-              <h2 className="text-4xl md:text-7xl font-serif font-medium text-white tracking-tight leading-[1.1]">
+            <div className="space-y-8 lg:pl-16 text-left">
+              <h2 className="text-4xl md:text-7xl font-serif font-black text-black tracking-tight leading-[1.1]">
                 Eliminate guesswork. <br />
-                <span className="text-zinc-600 italic">
+                <span className="text-[#b69cc4] italic font-medium">
                   Predict with precision.
                 </span>
               </h2>
               <div className="space-y-6 max-w-xl">
-                <p className="text-zinc-400 text-xl leading-relaxed font-medium">
+                <p className="text-zinc-700 text-xl leading-relaxed font-medium">
                   Our Neural Predictor is an advanced inference engine that
                   cross-references your profile with 15+ years of institutional
                   cutoff shifts and enrollment behaviors.
                 </p>
-                <p className="text-zinc-600 text-base leading-relaxed border-l border-zinc-800 pl-6">
+                <p className="text-zinc-600 text-base leading-relaxed border-l-2 border-black pl-6">
                   By modeling thousands of variables—from category shifts to
                   regional demand—Aura identifies patterns traditional search
                   misses, giving you a{" "}
-                  <span className="text-white font-bold">94% accurate</span>{" "}
+                  <span className="text-black font-black underline">94% accurate</span>{" "}
                   success probability.
                 </p>
               </div>
               <Link
                 href="/predictor"
-                className="inline-flex items-center gap-4 text-xs font-black text-white uppercase tracking-[0.2em] group"
+                className="inline-flex items-center gap-4 text-xs font-black text-black hover:text-[#b69cc4] uppercase tracking-[0.2em] group"
               >
                 Check My Chances{" "}
                 <ArrowRight
@@ -1033,24 +1025,24 @@ function InformationHub({ news, rankings }: { news: any[]; rankings: any[] }) {
 // ── Footer ───────────────────────────────────────────────────────────────────
 function Footer() {
   return (
-    <footer className="bg-[#0a0a0a] border-t border-zinc-900 pt-20 md:pt-32 pb-16 px-6 md:px-8">
+    <footer className="bg-white border-t-2 border-black pt-20 md:pt-32 pb-16 px-6 md:px-8 text-black">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-16 mb-24">
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-white rounded-xl border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <GraduationCap className="text-black w-6 h-6" />
               </div>
-              <span className="text-2xl font-serif font-bold tracking-tight text-white">
+              <span className="text-2xl font-serif font-black tracking-tight text-black">
                 AcademiaAI
               </span>
             </div>
-            <p className="text-zinc-500 text-base font-medium leading-relaxed max-w-[240px]">
+            <p className="text-zinc-600 text-base font-semibold leading-relaxed max-w-[240px]">
               The intelligent platform to explore and discover Indian academia.
             </p>
           </div>
           <div className="col-span-1 md:col-span-1">
-            <h4 className="text-white font-bold text-[10px] mb-8 uppercase tracking-[0.3em]">
+            <h4 className="text-black font-black text-[10px] mb-8 uppercase tracking-[0.3em]">
               Platform
             </h4>
             <ul className="space-y-4">
@@ -1064,7 +1056,7 @@ function Footer() {
                 <li key={item.label}>
                   <Link
                     href={item.href}
-                    className="text-zinc-500 hover:text-white text-sm transition-colors font-semibold"
+                    className="text-zinc-600 hover:text-[#b69cc4] text-sm transition-colors font-bold"
                   >
                     {item.label}
                   </Link>
@@ -1074,14 +1066,14 @@ function Footer() {
           </div>
 
           <div className="col-span-1 md:col-span-1">
-            <h4 className="text-white font-bold text-[10px] mb-8 uppercase tracking-[0.3em]">
+            <h4 className="text-black font-black text-[10px] mb-8 uppercase tracking-[0.3em]">
               Guidelines
             </h4>
             <ul className="space-y-4">
               <li>
                 <Link
                   href="/guidelines/usage-policy"
-                  className="text-zinc-500 hover:text-blue-400 text-sm transition-colors font-semibold"
+                  className="text-zinc-600 hover:text-[#b69cc4] text-sm transition-colors font-bold"
                 >
                   Usage Policy
                 </Link>
@@ -1090,14 +1082,14 @@ function Footer() {
           </div>
 
           <div className="col-span-1 md:col-span-1">
-            <h4 className="text-white font-bold text-[10px] mb-8 uppercase tracking-[0.3em]">
+            <h4 className="text-black font-black text-[10px] mb-8 uppercase tracking-[0.3em]">
               Support
             </h4>
             <ul className="space-y-4">
               <li>
                 <Link
                   href="/support/documentation"
-                  className="text-zinc-500 hover:text-blue-400 text-sm transition-colors font-semibold"
+                  className="text-zinc-600 hover:text-[#b69cc4] text-sm transition-colors font-bold"
                 >
                   Documentation
                 </Link>
@@ -1105,7 +1097,7 @@ function Footer() {
               <li>
                 <Link
                   href="/support/contact"
-                  className="text-zinc-500 hover:text-blue-400 text-sm transition-colors font-semibold"
+                  className="text-zinc-600 hover:text-[#b69cc4] text-sm transition-colors font-bold"
                 >
                   Contact Support
                 </Link>
@@ -1114,19 +1106,18 @@ function Footer() {
           </div>
         </div>
 
-        <div className="pt-16 border-t border-zinc-900/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-12">
+        <div className="pt-16 border-t border-zinc-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-12">
           <div className="space-y-3">
             <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.3em]">
               © {new Date().getFullYear()} ACADEMIAAI. BUILT FOR THE NEXT
               GENERATION.
             </p>
             <div className="flex items-center gap-4">
-              <span className="text-[9px] text-zinc-800 font-black uppercase tracking-widest">
+              <span className="text-[9px] text-zinc-600 font-black uppercase tracking-widest">
                 AI Accuracy: 98.4%
               </span>
             </div>
           </div>
-
         </div>
       </div>
     </footer>
@@ -1136,16 +1127,119 @@ function Footer() {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4006";
 
 export default function HeroPage() {
+  const { user, logout } = useAuth();
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgressText, setUploadProgressText] = useState("");
   const [news, setNews] = useState<any[]>([]);
   const [rankings, setRankings] = useState<any[]>([]);
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mode, setMode] = useState<"web" | "compare" | "pdf">("web");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isChatActive, setIsChatActive] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
+
+  const handleSend = async (textToSend: string) => {
+    if (!textToSend.trim() || isLoading) return;
+
+    if (!user) {
+      const count = parseInt(localStorage.getItem("guest_questions_asked") || "0", 10);
+      if (count >= 2) {
+        setShowAuthModal(true);
+        return;
+      }
+      localStorage.setItem("guest_questions_asked", (count + 1).toString());
+    }
+
+    setIsChatActive(true);
+    setIsLoading(true);
+
+    const userMessage: Message = { role: "user", content: textToSend };
+    let currentHistory: Message[] = [];
+    setMessages((prev) => {
+      currentHistory = [...prev];
+      return [...prev, userMessage, { role: "assistant", content: "" }];
+    });
+
+    setQuery("");
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      const response = await fetch(`${API_URL}/chat`, {
+        method: "POST",
+        signal: controller.signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...currentHistory, userMessage],
+          mode: mode,
+          ...(mode === "pdf" && attachedFile ? { pdfFilename: attachedFile.name } : {}),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || "Failed to query the intelligence engine.");
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let assistantText = "";
+
+      if (!reader) throw new Error("No response stream available");
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data:")) {
+            const dataStr = line.replace("data: ", "").trim();
+            if (dataStr === "[DONE]") break;
+            try {
+              const json = JSON.parse(dataStr);
+              if (json.choices?.[0]?.delta?.content) {
+                assistantText += json.choices[0].delta.content;
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  updated[updated.length - 1].content = assistantText;
+                  return updated;
+                });
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error("Chat Error:", err);
+      if (err.name !== "AbortError") {
+        setMessages((prev) => {
+          const updated = [...prev];
+          if (updated[updated.length - 1].role === "assistant") {
+            updated[updated.length - 1].content = `⚠️ **Error:** ${err.message || "Failed to connect to the engine."}`;
+          }
+          return updated;
+        });
+      }
+    } finally {
+      setIsLoading(false);
+      abortControllerRef.current = null;
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -1153,7 +1247,7 @@ export default function HeroPage() {
         headerRef.current &&
         !headerRef.current.contains(event.target as Node)
       ) {
-        setActiveMenu(null);
+        setProfileDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -1218,20 +1312,21 @@ export default function HeroPage() {
         setUploadProgressText("");
       }
 
-      const params = new URLSearchParams();
-      if (query.trim()) params.set("q", query.trim());
-      params.set("file", attachedFile.name);
-      if (uploadedFileUrl) params.set("fileUrl", uploadedFileUrl);
-      params.set("mode", "pdf");
-      window.location.href = `/chat?${params.toString()}`;
+      setIsChatActive(true);
+      setMessages([
+        {
+          role: "assistant",
+          content: `I've finished indexing **${attachedFile.name}**. You can now ask me questions about its content!`,
+        },
+      ]);
+      if (query.trim()) {
+        handleSend(query.trim());
+      }
       return;
     }
 
-    if (query.trim() || mode === "compare" || mode === "pdf") {
-      const params = new URLSearchParams();
-      if (query.trim()) params.set("q", query.trim());
-      params.set("mode", mode);
-      window.location.href = `/chat?${params.toString()}`;
+    if (query.trim()) {
+      handleSend(query.trim());
     }
   };
 
@@ -1264,101 +1359,80 @@ export default function HeroPage() {
   const heroY = useTransform(scrollY, [0, 500], [0, -100]);
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden selection:bg-white selection:text-black font-sans text-white">
+    <div className="flex h-screen bg-[#f3f4f6] overflow-hidden selection:bg-black selection:text-white font-sans text-black">
       <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative no-scrollbar">
-        {/* Liquid Glass Distortion Filter */}
+        {/* Brutalist Header */}
 
         <header
           ref={headerRef}
-          className="fixed top-0 left-0 right-0 h-20 border-b border-white/5 flex items-center justify-between px-6 md:px-12 z-[200] bg-[#0a0a0a]"
+          className="fixed top-0 left-0 right-0 h-20 border-b-2 border-black flex items-center justify-between px-6 md:px-12 z-[200] bg-white text-black"
         >
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.1)] group-hover:scale-105 transition-all shrink-0">
+            <div className="w-9 h-9 bg-white rounded-lg border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] group-hover:translate-x-[1px] group-hover:translate-y-[1px] group-hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all shrink-0">
               <GraduationCap className="text-black w-5 h-5" />
             </div>
-            <span className="text-xl font-serif font-bold text-white tracking-tight">
-              Academia<span className="text-zinc-500 italic">AI</span>
+            <span className="text-xl font-serif font-black text-black tracking-tight uppercase">
+              Academia<span className="text-[#b69cc4] italic font-medium">AI</span>
             </span>
           </Link>
 
           {/* Desktop Nav - Moved to Right */}
           <nav className="hidden lg:flex items-center gap-10 ml-auto">
-            {/* Platform Dropdown */}
-            <div className="relative py-4">
-              <button
-                onClick={() =>
-                  setActiveMenu(activeMenu === "platform" ? null : "platform")
-                }
-                className={cn(
-                  "flex items-center gap-1.5 text-[13px] font-semibold transition-colors",
-                  activeMenu === "platform"
-                    ? "text-white"
-                    : "text-zinc-400 hover:text-white",
-                )}
-              >
-                Platform
-                <ChevronDown
-                  size={14}
-                  className={cn(
-                    "transition-transform duration-300",
-                    activeMenu === "platform"
-                      ? "rotate-180 text-white"
-                      : "text-zinc-600",
-                  )}
-                />
-              </button>
-
-              {/* Dropdown Menu with Overlapping Roll-Down */}
-              <div
-                className={cn(
-                  "absolute top-[70px] left-1/2 -translate-x-1/2 pointer-events-none z-[300] transition-all",
-                  activeMenu === "platform" && "pointer-events-auto",
-                )}
-              >
-                <div
-                  className={cn(
-                    "opacity-0 overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.2,1,0.2,1)] w-72",
-                    activeMenu === "platform"
-                      ? "max-h-[500px] opacity-100"
-                      : "max-h-0",
-                  )}
+            {/* User Profile / Auth State */}
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className="flex items-center gap-2 hover:opacity-85 transition-opacity"
                 >
-                  <div className="bg-[#0d0d0d] border border-zinc-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-2 m-2">
-                    {[
-                      {
-                        label: "Neural Chat",
-                        href: "/chat",
-                        desc: "AI-powered research engine",
-                      },
-                      {
-                        label: "Smart Predictor",
-                        href: "/predictor",
-                        desc: "Advanced success modeling",
-                      },
-                    ].map((link) => (
-                      <Link
-                        key={link.label}
-                        href={link.href}
-                        className="block p-4 rounded-xl hover:bg-zinc-900 transition-colors group/item pointer-events-auto"
-                      >
-                        <p className="text-[13px] font-bold text-white mb-1">
-                          {link.label}
-                        </p>
-                        <p className="text-[11px] text-zinc-500 group-hover/item:text-zinc-400 leading-tight">
-                          {link.desc}
-                        </p>
-                      </Link>
-                    ))}
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt={user.displayName || "User"}
+                      className="w-8 h-8 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_#000000]"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-white border-2 border-black flex items-center justify-center text-xs font-black text-black uppercase shadow-[2px_2px_0px_0px_#000000]">
+                      {user.displayName ? user.displayName[0] : (user.email ? user.email[0] : "U")}
+                    </div>
+                  )}
+                </button>
+                {profileDropdownOpen && (
+                  <div className="absolute right-0 top-[45px] w-48 bg-white border-2 border-black rounded-lg shadow-[4px_4px_0px_0px_#000000] p-2 z-[300] text-black">
+                    <div className="px-3 py-2 border-b-2 border-zinc-100 mb-1">
+                      <p className="text-[11px] font-black text-black truncate">
+                        {user.displayName || "User"}
+                      </p>
+                      <p className="text-[9px] text-zinc-500 truncate mt-0.5">
+                        {user.email}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setProfileDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs font-black text-red-600 hover:bg-zinc-50 rounded-md transition-colors"
+                    >
+                      Sign Out
+                    </button>
                   </div>
-                </div>
+                )}
               </div>
-            </div>
+            ) : (
+              <Link
+                href="/login"
+                className="px-4 py-2 border-2 border-black rounded-lg bg-[#b69cc4] text-black font-extrabold text-[13px] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+              >
+                Sign In
+              </Link>
+            )}
           </nav>
         </header>
 
         {/* Mobile Navigation */}
-        <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-[#121212]/90 border border-white/10 rounded-full px-2 py-2 flex items-center gap-1 shadow-2xl backdrop-blur-xl">
+        <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-white border-2 border-black rounded-xl px-2 py-2 flex items-center gap-1 shadow-[4px_4px_0px_0px_#000000] text-black">
           {[
             { icon: GraduationCap, href: "/", active: true, label: "Home" },
             { icon: Brain, href: "/chat", label: "Chat" },
@@ -1371,48 +1445,77 @@ export default function HeroPage() {
                 key={i}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300",
+                  "flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-300",
                   item.active
-                    ? "bg-white text-black shadow-xl shadow-white/10"
-                    : "text-zinc-500 hover:text-white",
+                    ? "bg-[#b69cc4] text-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                    : "text-zinc-600 hover:text-black rounded-lg",
                 )}
               >
                 <Icon size={20} />
                 {item.active && (
-                  <span className="text-[13px] font-bold">{item.label}</span>
+                  <span className="text-[13px] font-black">{item.label}</span>
                 )}
               </Link>
             );
           })}
         </nav>
 
-        <section className="relative flex items-center min-h-screen px-6 md:px-24 overflow-hidden pt-20 bg-[#0a0a0a]">
-          <div className="relative z-10 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <section className="relative flex items-center min-h-screen px-6 md:px-24 overflow-hidden pt-20 bg-[#f3f4f6]">
+          <div className={cn(
+            "relative z-10 w-full mx-auto transition-all duration-700 items-center",
+            isChatActive
+              ? "max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch min-h-[550px] lg:h-[calc(100vh-160px)] pt-4"
+              : "max-w-5xl flex items-center justify-center"
+          )}>
             {/* Left Content */}
-            <motion.div style={{ y: heroY }} className="space-y-10 text-left">
-              <div className="space-y-6">
+            <motion.div
+              style={{ y: heroY }}
+              className={cn(
+                "transition-all duration-700 w-full",
+                isChatActive
+                  ? "lg:col-span-5 flex flex-col justify-center items-start text-left space-y-6 lg:h-full lg:pr-6"
+                  : "space-y-12 text-center flex flex-col items-center"
+              )}
+            >
+              <div className="space-y-6 w-full">
                 <Reveal>
-                  <h1 className="text-5xl md:text-8xl font-serif font-medium tracking-tight leading-[1.1] text-white">
+                  <h1 className={cn(
+                    "font-serif font-black tracking-tight leading-[1.1] text-black transition-all duration-700",
+                    isChatActive
+                      ? "text-3xl md:text-5xl lg:text-6xl text-left w-full"
+                      : "text-5xl md:text-8xl lg:text-9xl text-center w-full"
+                  )}>
                     Explore your
                     <br />
-                    <span className="italic text-zinc-400">next big step.</span>
+                    <span className="italic text-zinc-500">next big step.</span>
                   </h1>
                 </Reveal>
                 <Reveal delay={0.2}>
-                  <p className="text-lg md:text-xl text-zinc-500 leading-relaxed font-medium max-w-xl opacity-90">
+                  <p className={cn(
+                    "text-zinc-700 leading-relaxed font-semibold transition-all duration-700 opacity-90",
+                    isChatActive
+                      ? "text-sm md:text-base text-left max-w-md mx-0"
+                      : "text-lg md:text-xl lg:text-2xl text-center max-w-2xl mx-auto"
+                  )}>
                     Tackle any big, bold, bewildering academic challenge with
                     AcademiaAI.
                   </p>
                 </Reveal>
               </div>
 
-              <Reveal delay={0.4}>
-                <div className="space-y-6">
+              <Reveal delay={0.4} className="w-full">
+                <div className={cn(
+                  "space-y-6 w-full flex flex-col",
+                  isChatActive ? "items-start" : "items-center"
+                )}>
                   <form
                     onSubmit={handleSubmit}
-                    className="relative group max-w-2xl"
+                    className={cn(
+                      "relative group transition-all duration-700 w-full",
+                      isChatActive ? "max-w-xl mx-0 text-left" : "max-w-3xl mx-auto"
+                    )}
                   >
-                    <div className="relative flex items-center bg-[#141414] rounded-2xl border border-zinc-800 transition-all duration-300 focus-within:border-zinc-700 p-2">
+                    <div className="relative flex items-center bg-white rounded-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus-within:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all p-2">
                       <input
                         type="text"
                         value={query}
@@ -1424,12 +1527,12 @@ export default function HeroPage() {
                               ? "Ask something about your document..."
                               : "How can I help you today?"
                         }
-                        className="w-full bg-transparent pl-4 pr-4 py-4 text-lg md:text-xl text-white placeholder:text-zinc-600 outline-none font-medium"
+                        className="w-full bg-transparent pl-4 pr-4 py-4 text-lg md:text-xl text-black placeholder:text-zinc-500 outline-none font-medium"
                       />
                       <button
                         type="submit"
                         disabled={isUploading}
-                        className="px-6 py-3 bg-[#b69cc4] text-black font-bold text-sm rounded-xl hover:opacity-90 transition-all active:scale-95 flex items-center gap-2 shadow-[0_0_20px_rgba(182,156,196,0.2)]"
+                        className="px-6 py-3 bg-[#b69cc4] text-black font-black text-sm rounded-lg border-2 border-black hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all shrink-0 flex items-center gap-2"
                       >
                         {isUploading
                           ? "..."
@@ -1448,7 +1551,10 @@ export default function HeroPage() {
                     />
                   </form>
 
-                  <div className="flex flex-wrap gap-3">
+                  <div className={cn(
+                    "flex flex-wrap gap-3 transition-all duration-700",
+                    isChatActive ? "justify-start" : "justify-center"
+                  )}>
                     {[
                       {
                         label: "Compare",
@@ -1462,10 +1568,10 @@ export default function HeroPage() {
                         type="button"
                         onClick={() => setMode(item.mode)}
                         className={cn(
-                          "flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-xs font-bold",
+                          "flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 font-black text-xs transition-all",
                           mode === item.mode
-                            ? "border-white bg-white text-black"
-                            : "border-zinc-800 bg-[#141414] text-zinc-500 hover:text-white hover:border-zinc-700",
+                            ? "border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                            : "border-black bg-white text-black hover:bg-zinc-100 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
                         )}
                       >
                         <item.icon size={14} />
@@ -1479,10 +1585,10 @@ export default function HeroPage() {
                         fileInputRef.current?.click();
                       }}
                       className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-xs font-bold",
+                        "flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 font-black text-xs transition-all",
                         mode === "pdf"
-                          ? "border-white bg-white text-black"
-                          : "border-zinc-800 bg-[#141414] text-zinc-500 hover:text-white hover:border-zinc-700",
+                          ? "border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                          : "border-black bg-white text-black hover:bg-zinc-100 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
                       )}
                     >
                       <Paperclip size={14} />
@@ -1493,102 +1599,132 @@ export default function HeroPage() {
               </Reveal>
             </motion.div>
 
-            {/* Right Illustration: Neural Knowledge Graph */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1 }}
-              className="hidden lg:block relative"
-            >
-              <div className="relative aspect-square w-full max-w-xl ml-auto flex items-center justify-center">
-                <div className="relative w-full h-full flex items-center justify-center">
-                  {/* Central Core: Academia AI */}
-                  <motion.div
-                    animate={{ y: [-5, 5, -5] }}
-                    transition={{
-                      duration: 4,
-                      repeat: Infinity,
-                      ease: "easeInOut",
+            {/* Right Split Panel: Live Chat Ans */}
+            {isChatActive && (
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="lg:col-span-7 flex flex-col bg-white border-2 border-black rounded-xl h-[500px] lg:h-full overflow-hidden relative shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+              >
+                {/* Header */}
+                <div className="px-6 py-4 border-b-2 border-black flex items-center justify-between bg-[#f3f4f6]">
+                  <div className="flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-[#b69cc4]" />
+                    <span className="text-xs font-black text-black uppercase tracking-wider">AcademiaAI Intelligence</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (abortControllerRef.current) abortControllerRef.current.abort();
+                      setMessages([]);
+                      setIsChatActive(false);
                     }}
-                    className="z-20 px-8 py-4 rounded-2xl bg-[#141414] border border-white/10 shadow-[0_0_50px_rgba(182,156,196,0.15)] flex items-center justify-center"
+                    className="text-zinc-600 hover:text-black transition-colors p-1"
+                    title="Close chat session"
                   >
-                    <h2 className="text-2xl font-serif font-medium text-white tracking-tight">
-                      Academia <span className="text-[#b69cc4] italic">AI</span>
-                    </h2>
-                  </motion.div>
+                    <X size={16} />
+                  </button>
+                </div>
 
-                  {/* Floating Nodes & Connectors */}
-                  {[
-                    { label: "Admissions", x: "80%", y: "40%", delay: 0.1 },
-                    { label: "Cutoffs", x: "70%", y: "15%", delay: 0.3 },
-                    { label: "Campus Life", x: "30%", y: "15%", delay: 0.5 },
-                    { label: "Scholarship", x: "15%", y: "40%", delay: 0.7 },
-                    { label: "Placements", x: "25%", y: "75%", delay: 0.9 },
-                    { label: "Rankings", x: "75%", y: "75%", delay: 1.1 },
-                  ].map((node, i) => (
-                    <div key={i}>
-                      {/* Connecting Path */}
-                      <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
-                        <motion.path
-                          d={`M 280 280 L ${node.x} ${node.y}`}
-                          stroke="#b69cc4"
-                          strokeWidth="0.5"
-                          strokeDasharray="4 4"
-                          initial={{ pathLength: 0, opacity: 0 }}
-                          animate={{ pathLength: 1, opacity: 0.2 }}
-                          transition={{ duration: 1.5, delay: node.delay }}
-                        />
-                      </svg>
-
-                      {/* Node Chip */}
-                      <motion.div
-                        style={{ left: node.x, top: node.y }}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.8, delay: node.delay }}
-                        className="absolute -translate-x-1/2 -translate-y-1/2 px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 group hover:border-[#b69cc4] transition-all cursor-default shadow-xl"
+                {/* Message list area */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar text-left bg-zinc-50/50">
+                  {messages.map((msg, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        "flex flex-col w-full",
+                        msg.role === "user" ? "items-end" : "items-start"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "px-4 py-3 rounded-lg max-w-[85%] text-sm leading-relaxed",
+                          msg.role === "user"
+                            ? "bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                            : "bg-[#f3f4f6] border-2 border-black text-black"
+                        )}
                       >
-                        <span className="text-[10px] font-black text-zinc-500 group-hover:text-white uppercase tracking-widest transition-colors">
-                          {node.label}
-                        </span>
-                      </motion.div>
+                        {msg.role === "assistant" ? (
+                          <div className="prose prose-neutral max-w-none text-black">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {msg.content || "Thinking..."}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          msg.content
+                        )}
+                      </div>
                     </div>
                   ))}
+                  {isLoading && messages.length > 0 && messages[messages.length - 1].content === "" && (
+                    <div className="flex items-center gap-2 text-black text-sm italic pl-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-black" />
+                      Thinking...
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+              </motion.div>
+            )}
+          </div>
 
-                  {/* Ambient Intelligence Field */}
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(182,156,196,0.05)_0%,transparent_70%)]" />
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      duration: 60,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                    className="absolute w-[80%] h-[80%] border border-white/[0.03] rounded-full"
-                  />
+          {/* Auth Limit Modal */}
+          {showAuthModal && (
+            <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
+              <div
+                className="absolute inset-0 bg-black/40 backdrop-blur-md"
+                onClick={() => setShowAuthModal(false)}
+              />
+              <div className="relative z-10 w-full max-w-md bg-white border-2 border-black rounded-lg p-8 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col items-center text-center space-y-6 text-black">
+                <div className="w-16 h-16 bg-[#f3f4f6] border-2 border-black rounded-lg flex items-center justify-center text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                  <Brain size={32} />
+                </div>
+                
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-serif font-black uppercase text-black">
+                    Sign in to continue exploring
+                  </h3>
+                  <p className="text-sm text-zinc-700 leading-relaxed">
+                    You've reached the free guest limit of 2 questions. Sign in or create a free account to continue using AcademiaAI and unlock unlimited questions.
+                  </p>
+                </div>
+
+                <div className="flex flex-col w-full gap-3 pt-2">
+                  <Link
+                    href="/login"
+                    className="w-full py-3 bg-[#b69cc4] text-black font-extrabold text-sm rounded-lg border-2 border-black hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-center"
+                  >
+                    Sign In
+                  </Link>
+                  <button
+                    onClick={() => setShowAuthModal(false)}
+                    className="w-full py-3 border-2 border-black bg-white text-black hover:bg-[#f3f4f6] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-extrabold text-sm rounded-lg transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+                  >
+                    Continue as Guest (View Chat)
+                  </button>
                 </div>
               </div>
-            </motion.div>
-          </div>
+            </div>
+          )}
         </section>
 
         {/* Philosophy Section: The Death of Filters */}
-        <section className="w-full py-64 md:py-[400px] min-h-[900px] lg:min-h-screen px-6 bg-[#0a0a0a] relative flex flex-col items-start justify-center overflow-hidden">
+        <section className="w-full py-64 md:py-[400px] min-h-[900px] lg:min-h-screen px-6 bg-[#f3f4f6] relative flex flex-col items-start justify-center overflow-hidden">
           <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12">
             <div className="lg:col-span-10 space-y-12 text-left">
               <Reveal>
-                <h2 className="text-4xl md:text-8xl font-serif font-medium text-white leading-[1.05] tracking-tight">
+                <h2 className="text-4xl md:text-8xl font-serif font-black text-black leading-[1.05] tracking-tight">
                   Beyond the{" "}
-                  <span className="text-[#b69cc4] italic">noise</span> <br />
+                  <span className="text-[#b69cc4] italic font-black">noise</span> <br />
                   of infinite filters.
                 </h2>
               </Reveal>
 
               <div className="space-y-10 max-w-4xl">
                 <Reveal delay={0.2}>
-                  <p className="text-zinc-400 text-xl md:text-4xl leading-tight font-medium">
+                  <p className="text-zinc-700 text-xl md:text-4xl leading-tight font-medium">
                     AcademiaAI transforms the hunt for your future into a{" "}
-                    <span className="text-white italic">
+                    <span className="text-black italic font-black">
                       natural conversation
                     </span>
                     .
@@ -1607,28 +1743,25 @@ export default function HeroPage() {
               </div>
             </div>
           </div>
-
-          {/* Atmospheric Depth */}
-          <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#b69cc4]/[0.02] blur-[160px] rounded-full pointer-events-none" />
         </section>
 
         {/* CTA: Start Chatting Box */}
-        <section className="w-full pb-32 px-6 bg-[#0a0a0a] relative">
+        <section className="w-full pb-32 px-6 bg-[#f3f4f6] relative">
           <div className="max-w-7xl mx-auto">
             <Reveal delay={0.6}>
-              <div className="w-full p-8 md:p-12 rounded-[2.5rem] bg-[#b69cc4] flex flex-col md:flex-row items-center justify-between gap-8 shadow-[0_0_50px_rgba(182,156,196,0.3)]">
-                <div className="space-y-2">
-                  <h3 className="text-2xl md:text-4xl font-serif font-medium text-black tracking-tight">
+              <div className="w-full p-8 md:p-12 rounded-[2.5rem] bg-[#b69cc4] border-2 border-black flex flex-col md:flex-row items-center justify-between gap-8 shadow-[6px_6px_0px_0px_#000000] text-black">
+                <div className="space-y-2 text-left">
+                  <h3 className="text-2xl md:text-4xl font-serif font-black text-black tracking-tight">
                     Ready to experience the future of education?
                   </h3>
-                  <p className="text-black/60 text-lg md:text-xl font-medium">
+                  <p className="text-black/85 text-lg md:text-xl font-medium">
                     Start a dialogue that matters.
                   </p>
                 </div>
 
                 <a
                   href="/chat"
-                  className="group px-8 py-4 bg-black text-white font-bold text-lg rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-2xl whitespace-nowrap"
+                  className="group px-8 py-4 bg-white text-black border-2 border-black font-black text-lg rounded-2xl hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:scale-95 transition-all flex items-center gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] whitespace-nowrap"
                 >
                   Start Chatting
                   <ArrowRight
@@ -1646,15 +1779,15 @@ export default function HeroPage() {
         <InformationHub news={news} rankings={rankings} />
 
         {/* Motive Section */}
-        <section className="w-full py-24 md:py-48 px-6 bg-[#0a0a0a] border-t border-white/5">
+        <section className="w-full py-24 md:py-48 px-6 bg-[#f3f4f6] border-t-2 border-black">
           <div className="max-w-7xl mx-auto">
             <Reveal>
-              <div className="space-y-10 max-w-5xl">
+              <div className="space-y-10 max-w-5xl text-left">
                 <div className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">
                   Our Motive
                 </div>
-                <blockquote className="text-zinc-400 text-lg md:text-3xl font-medium leading-relaxed tracking-tight italic">
-                  "To <span className="text-white">democratize</span> academic
+                <blockquote className="text-zinc-700 text-lg md:text-3xl font-medium leading-relaxed tracking-tight italic">
+                  "To <span className="text-black font-black underline">democratize</span> academic
                   intelligence. We believe every student deserves access to the
                   same high-resolution data and predictive insights once
                   reserved for institutional insiders. AcademiaAI is our

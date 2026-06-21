@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Link from "next/link";
@@ -141,14 +142,14 @@ const ChatInput = ({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: menuSide === "top" ? -10 : 10, scale: 0.95 }}
           className={cn(
-            "absolute left-0 liquid-glass-card p-4 shadow-2xl shadow-black w-64 max-w-sm z-[110]",
+            "absolute left-0 bg-white border-2 border-black p-4 rounded-lg w-64 max-w-sm z-[110] shadow-[4px_4px_0px_0px_#000000] text-black",
             menuSide === "top" ? "bottom-full mb-2" : "top-full mt-2",
           )}
         >
-          <h3 className="px-4 pt-2 pb-4 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700">
+          <h3 className="px-4 pt-2 pb-4 text-[10px] font-black uppercase tracking-[0.2em] text-[#b69cc4]">
             Switch Mode
           </h3>
-          <div className="space-y-1">
+          <div className="space-y-2">
             {[
               {
                 id: "web",
@@ -176,10 +177,10 @@ const ChatInput = ({
                   setIsMenuOpen(false);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-4 p-3 sm:p-4 rounded-2xl transition-all text-left group",
+                  "w-full flex items-center gap-4 p-3 rounded-lg border-2 transition-all text-left group hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
                   chatMode === mode.id
-                    ? "bg-white text-black"
-                    : "hover:bg-zinc-800 text-zinc-400 hover:text-white",
+                    ? "bg-[#b69cc4] text-black border-black font-extrabold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                    : "bg-white border-black text-zinc-600 hover:text-black hover:border-black shadow-none",
                 )}
               >
                 <mode.icon
@@ -187,15 +188,15 @@ const ChatInput = ({
                   className={cn(
                     chatMode === mode.id
                       ? "text-black"
-                      : "text-zinc-500 group-hover:text-white",
+                      : "text-zinc-600 group-hover:text-black",
                   )}
                 />
                 <div>
-                  <p className="text-xs font-bold">{mode.label}</p>
+                  <p className="text-xs font-black">{mode.label}</p>
                   <p
                     className={cn(
-                      "text-[9px] font-medium",
-                      chatMode === mode.id ? "text-black/60" : "text-zinc-500",
+                      "text-[9px] font-bold mt-0.5",
+                      chatMode === mode.id ? "text-black/80" : "text-zinc-500",
                     )}
                   >
                     {mode.desc}
@@ -230,14 +231,14 @@ const ChatInput = ({
                 scale: 0.95,
               }}
               className={cn(
-                "absolute right-0 liquid-glass-card p-3 shadow-2xl shadow-black w-64 z-[110]",
+                "absolute right-0 bg-white border-2 border-black p-3 rounded-lg w-64 z-[110] shadow-[4px_4px_0px_0px_#000000] text-black",
                 menuSide === "top" ? "bottom-full mb-2" : "top-full mt-2",
               )}
             >
-              <h3 className="px-3 pt-2 pb-3 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">
+              <h3 className="px-3 pt-2 pb-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#b69cc4]">
                 Response Language
               </h3>
-              <div className="max-h-72 overflow-y-auto custom-scrollbar space-y-0.5 pr-1">
+              <div className="max-h-72 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
                 {/* Auto option */}
                 {LANGUAGES.filter((l) => l.region === "meta").map((lang) => (
                   <button
@@ -247,15 +248,15 @@ const ChatInput = ({
                       setIsLangMenuOpen(false);
                     }}
                     className={cn(
-                      "w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl transition-all text-left",
+                      "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg border-2 transition-all text-left hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
                       selectedLanguage === "auto" || !selectedLanguage
-                        ? "bg-white text-black"
-                        : "hover:bg-blue-500/10 text-zinc-300 hover:text-blue-400",
+                        ? "bg-[#b69cc4] text-black border-black font-extrabold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        : "bg-white border-black text-zinc-600 hover:text-black hover:border-black shadow-none",
                     )}
                   >
                     <div className="flex items-center gap-2">
                       <Globe size={13} />
-                      <span className="text-xs font-bold">{lang.name}</span>
+                      <span className="text-xs font-black">{lang.name}</span>
                     </div>
                     {(selectedLanguage === "auto" || !selectedLanguage) && (
                       <Check size={12} />
@@ -264,7 +265,7 @@ const ChatInput = ({
                 ))}
 
                 {/* Indian languages */}
-                <p className="px-3 pt-3 pb-1 text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">
+                <p className="px-3 pt-3 pb-1 text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500">
                   🇮🇳 Indian
                 </p>
                 {LANGUAGES.filter((l) => l.region === "indian").map((lang) => (
@@ -275,19 +276,19 @@ const ChatInput = ({
                       setIsLangMenuOpen(false);
                     }}
                     className={cn(
-                      "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-2xl transition-all text-left",
+                      "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg border-2 transition-all text-left hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
                       selectedLanguage === lang.code
-                        ? "bg-white text-black"
-                        : "hover:bg-blue-500/10 text-zinc-300 hover:text-blue-400",
+                        ? "bg-[#b69cc4] text-black border-black font-extrabold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        : "bg-white border-black text-zinc-600 hover:text-black hover:border-black shadow-none",
                     )}
                   >
                     <div>
-                      <p className="text-xs font-semibold">{lang.native}</p>
+                      <p className="text-xs font-black">{lang.native}</p>
                       <p
                         className={cn(
-                          "text-[10px]",
+                          "text-[9px] font-bold mt-0.5",
                           selectedLanguage === lang.code
-                            ? "text-black/60"
+                            ? "text-black/80"
                             : "text-zinc-500",
                         )}
                       >
@@ -299,7 +300,7 @@ const ChatInput = ({
                 ))}
 
                 {/* Global languages */}
-                <p className="px-3 pt-3 pb-1 text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">
+                <p className="px-3 pt-3 pb-1 text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500">
                   🌍 Global
                 </p>
                 {LANGUAGES.filter((l) => l.region === "global").map((lang) => (
@@ -310,19 +311,19 @@ const ChatInput = ({
                       setIsLangMenuOpen(false);
                     }}
                     className={cn(
-                      "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-2xl transition-all text-left",
+                      "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg border-2 transition-all text-left hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
                       selectedLanguage === lang.code
-                        ? "bg-white text-black"
-                        : "hover:bg-blue-500/10 text-zinc-300 hover:text-blue-400",
+                        ? "bg-[#b69cc4] text-black border-black font-extrabold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        : "bg-white border-black text-zinc-600 hover:text-black hover:border-black shadow-none",
                     )}
                   >
                     <div>
-                      <p className="text-xs font-semibold">{lang.native}</p>
+                      <p className="text-xs font-black">{lang.native}</p>
                       <p
                         className={cn(
-                          "text-[10px]",
+                          "text-[9px] font-bold mt-0.5",
                           selectedLanguage === lang.code
-                            ? "text-black/60"
+                            ? "text-black/80"
                             : "text-zinc-500",
                         )}
                       >
@@ -343,12 +344,12 @@ const ChatInput = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               className={cn(
-                "absolute left-10 w-64 p-4 bg-zinc-900 border border-zinc-800 rounded-3xl z-50 shadow-2xl",
+                "absolute left-10 w-64 p-4 bg-white border-2 border-black rounded-lg z-50 shadow-[4px_4px_0px_0px_#000000] text-black",
                 "top-full mt-2"
               )}
             >
-              <div className="flex flex-col gap-1 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
-                <h3 className="px-2 pt-1 pb-3 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">
+              <div className="flex flex-col gap-1.5 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
+                <h3 className="px-2 pt-1 pb-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#b69cc4]">
                   Focus Parameters
                 </h3>
                 {COMPARISON_CRITERIA.map((c) => {
@@ -364,23 +365,23 @@ const ChatInput = ({
                         );
                       }}
                       className={cn(
-                        "flex items-center gap-3 w-full p-3 rounded-2xl transition-all text-left group",
+                        "flex items-center gap-3 w-full p-3 rounded-lg border-2 transition-all text-left group hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
                         isSelected
-                          ? "bg-white/10 text-white"
-                          : "hover:bg-blue-500/10 text-zinc-400 hover:text-blue-400",
+                          ? "bg-[#b69cc4] border-black text-black font-extrabold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                          : "bg-white border-black text-zinc-600 hover:text-black hover:border-black shadow-none",
                       )}
                     >
                       <div
                         className={cn(
-                          "w-5 h-5 rounded flex items-center justify-center border transition-colors shrink-0",
+                          "w-5 h-5 rounded flex items-center justify-center border-2 transition-colors shrink-0",
                           isSelected
-                            ? "bg-white border-white text-black"
+                            ? "bg-black border-black text-white"
                             : "border-zinc-600 group-hover:border-zinc-400 text-transparent",
                         )}
                       >
                         <Check className="w-3 h-3" />
                       </div>
-                      <span className="text-sm font-medium">{c}</span>
+                      <span className="text-sm font-bold">{c}</span>
                     </button>
                   );
                 })}
@@ -388,23 +389,23 @@ const ChatInput = ({
                 <button
                   onClick={() => setShowOtherInput(!showOtherInput)}
                   className={cn(
-                    "flex items-center gap-3 w-full p-3 rounded-2xl transition-all text-left group",
+                    "flex items-center gap-3 w-full p-3 rounded-lg border-2 transition-all text-left group hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
                     showOtherInput
-                      ? "bg-white/10 text-white"
-                      : "hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-200",
+                      ? "bg-[#b69cc4] border-black text-black font-extrabold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                      : "bg-white border-black text-zinc-600 hover:text-black hover:border-black shadow-none",
                   )}
                 >
                   <div
                     className={cn(
-                      "w-5 h-5 rounded flex items-center justify-center border transition-colors shrink-0",
+                      "w-5 h-5 rounded flex items-center justify-center border-2 transition-colors shrink-0",
                       showOtherInput
-                        ? "bg-white border-white text-black"
+                        ? "bg-black border-black text-white"
                         : "border-zinc-600 group-hover:border-zinc-400 text-transparent",
                     )}
                   >
                     <Check className="w-3 h-3" />
                   </div>
-                  <span className="text-sm font-medium">Other (Custom)</span>
+                  <span className="text-sm font-bold">Other (Custom)</span>
                 </button>
 
                 {showOtherInput && (
@@ -413,7 +414,7 @@ const ChatInput = ({
                       value={otherCriteria}
                       onChange={(e) => setOtherCriteria(e.target.value)}
                       placeholder="Enter custom focus..."
-                      className="w-full bg-black/40 border border-zinc-800 rounded-xl px-4 py-3 text-sm font-medium text-white outline-none focus:border-white/20 transition-all placeholder:text-zinc-600"
+                      className="w-full bg-white border-2 border-black rounded-lg px-4 py-3 text-sm font-semibold text-black outline-none focus:shadow-[4px_4px_0px_0px_#b69cc4] transition-all placeholder:text-zinc-400"
                     />
                   </div>
                 )}
@@ -430,8 +431,8 @@ const ChatInput = ({
           >
             <div className="flex items-center justify-between px-2">
               <div className="flex items-center gap-3">
-                <Loader2 className="w-4 h-4 text-white animate-spin" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">
+                <Loader2 className="w-4 h-4 text-black animate-spin" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-black">
                   {uploadProgressText || "Processing Document"}
                 </span>
               </div>
@@ -439,9 +440,9 @@ const ChatInput = ({
                 {uploadProgress}%
               </span>
             </div>
-            <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/50">
+            <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden border-2 border-black">
               <motion.div
-                className="h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+                className="h-full bg-[#b69cc4]"
                 initial={{ width: 0 }}
                 animate={{ width: `${uploadProgress}%` }}
                 transition={{ type: "spring", bounce: 0, duration: 0.5 }}
@@ -450,36 +451,40 @@ const ChatInput = ({
           </motion.div>
         )}
 
-        <div className="bg-zinc-900 border border-zinc-800/50 group-focus-within:border-zinc-700 group-focus-within:bg-zinc-900 rounded-full transition-all duration-500 shadow-2xl shadow-black/20 overflow-hidden px-2 sm:px-4 py-1.5 sm:py-2">
-          <div className="flex items-center gap-1 sm:gap-2">
+        <div className="bg-white border-2 border-black group-focus-within:shadow-[4px_4px_0px_0px_#b69cc4] rounded-lg transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden px-2 sm:px-4 py-1.5 sm:py-2">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
             {/* Left Action: Plus Menu & Attach */}
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className={cn(
-                  "p-2 hover:bg-zinc-800 rounded-full transition-colors shrink-0",
-                  isMenuOpen ? "text-white" : "text-zinc-500",
+                  "p-2 rounded-lg border-2 transition-all shrink-0 hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+                  isMenuOpen 
+                    ? "bg-black text-white border-black" 
+                    : "bg-white border-black text-black hover:bg-[#b69cc4]"
                 )}
               >
-                <Plus size={22} />
+                <Plus size={18} />
               </button>
               {chatMode === "compare" && (
                 <button
                   onClick={() => setIsFocusMenuOpen(!isFocusMenuOpen)}
                   className={cn(
-                    "p-2 hover:bg-zinc-800 rounded-full transition-colors shrink-0",
-                    isFocusMenuOpen || selectedCriteria.length > 0 ? "text-white" : "text-zinc-500",
+                    "p-2 rounded-lg border-2 transition-all shrink-0 hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+                    isFocusMenuOpen || selectedCriteria.length > 0
+                      ? "bg-[#b69cc4] text-black border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                      : "bg-white border-black text-black hover:bg-[#b69cc4] shadow-none"
                   )}
                   title="Focus Parameters"
                 >
-                  <SlidersHorizontal size={20} />
+                  <SlidersHorizontal size={18} />
                 </button>
               )}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-2 hover:bg-zinc-800 text-zinc-500 hover:text-white rounded-full transition-colors shrink-0"
+                className="p-2 bg-white border-2 border-black text-black hover:bg-[#b69cc4] rounded-lg transition-all shrink-0 hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
               >
-                <Paperclip size={20} />
+                <Paperclip size={18} />
               </button>
             </div>
 
@@ -502,13 +507,13 @@ const ChatInput = ({
                     ? uploadProgressText || "Indexing..."
                     : "Ask anything..."
                 }
-                className="flex-1 min-w-0 bg-transparent py-2 sm:py-3 text-sm sm:text-base font-medium text-white placeholder:text-zinc-600 outline-none ml-1"
+                className="flex-1 min-w-0 bg-transparent py-2 sm:py-3 text-sm sm:text-base font-semibold text-black placeholder:text-zinc-400 outline-none ml-1"
                 disabled={isUploading}
               />
             )}
 
             {/* Right Action Group */}
-            <div className="flex items-center gap-0.5 sm:gap-1">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {/* Language Selector */}
               <button
                 onClick={() => {
@@ -517,16 +522,15 @@ const ChatInput = ({
                   setIsFocusMenuOpen(false);
                 }}
                 className={cn(
-                  "p-2 hover:bg-zinc-800 rounded-full transition-colors shrink-0 relative",
-                  isLangMenuOpen ||
-                    (selectedLanguage && selectedLanguage !== "auto")
-                    ? "text-white"
-                    : "text-zinc-500",
+                  "p-2 rounded-lg border-2 transition-all shrink-0 relative hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+                  isLangMenuOpen || (selectedLanguage && selectedLanguage !== "auto")
+                    ? "bg-[#b69cc4] text-black border-black"
+                    : "bg-white border-black text-black hover:bg-[#b69cc4]"
                 )}
               >
                 <Globe size={18} />
                 {selectedLanguage && selectedLanguage !== "auto" && (
-                  <span className="absolute -top-1 -right-1 bg-white text-black text-[8px] font-bold px-1 rounded-full border border-black">
+                  <span className="absolute -top-1 -right-1 bg-white text-black text-[8px] font-black px-1 rounded-md border-2 border-black">
                     {selectedLanguage.toUpperCase()}
                   </span>
                 )}
@@ -541,7 +545,7 @@ const ChatInput = ({
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.8, opacity: 0 }}
                     onClick={() => abortControllerRef.current?.abort()}
-                    className="w-8 h-8 sm:w-10 sm:h-10 bg-zinc-800 text-white rounded-full flex items-center justify-center hover:bg-zinc-700 transition-colors shrink-0 ml-1"
+                    className="w-8 h-8 sm:w-10 sm:h-10 bg-white text-black border-2 border-black rounded-lg flex items-center justify-center hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all shrink-0 ml-1"
                   >
                     <StopCircle size={18} />
                   </motion.button>
@@ -552,7 +556,7 @@ const ChatInput = ({
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.8, opacity: 0 }}
                     onClick={startVoiceRecording}
-                    className="w-8 h-8 sm:w-10 sm:h-10 bg-rose-500 text-white rounded-full flex items-center justify-center animate-pulse shrink-0 ml-1"
+                    className="w-8 h-8 sm:w-10 sm:h-10 bg-rose-500 text-black border-2 border-black rounded-lg flex items-center justify-center animate-pulse shrink-0 ml-1 hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                   >
                     <Mic size={18} />
                   </motion.button>
@@ -564,7 +568,7 @@ const ChatInput = ({
                     exit={{ scale: 0.8, opacity: 0 }}
                     onClick={() => handleSend()}
                     disabled={isUploading}
-                    className="w-8 h-8 sm:w-10 sm:h-10 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 active:scale-95 shadow-lg shadow-white/10 transition-all shrink-0 ml-1"
+                    className="w-8 h-8 sm:w-10 sm:h-10 bg-[#b69cc4] text-black border-2 border-black rounded-lg flex items-center justify-center hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all shrink-0 ml-1 font-extrabold"
                   >
                     <ArrowUp size={18} strokeWidth={3} />
                   </motion.button>
@@ -575,7 +579,7 @@ const ChatInput = ({
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.8, opacity: 0 }}
                     onClick={startVoiceRecording}
-                    className="p-2 text-zinc-500 hover:bg-zinc-800 hover:text-white rounded-full transition-colors shrink-0 ml-1"
+                    className="w-8 h-8 sm:w-10 sm:h-10 bg-white border-2 border-black text-black hover:bg-[#b69cc4] rounded-lg flex items-center justify-center hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all shrink-0 ml-1"
                   >
                     <Mic size={18} />
                   </motion.button>
@@ -643,20 +647,20 @@ const MessageBubble = ({
   return (
     <div
       className={cn(
-        "max-w-[95%] sm:max-w-[90%] rounded-2xl sm:rounded-3xl text-base sm:text-[18px] leading-relaxed group/msg relative",
+        "max-w-[95%] sm:max-w-[90%] rounded-lg text-base sm:text-[18px] leading-relaxed group/msg relative transition-all",
         msg.role === "user"
-          ? "bg-zinc-900 border border-zinc-800 px-5 sm:px-8 py-4 sm:py-5 text-white font-medium self-end"
-          : "w-full text-zinc-200",
+          ? "bg-white border-2 border-black px-5 sm:px-8 py-4 sm:py-5 text-black font-semibold self-end shadow-[4px_4px_0px_0px_#b69cc4]"
+          : "bg-white border-2 border-black px-5 sm:px-8 py-4 sm:py-5 text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.05)] w-full",
       )}
     >
       {msg.role === "assistant" && mainContent && (
         <button
           onClick={() => onSpeak(mainContent, index)}
           className={cn(
-            "absolute -right-12 top-2 p-2.5 rounded-xl transition-all border shrink-0",
+            "absolute -right-12 top-2 p-2.5 rounded-lg border-2 transition-all shrink-0 hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
             isSpeaking
-              ? "bg-white border-white text-black animate-pulse"
-              : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-700 opacity-0 group-hover/msg:opacity-100",
+              ? "bg-[#b69cc4] border-black text-black animate-pulse shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+              : "bg-white border-black text-black hover:bg-[#b69cc4] shadow-none opacity-0 group-hover/msg:opacity-100",
           )}
           title={isSpeaking ? "Stop speaking" : "Read aloud"}
         >
@@ -664,7 +668,7 @@ const MessageBubble = ({
         </button>
       )}
       <div className="flex flex-col gap-5 w-full">
-        <div className="prose prose-invert max-w-none prose-premium prose-base sm:prose-lg lg:prose-xl">
+        <div className="prose prose-neutral max-w-none prose-premium prose-base sm:prose-lg lg:prose-xl text-black">
           {mainContent ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {mainContent}
@@ -673,9 +677,9 @@ const MessageBubble = ({
             <div className="flex flex-col gap-4 py-2">
               <div className="flex items-center gap-3">
                 <div className="flex items-center space-x-1.5">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                  <div className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-bounce"></div>
+                  <div className="w-1.5 h-1.5 bg-[#b69cc4] rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                  <div className="w-1.5 h-1.5 bg-[#b69cc4]/80 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                  <div className="w-1.5 h-1.5 bg-[#b69cc4]/60 rounded-full animate-bounce"></div>
                 </div>
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -687,7 +691,7 @@ const MessageBubble = ({
                   >
                     <ShimmeringText 
                       text={LOADING_PHRASES[loadingIndex]} 
-                      className="text-sm sm:text-base"
+                      className="text-sm sm:text-base text-black"
                     />
                   </motion.div>
                 </AnimatePresence>
@@ -697,9 +701,9 @@ const MessageBubble = ({
         </div>
 
         {sourcesMeta && sourcesMeta.length > 0 && (
-          <div className="mt-2 pt-4 border-t border-white/5 flex flex-col gap-3">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
-              <Globe className="w-3 h-3" />
+          <div className="mt-2 pt-4 border-t-2 border-black flex flex-col gap-3">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-black">
+              <Globe className="w-3 h-3 text-black" />
               Sources Analyzed
             </div>
             <div className="flex flex-wrap gap-2">
@@ -709,20 +713,20 @@ const MessageBubble = ({
                   href={s.url || "#"}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/5 border border-white/5 hover:bg-blue-500/10 hover:border-blue-500/30 transition-all group w-fit max-w-[280px]"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white border-2 border-black hover:bg-[#b69cc4] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-[1px] hover:-translate-y-[1px] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all group w-fit max-w-[280px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-black/50 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-md bg-[#f3f4f6] border border-black flex items-center justify-center shrink-0">
                     {s.type === "pdf" ? (
-                      <FileText className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
+                      <FileText className="w-4 h-4 text-black" />
                     ) : (
-                      <Globe className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
+                      <Globe className="w-4 h-4 text-black" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-zinc-300 group-hover:text-white transition-colors truncate">
+                    <p className="text-xs font-black text-black truncate">
                       {s.name || s.url}
                     </p>
-                    <p className="text-[10px] text-zinc-500 truncate mt-0.5">
+                    <p className="text-[10px] text-zinc-600 truncate mt-0.5 font-bold">
                       {s.type === "pdf"
                         ? `Page ${s.page || 1}`
                         : (s.url || "").replace(/^https?:\/\/(www\.)?/, "")}
@@ -778,6 +782,9 @@ function ChatContent() {
     setIsInitialized,
   } = useChat();
 
+  const { user, logout } = useAuth();
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -1037,6 +1044,15 @@ function ChatContent() {
   ) => {
     if (!text.trim() || isLoading) return;
 
+    if (!user) {
+      const count = parseInt(localStorage.getItem("guest_questions_asked") || "0", 10);
+      if (count >= 2) {
+        setShowAuthModal(true);
+        return;
+      }
+      localStorage.setItem("guest_questions_asked", (count + 1).toString());
+    }
+
     let displayedText = text;
     let finalHiddenPrefix = hiddenPrefix;
     if (chatMode === "compare" && !hiddenPrefix) {
@@ -1138,7 +1154,7 @@ function ChatContent() {
         setMessages((prev) => {
           const updated = [...prev];
           if (updated[updated.length - 1].role === "assistant") {
-            updated[updated.length - 1].content = `⚠️ **Error:** ${err.message || "Failed to connect to the intelligence engine. Please check your connection."}`;
+            updated[updated.length - 1].content = `⚠️ **Error:** ${err.message || "Failed to connect to the intelligence engine."}`;
           }
           return updated;
         });
@@ -1150,11 +1166,11 @@ function ChatContent() {
   };
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] text-white selection:bg-white selection:text-black overflow-hidden font-sans">
-      <aside className="hidden md:flex w-16 border-r border-zinc-900 flex-col items-center py-6 gap-6 z-[100] bg-black">
+    <div className="flex h-screen bg-[#f3f4f6] text-black selection:bg-black selection:text-white overflow-hidden font-sans">
+      <aside className="hidden md:flex w-16 border-r-2 border-black flex-col items-center py-6 gap-6 z-[100] bg-white">
         <Link
           href="/"
-          className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center hover:scale-110 transition-transform"
+          className="w-10 h-10 bg-white rounded-lg border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
         >
           <GraduationCap className="text-black w-5 h-5" />
         </Link>
@@ -1169,10 +1185,10 @@ function ChatContent() {
               href={item.href}
               title={(item as any).label}
               className={cn(
-                "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
+                "w-10 h-10 rounded-lg flex items-center justify-center border-2 transition-all",
                 item.active
-                  ? "bg-white text-black shadow-xl shadow-white/10"
-                  : "text-zinc-600 hover:bg-blue-500/10 hover:text-blue-400",
+                  ? "bg-black border-black text-white shadow-[2px_2px_0px_0px_#b69cc4]"
+                  : "border-transparent text-zinc-500 hover:border-black hover:text-black",
               )}
             >
               <item.icon size={18} />
@@ -1181,7 +1197,7 @@ function ChatContent() {
         </div>
       </aside>
 
-      <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-[#121212]/90 border border-white/10 rounded-full px-2 py-2 flex items-center gap-1 shadow-2xl backdrop-blur-xl">
+      <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-white border-2 border-black rounded-xl px-2 py-2 flex items-center gap-1 shadow-[4px_4px_0px_0px_#000000] text-black">
         {[
           { icon: GraduationCap, href: "/", label: "Home" },
           { icon: Brain, href: "/chat", active: true, label: "Chat" },
@@ -1192,21 +1208,73 @@ function ChatContent() {
             key={i}
             href={item.href}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300",
+              "flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-300",
               item.active
-                ? "bg-white text-black shadow-xl shadow-white/10"
-                : "text-zinc-500 hover:text-white",
+                ? "bg-[#b69cc4] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000000]"
+                : "text-zinc-500 hover:text-black rounded-lg",
             )}
           >
             <item.icon size={20} />
             {item.active && (
-              <span className="text-[13px] font-bold">{item.label}</span>
+              <span className="text-[13px] font-black">{item.label}</span>
             )}
           </Link>
         ))}
       </nav>
 
-      <main className="flex-1 flex flex-col relative bg-[#0a0a0a]">
+      <main className="flex-1 flex flex-col relative bg-[#f3f4f6]">
+        {/* Floating Profile/Sign In */}
+        <div className="absolute top-6 right-6 z-50">
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="flex items-center gap-2 hover:opacity-90 transition-opacity"
+              >
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || "User"}
+                    className="w-8 h-8 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-lg bg-white border-2 border-black flex items-center justify-center text-xs font-extrabold text-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    {user.displayName ? user.displayName[0] : (user.email ? user.email[0] : "U")}
+                  </div>
+                )}
+              </button>
+              {profileDropdownOpen && (
+                <div className="absolute right-0 top-[45px] w-48 bg-white border-2 border-black rounded-lg p-2 z-[300] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-black">
+                  <div className="px-3 py-2 border-b-2 border-zinc-100 mb-1">
+                    <p className="text-[11px] font-black text-black truncate">
+                      {user.displayName || "User"}
+                    </p>
+                    <p className="text-[9px] text-[#b69cc4] font-bold truncate mt-0.5">
+                      {user.email}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setProfileDropdownOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs font-black text-red-600 hover:bg-red-50 border border-transparent rounded-lg transition-all"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="px-4 py-2 border-2 border-black rounded-lg bg-[#b69cc4] text-black font-extrabold text-[13px] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+            >
+              Sign In
+            </Link>
+          )}
+        </div>
+
         <div
           className={cn(
             "flex-1 overflow-y-auto custom-scrollbar flex flex-col",
@@ -1225,7 +1293,7 @@ function ChatContent() {
           >
             {messages.length === 0 && !isLoading && (
               <div className="text-center space-y-6 pt-12 md:pt-0">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold tracking-tight text-white px-4">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-black tracking-tight text-black px-4">
                   {chatMode === "compare"
                     ? "Compare your institutions"
                     : "What shall we analyze today?"}
@@ -1250,10 +1318,10 @@ function ChatContent() {
                         animate={{ opacity: 1, y: 0 }}
                         className="flex flex-col items-end mb-4"
                       >
-                        <div className="bg-zinc-900 border border-zinc-800 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl sm:rounded-3xl flex items-center gap-4 text-white max-w-[85%]">
-                          <FileText className="w-8 h-8 text-zinc-400 shrink-0" />
+                        <div className="bg-white border-2 border-black px-4 sm:px-6 py-3 sm:py-4 rounded-lg flex items-center gap-4 text-black max-w-[85%] shadow-[4px_4px_0px_0px_#b69cc4]">
+                          <FileText className="w-8 h-8 text-black shrink-0" />
                           <div className="flex flex-col min-w-0">
-                            <p className="text-sm font-bold truncate">
+                            <p className="text-sm font-black truncate">
                               {filename}
                             </p>
                             {url && (
@@ -1261,7 +1329,7 @@ function ChatContent() {
                                 href={fullUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[10px] uppercase tracking-wider text-zinc-400 hover:text-blue-400 mt-1 flex items-center gap-1 w-fit"
+                                className="text-[10px] uppercase tracking-wider text-black hover:text-[#b69cc4] mt-1 flex items-center gap-1 w-fit font-extrabold"
                               >
                                 Preview PDF <ExternalLink className="w-3 h-3" />
                               </a>
@@ -1347,7 +1415,7 @@ function ChatContent() {
         {(messages.length > 0 || chatMode !== "compare") && (
           <div
             className={cn(
-              "fixed bottom-16 md:bottom-0 left-0 md:left-20 right-0 p-2 sm:p-4 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a] to-transparent pt-6 sm:pt-10 z-50",
+              "fixed bottom-16 md:bottom-0 left-0 md:left-20 right-0 p-2 sm:p-4 bg-gradient-to-t from-[#f3f4f6] via-[#f3f4f6] to-transparent pt-6 sm:pt-10 z-50",
               messages.length === 0 && chatMode !== "compare" && "md:hidden",
               messages.length === 0 && chatMode === "compare" && "hidden",
             )}
@@ -1405,24 +1473,74 @@ function ChatContent() {
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
+          width: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #18181b;
-          border-radius: 10px;
+          background: #000000;
+          border: 1px solid #f3f4f6;
+          border-radius: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #fff;
+          background: #1f1f1f;
         }
       `}</style>
+
+      {/* Auth Limit Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-md"
+            onClick={() => setShowAuthModal(false)}
+          />
+          <div className="relative z-10 w-full max-w-md bg-white border-2 border-black rounded-lg p-8 shadow-[6px_6px_0px_0px_#000000] flex flex-col items-center text-center space-y-6 text-black">
+            <div className="w-16 h-16 bg-[#f3f4f6] border-2 border-black rounded-lg flex items-center justify-center text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+              <Brain size={32} />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-2xl font-serif font-black uppercase text-black">
+                Sign in to continue exploring
+              </h3>
+              <p className="text-sm text-zinc-700 leading-relaxed font-semibold">
+                You've reached the free guest limit of 2 questions. Sign in or create a free account to continue using AcademiaAI and unlock unlimited questions.
+              </p>
+            </div>
+
+            <div className="flex flex-col w-full gap-3 pt-2">
+              <Link
+                href="/login"
+                className="w-full py-3 bg-[#b69cc4] text-black font-extrabold text-sm rounded-lg border-2 border-black hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-center"
+              >
+                Sign In
+              </Link>
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="w-full py-3 border-2 border-black bg-white text-black hover:bg-[#f3f4f6] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-extrabold text-sm rounded-lg transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+              >
+                Continue as Guest (View Chat)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function ChatPage() {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f3f4f6] text-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-black" />
+      </div>
+    );
+  }
+
   return (
     <Suspense>
       <ChatContent />

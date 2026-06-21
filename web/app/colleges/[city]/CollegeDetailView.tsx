@@ -16,7 +16,6 @@ import dynamic from "next/dynamic";
 import { ChatWidget } from "@/app/components/ChatWidget";
 import { useShortlist } from "../../context/ShortlistContext";
 
-
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4006").replace("localhost", "127.0.0.1");
 
@@ -51,15 +50,15 @@ interface CollegeDetail {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Engineering:  "from-zinc-950/90 via-zinc-900/60 to-black/90",
-  Management:   "from-amber-950/90 via-amber-900/60 to-black/90",
-  Medical:      "from-emerald-950/90 via-emerald-900/60 to-black/90",
-  Law:          "from-purple-950/90 via-purple-900/60 to-black/90",
-  Research:     "from-cyan-950/90 via-cyan-900/60 to-black/90",
-  Design:       "from-rose-950/90 via-rose-900/60 to-black/90",
-  Pharmacy:     "from-teal-950/90 via-teal-900/60 to-black/90",
-  Agriculture:  "from-lime-950/90 via-lime-900/60 to-black/90",
-  University:   "from-indigo-950/90 via-indigo-900/60 to-black/90",
+  Engineering:  "from-[#b69cc4]/30 via-zinc-100/50 to-white",
+  Management:   "from-[#fcd34d]/30 via-zinc-100/50 to-white",
+  Medical:      "from-[#f472b6]/30 via-zinc-100/50 to-white",
+  Law:          "from-purple-100/50 via-zinc-100/50 to-white",
+  Research:     "from-cyan-100/50 via-zinc-100/50 to-white",
+  Design:       "from-rose-100/50 via-zinc-100/50 to-white",
+  Pharmacy:     "from-teal-100/50 via-zinc-100/50 to-white",
+  Agriculture:  "from-lime-100/50 via-zinc-100/50 to-white",
+  University:   "from-indigo-100/50 via-zinc-100/50 to-white",
 };
 
 const TABS = [
@@ -218,21 +217,18 @@ export default function CollegeDetailView({
   // Silent Background Sync
   useEffect(() => {
     const triggerSync = async () => {
-      // Check if data is stale via backend flag
       try {
         const res = await fetch(`${API_URL}/api/colleges/${toSlug(localCollege.college)}`);
         const data = await res.json();
         
         if (data.syncRequired) {
           setIsSyncing(true);
-          // Trigger the sync call silently
           await fetch(`${API_URL}/api/rankings/sync`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ college: localCollege.college })
           });
           
-          // Wait for scraper to finish and fetch again
           setTimeout(async () => {
             const freshRes = await fetch(`${API_URL}/api/colleges/${toSlug(localCollege.college)}`);
             const freshData = await freshRes.json();
@@ -240,7 +236,7 @@ export default function CollegeDetailView({
               setLocalCollege(freshData.college);
             }
             setIsSyncing(false);
-          }, 8000); // Give scraper some time
+          }, 8000);
         }
       } catch (err) {
         console.error("Silent sync failed:", err);
@@ -267,10 +263,9 @@ export default function CollegeDetailView({
     }
   };
 
-  const gradColor = CATEGORY_COLORS[localCollege.nirf_category ?? ""] ?? "from-zinc-950/90 via-zinc-900/60 to-black/90";
+  const gradColor = CATEGORY_COLORS[localCollege.nirf_category ?? ""] ?? "from-[#b69cc4]/30 via-zinc-100/50 to-white";
   const metaInfo = getCollegeMeta(localCollege.college, localCollege.nirf_category);
 
-  // ── Review Data Generator ──
   const getReviewsList = () => {
     const name = college.college;
     const isIIT = name.includes("IIT");
@@ -302,7 +297,6 @@ export default function CollegeDetailView({
     ];
   };
 
-  // ── Scholarship & Exam Data Generator ──
   const getScholarshipExamsList = () => {
     const cat = college.nirf_category || "Engineering";
     const data: any = {
@@ -338,7 +332,6 @@ export default function CollegeDetailView({
     ];
   };
 
-  // ── Course Data Generator ──
   const getCoursesList = () => {
     if (localCollege.courses && Array.isArray(localCollege.courses) && localCollege.courses.length > 0) {
       return localCollege.courses;
@@ -394,22 +387,22 @@ export default function CollegeDetailView({
 
   return (
     <PageShell>
-      <div className="relative w-full pt-8 pb-16 sm:pt-12 sm:pb-20 overflow-hidden">
+      <div className="relative w-full pt-8 pb-16 sm:pt-12 sm:pb-20 overflow-hidden text-black">
         <div className="absolute inset-0 z-0">
           <div className={`absolute inset-0 bg-gradient-to-r ${gradColor} opacity-40 mix-blend-multiply`} />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-[#0a0a0a]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-100/20 to-[#f3f4f6]" />
         </div>
 
         <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-8">
           {/* ── Breadcrumbs ── */}
-          <div className="flex items-center gap-2 text-[10px] font-bold text-white/20 uppercase tracking-widest mb-10 sm:mb-16">
-            <Link href="/" className="hover:text-blue-400 transition-colors">Home</Link>
+          <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-10 sm:mb-16">
+            <Link href="/" className="hover:text-black transition-colors">Home</Link>
             <ChevronRight size={10} />
-            <Link href="/rankings" className="hover:text-blue-400 transition-colors">Rankings</Link>
+            <Link href="/rankings" className="hover:text-black transition-colors">Rankings</Link>
             <ChevronRight size={10} />
-            <span className="text-white/40 truncate max-w-[300px]">{localCollege.college}</span>
+            <span className="text-black truncate max-w-[300px]">{localCollege.college}</span>
             {isSyncing && (
-              <span className="flex items-center gap-2 ml-4 text-white/20 font-bold animate-pulse">
+              <span className="flex items-center gap-2 ml-4 text-zinc-500 font-bold animate-pulse">
                 Refreshing Intel...
               </span>
             )}
@@ -420,48 +413,47 @@ export default function CollegeDetailView({
             
             <div className="space-y-8 flex-1">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white rounded-[2rem] flex items-center justify-center shadow-2xl p-4 sm:p-6 border border-white/10 group overflow-hidden relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white border-2 border-black rounded-xl flex items-center justify-center shadow-[4px_4px_0px_0px_#000000] p-4 sm:p-6 overflow-hidden relative text-black shrink-0">
                   <img src={clgAssets.logo} alt={localCollege.college} className="w-full h-full object-contain relative z-10" />
                 </div>
                 {localCollege.nirf_rank && (
-                  <span className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-2xl text-xs font-black uppercase tracking-[0.2em] backdrop-blur-md shadow-lg">
+                  <span className="px-5 py-2.5 bg-white border-2 border-black rounded-lg text-xs font-black uppercase tracking-[0.2em] shadow-[2px_2px_0px_0px_#000000] text-black">
                     NIRF Rank #{localCollege.nirf_rank}
                   </span>
                 )}
               </div>
 
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-serif font-bold text-white tracking-tight leading-tight drop-shadow-2xl">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-serif font-black text-black tracking-tight leading-tight">
                 {localCollege.college}
               </h1>
 
-              <div className="flex flex-wrap items-center gap-5 text-sm text-white/60">
+              <div className="flex flex-wrap items-center gap-5 text-sm text-zinc-700">
                 {(localCollege.city || localCollege.state) && (
-                  <span className="flex items-center gap-1.5">
-                    <MapPin size={15} className="text-white/40" />
+                  <span className="flex items-center gap-1.5 font-bold">
+                    <MapPin size={15} className="text-black" />
                     {[localCollege.city, localCollege.state].filter(Boolean).join(", ")}
                   </span>
                 )}
                 {localCollege.website && (
                   <a href={localCollege.website} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 hover:text-blue-400 transition-colors">
+                    className="flex items-center gap-1.5 hover:text-[#a387b3] font-bold transition-colors">
                     <Globe size={15} />Official Website<ExternalLink size={12} />
                   </a>
                 )}
               </div>
 
-              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pt-4 mt-2 border-t border-white/10">
+              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pt-4 mt-2 border-t-2 border-black/10">
                 <div className="flex flex-wrap items-center gap-2.5 text-xs">
-                  <span className="flex items-center gap-1 text-white/60 font-bold bg-white/5 border border-white/10 px-2 py-1 rounded-md backdrop-blur-md">
-                    <Star size={12} className="fill-white/40" /> {localCollege.user_rating || "4.5"} /5 <span className="text-white/20 font-normal">({localCollege.total_reviews || "120"} Reviews)</span>
+                  <span className="flex items-center gap-1 text-black font-bold bg-[#b69cc4]/30 border-2 border-black px-2 py-1 rounded shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                    <Star size={12} className="fill-black" /> {localCollege.user_rating || "4.5"} /5 <span className="text-zinc-600 font-normal ml-1">({localCollege.total_reviews || "120"} Reviews)</span>
                   </span>
-                  <span className="text-white/70 font-bold bg-white/5 border border-white/10 px-2 py-1 rounded-md backdrop-blur-md">
+                  <span className="text-black font-bold bg-white border-2 border-black px-2 py-1 rounded shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
                     {metaInfo.acc}
                   </span>
-                  <span className="text-white/70 bg-white/5 border border-white/10 px-2 py-1 rounded-md backdrop-blur-md">
+                  <span className="text-black font-bold bg-white border-2 border-black px-2 py-1 rounded shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
                     {metaInfo.type}
                   </span>
-                  <span className="text-white/70 bg-white/5 border border-white/10 px-2 py-1 rounded-md backdrop-blur-md">
+                  <span className="text-black font-bold bg-white border-2 border-black px-2 py-1 rounded shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
                     Estd. {metaInfo.estd}
                   </span>
                 </div>
@@ -469,13 +461,13 @@ export default function CollegeDetailView({
                   <button 
                     onClick={toggleSave}
                     className={cn(
-                      "flex items-center gap-2 px-6 py-2.5 rounded-xl border text-[11px] font-black uppercase tracking-widest backdrop-blur-md transition-all shadow-lg hover:scale-105 active:scale-95",
+                      "flex items-center gap-2 px-6 py-2.5 rounded-lg border-2 border-black text-[11px] font-black uppercase tracking-widest transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
                       isSaved 
-                        ? "bg-amber-500 border-amber-500 text-white shadow-amber-500/20" 
-                        : "border-white/20 text-white hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-400/30"
+                        ? "bg-[#b69cc4] text-black" 
+                        : "bg-white text-zinc-600 hover:text-black"
                     )}
                   >
-                    <Bookmark size={14} className={isSaved ? "fill-white" : ""} /> {isSaved ? "Saved" : "Save College"}
+                    <Bookmark size={14} className={isSaved ? "fill-black" : ""} /> {isSaved ? "Saved" : "Save College"}
                   </button>
                 </div>
               </div>
@@ -484,12 +476,12 @@ export default function CollegeDetailView({
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-8 pb-24 md:pb-10 pt-4">
-        <div className="flex border-b border-white/10 mb-8 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="max-w-5xl mx-auto px-4 sm:px-8 pb-24 md:pb-10 pt-4 text-black">
+        <div className="flex border-b-2 border-black/10 mb-8 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {TABS.map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={cn("px-4 py-3 sm:px-5 sm:py-4 text-xs sm:text-sm font-bold transition-all whitespace-nowrap border-b-2",
-                activeTab === tab ? "border-white text-white" : "border-transparent text-white/40 hover:text-blue-400 hover:border-blue-500/50")}>
+                activeTab === tab ? "border-black text-black font-black" : "border-transparent text-zinc-500 hover:text-black hover:border-black/50")}>
               {tab}
             </button>
           ))}
@@ -499,16 +491,16 @@ export default function CollegeDetailView({
           <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
 
             {activeTab === "College Info" && (
-              <div className="flex flex-col">
-                <div className="py-8 border-b border-white/5 space-y-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">About the Institution</p>
-                  <p className="text-sm text-white/70 leading-relaxed">
+              <div className="flex flex-col text-black">
+                <div className="py-8 border-b-2 border-black/10 space-y-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">About the Institution</p>
+                  <p className="text-sm text-zinc-700 leading-relaxed font-bold">
                     Established in {metaInfo.estd}, {localCollege.college} is a premier {metaInfo.type.toLowerCase()} located in {localCollege.city || "India"}. 
                     Recognized with an {metaInfo.acc} rating, the institution offers world-class academic programs, cutting-edge research facilities, 
                     and a vibrant campus life. It is highly regarded for its rigorous curriculum, distinguished faculty, and exceptional placement 
                     records, making it a top choice for students nationwide.
                   </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-white/5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-black/10">
                     {[
                       { label: "Category",     value: localCollege.nirf_category },
                       { label: "City",         value: localCollege.city },
@@ -516,39 +508,39 @@ export default function CollegeDetailView({
                       { label: "Global Rank",  value: localCollege.global_rank ? `QS #${localCollege.global_rank}` : undefined },
                     ].filter(r => r.value).map(({ label, value }) => (
                       <div key={label}>
-                        <p className="text-[10px] text-white/30 uppercase tracking-wider mb-1">{label}</p>
-                        <p className="text-sm font-semibold text-white">{value}</p>
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">{label}</p>
+                        <p className="text-sm font-black text-black">{value}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="py-8 border-b border-white/5 space-y-6">
+                <div className="py-8 border-b-2 border-black/10 space-y-6">
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 flex items-center gap-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 flex items-center gap-2">
                       <GraduationCap size={14}/> Featured Programs
                     </p>
-                    <button onClick={() => setActiveTab("Courses")} className="text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-blue-400 transition-colors">
+                    <button onClick={() => setActiveTab("Courses")} className="text-[10px] font-black uppercase tracking-widest text-black hover:underline transition-colors">
                       Explore All Courses →
                     </button>
                   </div>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {getCoursesList().slice(0, 3).map((c: any, i: number) => (
-                      <div key={i} className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.04] transition-all cursor-pointer" onClick={() => setActiveTab("Courses")}>
-                        <p className="text-sm font-bold text-white mb-1">{c.name}</p>
-                        <p className="text-[10px] text-white/40 uppercase tracking-wider">{c.fees} • {c.count}</p>
+                      <div key={i} className="p-4 bg-white border-2 border-black rounded-xl hover:bg-[#b69cc4]/10 transition-all cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" onClick={() => setActiveTab("Courses")}>
+                        <p className="text-sm font-black text-black mb-1">{c.name}</p>
+                        <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">{c.fees} • {c.count}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-12 py-8 border-b border-white/5">
+                <div className="grid md:grid-cols-2 gap-12 py-8 border-b-2 border-black/10">
                   <div className="space-y-6">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 flex items-center gap-2">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 flex items-center gap-2">
                         <Newspaper size={14}/> Recent Updates
                       </p>
-                      <button onClick={() => setActiveTab("News")} className="text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-blue-400 transition-colors">
+                      <button onClick={() => setActiveTab("News")} className="text-[10px] font-black uppercase tracking-widest text-black hover:underline transition-colors">
                         All News
                       </button>
                     </div>
@@ -556,36 +548,36 @@ export default function CollegeDetailView({
                       {newsData.length > 0 ? (
                         newsData.slice(0, 2).map((item, i) => (
                           <a key={i} href={item.url} target="_blank" rel="noopener noreferrer" className="block group">
-                            <p className="text-[9px] text-white/20 font-bold uppercase tracking-widest mb-1">{new Date(item.published_at || item.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
-                            <p className="text-sm font-medium text-white/70 group-hover:text-blue-400 transition-colors line-clamp-2 leading-relaxed">{item.title}</p>
+                            <p className="text-[9px] text-[#a387b3] font-black uppercase tracking-widest mb-1">{new Date(item.published_at || item.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                            <p className="text-sm font-bold text-black group-hover:text-[#a387b3] transition-colors line-clamp-2 leading-relaxed">{item.title}</p>
                           </a>
                         ))
                       ) : (
-                        <p className="text-xs text-white/20 italic">No recent updates.</p>
+                        <p className="text-xs text-zinc-500 italic">No recent updates.</p>
                       )}
                     </div>
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 flex items-center gap-2">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 flex items-center gap-2">
                         <Building2 size={14}/> Cut-offs
                       </p>
-                      <span className="text-[10px] text-white/40 bg-white/5 px-2 py-0.5 rounded">2025-26</span>
+                      <span className="text-[10px] text-black bg-[#b69cc4]/30 px-2 py-0.5 border border-black/20 rounded font-black">2025-26</span>
                     </div>
                     <div className="space-y-2">
                       {getDummyCutoffs().map((c, i) => (
-                        <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                          <span className="text-xs font-medium text-white/70">{c.course}</span>
-                          <span className="text-xs font-bold text-white">{c.cutoff}</span>
+                        <div key={i} className="flex items-center justify-between py-2 border-b border-black/10 last:border-0">
+                          <span className="text-xs font-bold text-zinc-700">{c.course}</span>
+                          <span className="text-xs font-black text-black">{c.cutoff}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
 
-                <div className="py-8 border-b border-white/5 space-y-6">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 pl-2">Research & Innovation</p>
+                <div className="py-8 border-b-2 border-black/10 space-y-6">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 pl-2">Research & Innovation</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                     {[
                       { icon: Cpu,      label: "Patents",      value: fmt(college.patents)            },
@@ -593,23 +585,23 @@ export default function CollegeDetailView({
                       { icon: Rocket,   label: "Startups",     value: fmt(college.startups_incubated) },
                       { icon: Users,    label: "Hackathons",   value: fmt(college.hackathons_won)      },
                     ].map(({ icon: Icon, label, value }) => (
-                      <div key={label} className="py-2 space-y-1 px-2">
+                      <div key={label} className="py-4 space-y-1 px-4 bg-white border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                         <div className="flex items-center gap-2 mb-2">
-                          <Icon size={14} className="text-white/30" />
-                          <p className="text-[9px] font-black uppercase tracking-widest text-white/40">{label}</p>
+                          <Icon size={14} className="text-black" />
+                          <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">{label}</p>
                         </div>
-                        <p className="text-2xl font-serif font-bold text-white">{value}</p>
+                        <p className="text-2xl font-serif font-black text-black">{value}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {college.aliases && college.aliases.filter(Boolean).length > 0 && (
-                  <div className="py-8 border-b border-white/5">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-3">Also Known As</p>
+                  <div className="py-8 border-b-2 border-black/10">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-3">Also Known As</p>
                     <div className="flex flex-wrap gap-2">
                       {college.aliases.filter(Boolean).map((alias: string) => (
-                        <span key={alias} className="px-3 py-1.5 bg-white/5 border border-white/[0.08] rounded-xl text-xs text-white/50">{alias}</span>
+                        <span key={alias} className="px-3 py-1.5 bg-white border-2 border-black rounded-lg text-xs text-black shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] font-bold">{alias}</span>
                       ))}
                     </div>
                   </div>
@@ -618,39 +610,39 @@ export default function CollegeDetailView({
             )}
 
             {activeTab === "Courses" && (
-              <div className="flex flex-col">
-                <div className="py-8 border-b border-white/5">
+              <div className="flex flex-col text-black">
+                <div className="py-8 border-b-2 border-black/10">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-2 flex items-center gap-2">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 flex items-center gap-2">
                         <GraduationCap size={14}/> Academic Catalog
                       </p>
-                      <h2 className="text-xl font-serif font-bold text-white">Programs & Specializations</h2>
+                      <h2 className="text-xl font-serif font-black text-black">Programs & Specializations</h2>
                     </div>
                   </div>
                   
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                  <div className="overflow-x-auto border-2 border-black rounded-xl">
+                    <table className="w-full text-left border-collapse bg-white">
                       <thead>
-                        <tr className="bg-white/[0.03] border-b border-white/10">
-                          <th className="p-4 text-[10px] font-black uppercase tracking-wider text-white/30">Courses</th>
-                          <th className="p-4 text-[10px] font-black uppercase tracking-wider text-white/30">Tuition Fees</th>
-                          <th className="p-4 text-[10px] font-black uppercase tracking-wider text-white/30">Eligibility</th>
+                        <tr className="bg-zinc-100 border-b-2 border-black text-black">
+                          <th className="p-4 text-[10px] font-black uppercase tracking-wider text-black">Courses</th>
+                          <th className="p-4 text-[10px] font-black uppercase tracking-wider text-black">Tuition Fees</th>
+                          <th className="p-4 text-[10px] font-black uppercase tracking-wider text-black">Eligibility</th>
                         </tr>
                       </thead>
                       <tbody>
                         {getCoursesList().map((c: any, i: number) => (
-                          <tr key={i} className="border-b border-white/5 hover:bg-blue-500/[0.05] transition-colors">
+                          <tr key={i} className="border-b border-black/10 hover:bg-[#b69cc4]/5 transition-colors">
                             <td className="p-4 align-top">
-                              <p className="text-sm font-bold text-white/90">{c.name}</p>
-                              {c.count && <p className="text-[10px] text-white/30 mt-1">({c.count})</p>}
+                              <p className="text-sm font-bold text-black">{c.name}</p>
+                              {c.count && <p className="text-[10px] text-zinc-500 mt-1">({c.count})</p>}
                             </td>
                             <td className="p-4 align-top">
-                              <p className="text-sm font-medium text-white/80">{c.fees || "N/A"}</p>
+                              <p className="text-sm font-bold text-black">{c.fees || "N/A"}</p>
                             </td>
                             <td className="p-4 align-top">
-                              <p className="text-sm text-white/70">{c.eligibility || "Check Website"}</p>
-                              {c.exams && <p className="text-[10px] text-white/40 mt-1.5">Exams : <span className="text-white/60 font-medium">{c.exams}</span></p>}
+                              <p className="text-sm text-zinc-700 font-medium">{c.eligibility || "Check Website"}</p>
+                              {c.exams && <p className="text-[10px] text-zinc-500 mt-1.5 font-bold">Exams : <span className="text-black font-black">{c.exams}</span></p>}
                             </td>
                           </tr>
                         ))}
@@ -662,30 +654,30 @@ export default function CollegeDetailView({
             )}
 
             {activeTab === "News" && (
-              <div className="flex flex-col">
-                <div className="py-8 border-b border-white/5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-6 flex items-center gap-2">
+              <div className="flex flex-col text-black">
+                <div className="py-8 border-b-2 border-black/10">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-6 flex items-center gap-2">
                     <Newspaper size={14}/> Latest News & Events
                   </p>
                   <div className="flex flex-col gap-3">
                     {newsData.length > 0 ? (
                       newsData.map((item, i) => (
-                        <a key={i} href={item.url} target="_blank" rel="noopener noreferrer" className="block group cursor-pointer py-6 border-b border-white/5 last:border-0 transition-all w-full">
+                        <a key={i} href={item.url} target="_blank" rel="noopener noreferrer" className="block group cursor-pointer py-6 border-b border-black/10 last:border-0 transition-all w-full bg-white border-2 border-black rounded-xl p-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mb-4">
                           <div className="flex items-center gap-6">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-3 mb-2.5">
-                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60 bg-white/5 px-2 py-0.5 rounded-md border border-white/10 shrink-0">{item.category || "Campus News"}</span>
-                                <span className="text-[10px] text-white/20 font-medium">{new Date(item.published_at || item.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-black bg-[#b69cc4]/30 px-2 py-0.5 border border-black/20 rounded shrink-0">{item.category || "Campus News"}</span>
+                                <span className="text-[10px] text-zinc-500 font-bold">{new Date(item.published_at || item.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                               </div>
-                              <h3 className="text-sm font-bold text-white/80 group-hover:text-blue-400 transition-colors leading-relaxed">{item.title}</h3>
+                              <h3 className="text-sm font-black text-black group-hover:text-[#a387b3] transition-colors leading-relaxed">{item.title}</h3>
                             </div>
-                            <ArrowRight size={14} className="text-white/10 group-hover:text-blue-400 group-hover:translate-x-1 transition-all shrink-0" />
+                            <ArrowRight size={14} className="text-black group-hover:text-[#a387b3] group-hover:translate-x-1 transition-all shrink-0" />
                           </div>
                         </a>
                       ))
                     ) : (
-                      <div className="text-center py-12 bg-white/[0.01] rounded-2xl border border-white/5">
-                        <p className="text-sm text-white/40">No recent news available.</p>
+                      <div className="text-center py-12 bg-white rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <p className="text-sm text-zinc-500 font-bold">No recent news available.</p>
                       </div>
                     )}
                   </div>
@@ -694,21 +686,21 @@ export default function CollegeDetailView({
             )}
 
             {activeTab === "Reviews" && (
-              <div className="flex flex-col">
-                <div className="py-8 border-b border-white/5">
+              <div className="flex flex-col text-black">
+                <div className="py-8 border-b-2 border-black/10">
                   <div className="flex items-center justify-between mb-8">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-2 flex items-center gap-2">
-                        <Star size={14} className="fill-white/10" /> Student Experiences
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 flex items-center gap-2">
+                        <Star size={14} className="fill-black" /> Student Experiences
                       </p>
-                      <h2 className="text-xl font-serif font-bold text-white">Verified Campus Reviews</h2>
+                      <h2 className="text-xl font-serif font-black text-black">Verified Campus Reviews</h2>
                     </div>
                     {college.user_rating && (
-                      <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-2xl border border-white/10">
-                        <span className="text-2xl font-bold text-white">{college.user_rating}</span>
+                      <div className="flex items-center gap-3 bg-[#b69cc4]/35 px-4 py-2 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <span className="text-2xl font-black text-black">{college.user_rating}</span>
                         <div className="flex gap-0.5">
                           {[1,2,3,4,5].map(s => (
-                            <Star key={s} size={12} className={s <= Math.round(college.user_rating!) ? "fill-white/40 text-white/40" : "fill-white/10 text-white/10"} />
+                            <Star key={s} size={12} className={s <= Math.round(college.user_rating!) ? "fill-black text-black" : "text-black/20"} />
                           ))}
                         </div>
                       </div>
@@ -717,25 +709,25 @@ export default function CollegeDetailView({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {getReviewsList().map((rev, i) => (
-                      <div key={i} className="p-6 bg-white/[0.02] border border-white/[0.08] rounded-3xl hover:bg-white/[0.04] transition-all flex flex-col justify-between">
+                      <div key={i} className="p-6 bg-white border-2 border-black rounded-[2rem] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-between hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">
                         <div className="space-y-4">
-                          <div className="flex items-center gap-0.5">
+                          <div className="flex gap-0.5">
                             {[1,2,3,4,5].map(s => (
-                              <Star key={s} size={14} className={s <= rev.rating ? "fill-white/40 text-white/40" : "fill-white/10 text-white/10"} />
+                              <Star key={s} size={14} className={s <= rev.rating ? "fill-black text-black" : "text-black/20"} />
                             ))}
                           </div>
-                          <p className="text-sm text-white/70 leading-relaxed italic">"{rev.text}"</p>
+                          <p className="text-sm text-zinc-800 leading-relaxed font-bold italic">"{rev.text}"</p>
                         </div>
-                        <div className="mt-6 flex items-center gap-4 border-t border-white/5 pt-4">
-                          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
-                            <span className="text-xs font-bold text-white/60">{rev.author[0]}</span>
+                        <div className="mt-6 flex items-center gap-4 border-t-2 border-black/10 pt-4">
+                          <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center border-2 border-black">
+                            <span className="text-xs font-black text-black">{rev.author[0]}</span>
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-white">{rev.author}</p>
+                            <p className="text-sm font-black text-black">{rev.author}</p>
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-white/40 font-medium">{rev.role}</span>
-                              <span className="text-[10px] text-white/20">•</span>
-                              <span className="text-[10px] text-white/30">{rev.date}</span>
+                              <span className="text-[10px] text-zinc-500 font-bold">{rev.role}</span>
+                              <span className="text-[10px] text-zinc-400">•</span>
+                              <span className="text-[10px] text-zinc-600 font-bold">{rev.date}</span>
                             </div>
                           </div>
                         </div>
@@ -747,29 +739,29 @@ export default function CollegeDetailView({
             )}
 
             {activeTab === "Fees" && (
-              <div className="flex flex-col">
-                <div className="py-8 border-b border-white/5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-6 flex items-center gap-2">
+              <div className="flex flex-col text-black">
+                <div className="py-8 border-b-2 border-black/10">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-6 flex items-center gap-2">
                     <DollarSign size={14}/> Tuition Fees Structure
                   </p>
                   
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto border-2 border-black rounded-xl bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-white/[0.03] border-b border-white/10">
-                          <th className="p-4 text-[10px] font-black uppercase tracking-wider text-white/30">Course</th>
-                          <th className="p-4 text-[10px] font-black uppercase tracking-wider text-white/30">Total tuition fees</th>
+                        <tr className="bg-zinc-100 border-b-2 border-black text-black">
+                          <th className="p-4 text-[10px] font-black uppercase tracking-wider text-black">Course</th>
+                          <th className="p-4 text-[10px] font-black uppercase tracking-wider text-black">Total tuition fees</th>
                         </tr>
                       </thead>
                       <tbody>
                         {getCoursesList().map((c: any, i: number) => (
-                          <tr key={i} className="border-b border-white/5 hover:bg-blue-500/[0.05] transition-colors">
+                          <tr key={i} className="border-b border-black/10 hover:bg-[#b69cc4]/5 transition-colors">
                             <td className="p-4 py-6">
-                              <span className="text-sm font-bold text-white/90">{c.name}</span>
-                              <span className="text-[11px] text-white/30 ml-2">({c.count})</span>
+                              <span className="text-sm font-black text-black">{c.name}</span>
+                              <span className="text-[11px] text-zinc-500 ml-2 font-bold">({c.count})</span>
                             </td>
                             <td className="p-4 py-6">
-                              <p className="text-sm font-medium text-white/80">₹ {c.fees}</p>
+                              <p className="text-sm font-bold text-black">₹ {c.fees}</p>
                             </td>
                           </tr>
                         ))}
@@ -780,25 +772,23 @@ export default function CollegeDetailView({
               </div>
             )}
 
-
             {activeTab === "Scholarship & Exams" && (
-              <div className="flex flex-col">
-                <div className="py-8 border-b border-white/5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-8 flex items-center gap-2">
+              <div className="flex flex-col text-black">
+                <div className="py-8 border-b-2 border-black/10">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-8 flex items-center gap-2">
                     <Award size={14}/> Financial Aid & Entrance
                   </p>
                   
                   <div className="flex flex-col gap-3">
                     {getScholarshipExamsList().map((item: any, i: number) => (
-                      <div key={i} className="group cursor-pointer py-6 border-b border-white/5 last:border-0 transition-all flex items-center justify-between w-full">
+                      <div key={i} className="group cursor-pointer py-6 px-6 border-2 border-black rounded-xl bg-white transition-all flex items-center justify-between w-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mb-4">
                         <div className="flex items-center gap-6">
-                          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border transition-colors", 
-                            "bg-white/5 border-white/10 group-hover:border-white/30")}>
-                            {item.type === "Exam" ? <FileText size={18} className="text-white/40" /> : <Landmark size={18} className="text-white/40" />}
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center border-2 border-black bg-zinc-50 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                            {item.type === "Exam" ? <FileText size={18} className="text-black" /> : <Landmark size={18} className="text-black" />}
                           </div>
                           <div>
-                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20 mb-1">{item.type}</p>
-                            <p className="text-base font-bold text-white group-hover:text-blue-400 transition-colors">{item.name}</p>
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-1">{item.type}</p>
+                            <p className="text-base font-black text-black group-hover:text-[#a387b3] transition-colors">{item.name}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-6">
@@ -807,16 +797,16 @@ export default function CollegeDetailView({
                               href={item.url} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="text-[9px] font-black px-4 py-2 rounded-xl uppercase tracking-widest bg-white text-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-white/5"
+                              className="text-[9px] font-black px-4 py-2 border-2 border-black rounded-lg uppercase tracking-widest bg-[#b69cc4] text-black hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                             >
                               Apply Now
                             </a>
                           ) : (
-                            <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-[0.2em] border bg-white/5 text-white/20 border-white/10">
+                            <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-[0.2em] border-2 border-black bg-zinc-100 text-zinc-400">
                               {item.status}
                             </span>
                           )}
-                          <ArrowRight size={14} className="text-white/10 group-hover:text-blue-400 group-hover:translate-x-1 transition-all shrink-0" />
+                          <ArrowRight size={14} className="text-black group-hover:text-[#a387b3] group-hover:translate-x-1 transition-all shrink-0" />
                         </div>
                       </div>
                     ))}
@@ -824,7 +814,6 @@ export default function CollegeDetailView({
                 </div>
               </div>
             )}
-
 
           </motion.div>
         </AnimatePresence>
@@ -838,9 +827,9 @@ export default function CollegeDetailView({
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen bg-[#050505] text-white font-sans overflow-hidden">
-      <aside className="hidden md:flex w-20 border-r border-white/5 flex-col items-center py-8 gap-8 z-[100] bg-[#0a0a0a]">
-        <Link href="/" className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center hover:scale-110 transition-transform shadow-xl">
+    <div className="flex h-screen bg-[#f3f4f6] text-black font-sans overflow-hidden">
+      <aside className="hidden md:flex w-20 border-r-2 border-black flex-col items-center py-8 gap-8 z-[100] bg-white shrink-0">
+        <Link href="/" className="w-12 h-12 bg-white rounded-lg border-2 border-black flex items-center justify-center hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
           <GraduationCap className="text-black w-6 h-6" />
         </Link>
         <nav className="flex flex-col gap-6 items-center">
@@ -849,20 +838,19 @@ function PageShell({ children }: { children: React.ReactNode }) {
             { icon: Newspaper, href: "/news" },
             { icon: MessageSquare, href: "/chat" },
           ].map((item, i) => (
-            <Link key={i} href={item.href} className="text-white/30 hover:text-blue-400 transition-colors p-3 hover:bg-blue-500/10 rounded-xl">
+            <Link key={i} href={item.href} className="text-zinc-500 hover:text-black transition-colors p-3 hover:bg-[#b69cc4]/30 rounded-lg border-2 border-transparent hover:border-black hover:shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1.5px] hover:translate-y-[1.5px] transition-all">
               <item.icon size={20} />
             </Link>
           ))}
         </nav>
       </aside>
-      <main className="flex-1 overflow-y-auto custom-scrollbar">{children}</main>
+      <main className="flex-1 overflow-y-auto custom-scrollbar bg-[#f3f4f6]">{children}</main>
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
-
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border: 1px solid #f3f4f6; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.4); }
       `}</style>
     </div>
   );
 }
-

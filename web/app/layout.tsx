@@ -59,6 +59,7 @@ export const metadata: Metadata = {
 
 import { ChatProvider } from "./context/ChatContext";
 import { ShortlistProvider } from "./context/ShortlistContext";
+import { AuthProvider } from "./context/AuthContext";
 
 export default function RootLayout({
   children,
@@ -68,12 +69,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${playfair.variable} font-sans antialiased bg-white text-zinc-900`}
+        className={`${inter.variable} ${playfair.variable} font-sans antialiased bg-[#f3f4f6] text-black`}
         suppressHydrationWarning
       >
-        <ShortlistProvider>
-          <ChatProvider>{children}</ChatProvider>
-        </ShortlistProvider>
+        <AuthProvider>
+          <ShortlistProvider>
+            <ChatProvider>{children}</ChatProvider>
+          </ShortlistProvider>
+        </AuthProvider>
       </body>
     </html>
   );

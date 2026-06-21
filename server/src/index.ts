@@ -15,6 +15,7 @@ import multipart from "@fastify/multipart";
 import { uploadRoute } from "./routes/upload.js";
 import { contactRoute } from "./routes/contact.js";
 import { cutoffRoute } from "./routes/cutoff.js";
+import { authRoute } from "./routes/auth.js";
 import { registerRateLimiter } from "./guardrails/index.js";
 import { startNewsCron } from "./jobs/newsCron.js";
 import { seedCollegeAchievements, seedCutoffs } from "./lib/collegeSeeds.js";
@@ -75,6 +76,7 @@ await app.register(ttsRoute);
 await app.register(contactRoute);
 await app.register(uploadRoute);
 await app.register(cutoffRoute);
+await app.register(authRoute);
 
 async function initVectorDB() {
   const collections = await qdrant.getCollections();
