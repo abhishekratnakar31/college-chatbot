@@ -33,75 +33,66 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-white selection:text-black overflow-x-hidden">
-      {/* Cinematic Background */}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/[0.03] blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-white/[0.02] blur-[120px] rounded-full" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)]" />
-      </div>
-
+    <div className="min-h-screen bg-[#f3f4f6] text-black font-sans selection:bg-[#b69cc4]/30">
       {/* ── Header & Breadcrumbs ── */}
-      <nav className="relative z-10 p-8 md:p-12">
+      <nav className="p-8 md:p-12 border-b-2 border-black">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[10px] font-bold text-white/20 uppercase tracking-widest">
-            <Link href="/" className="hover:text-blue-400 transition-colors">Home</Link>
+          <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+            <Link href="/" className="hover:text-[#b69cc4] transition-colors">Home</Link>
             <ChevronRight size={10} />
-            <span className="text-white/40">Support</span>
+            <span>Support</span>
             <ChevronRight size={10} />
-            <span className="text-white/60">Contact Support</span>
+            <span className="text-black">Contact Support</span>
           </div>
-          <div className="hidden md:flex items-center gap-4 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+          <div className="hidden md:flex items-center gap-4 px-4 py-2 rounded-lg bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400">Support Systems Online</span>
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">Support Systems Online</span>
           </div>
         </div>
       </nav>
 
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-12 md:py-24 grid lg:grid-cols-[1fr_500px] gap-24 items-start">
+      <main className="max-w-7xl mx-auto px-6 py-12 md:py-24 grid lg:grid-cols-[1fr_500px] gap-24 items-start">
         {/* Left Column: Context & Branding */}
         <div className="space-y-16">
           <header className="space-y-10">
             <motion.div 
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-20 h-20 bg-white rounded-[2rem] flex items-center justify-center shadow-[0_0_80px_rgba(255,255,255,0.15)]"
+              className="w-20 h-20 bg-white border-2 border-black rounded-xl flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             >
               <Mail className="text-black w-10 h-10" />
             </motion.div>
             <div className="space-y-6">
-              <h1 className="text-7xl md:text-9xl font-serif font-bold tracking-tighter leading-[0.85]">
+              <h1 className="text-7xl md:text-9xl font-serif font-black tracking-tighter leading-[0.85]">
                 Contact <br />
-                <span className="text-zinc-800 italic">Support</span>
+                <span className="text-zinc-400 italic">Support</span>
               </h1>
-              <p className="text-zinc-500 text-xl md:text-2xl font-medium max-w-xl leading-relaxed">
+              <p className="text-zinc-600 text-xl md:text-2xl font-bold max-w-xl leading-relaxed">
                 Connect with our specialized intelligence team for technical inquiries, data discrepancies, or error reporting.
               </p>
             </div>
           </header>
 
-          <div className="grid sm:grid-cols-2 gap-12 pt-12 border-t border-zinc-900/50">
+          <div className="grid sm:grid-cols-2 gap-12 pt-12 border-t-2 border-black">
             <div className="space-y-4">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">01 / Issue Categorization</h3>
-              <ul className="space-y-2 text-xs text-zinc-500 font-medium">
-                <li>• <span className="text-white">Critical:</span> Platform downtime or prediction failures.</li>
-                <li>• <span className="text-white">Data:</span> Discrepancies in college rankings or cutoffs.</li>
-                <li>• <span className="text-white">Feature:</span> Integration requests for new institutional tools.</li>
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">01 / Issue Categorization</h3>
+              <ul className="space-y-2 text-xs text-zinc-600 font-bold">
+                <li>• <span className="text-black">Critical:</span> Platform downtime or prediction failures.</li>
+                <li>• <span className="text-black">Data:</span> Discrepancies in college rankings or cutoffs.</li>
+                <li>• <span className="text-black">Feature:</span> Integration requests for new institutional tools.</li>
               </ul>
             </div>
             <div className="space-y-4">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">02 / Technical Requirements</h3>
-              <p className="text-zinc-600 text-xs leading-relaxed">
-                When reporting errors, please include the <span className="text-white">Neural-V8</span> version number and the specific query path utilized.
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">02 / Technical Requirements</h3>
+              <p className="text-zinc-600 text-xs leading-relaxed font-medium">
+                When reporting errors, please include the <span className="text-black font-black">Neural-V8</span> version number and the specific query path utilized.
               </p>
             </div>
           </div>
         </div>
 
         {/* Right Column: The Form */}
-        <section className="relative group">
-          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.05] to-transparent rounded-[3.5rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000 -z-10" />
-          
+        <section>
           <AnimatePresence mode="wait">
             {status === "success" ? (
               <motion.div 
@@ -109,18 +100,18 @@ export default function ContactPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="p-16 bg-zinc-900/40 backdrop-blur-3xl border border-emerald-500/30 rounded-[3.5rem] text-center space-y-8 h-full flex flex-col justify-center"
+                className="p-16 bg-white border-2 border-black rounded-xl text-center space-y-8 h-full flex flex-col justify-center shadow-[6px_6px_0px_0px_#b69cc4]"
               >
-                <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="text-emerald-500 w-12 h-12" />
+                <div className="w-24 h-24 bg-[#b69cc4]/20 border-2 border-black rounded-full flex items-center justify-center mx-auto shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                  <CheckCircle2 className="text-black w-12 h-12" />
                 </div>
                 <div className="space-y-3">
-                  <h2 className="text-4xl font-serif font-bold text-white tracking-tight">Transmission Received</h2>
-                  <p className="text-zinc-500 text-lg">Your report has been successfully ingested into our support pipeline.</p>
+                  <h2 className="text-4xl font-serif font-black text-black tracking-tight">Transmission Received</h2>
+                  <p className="text-zinc-600 text-lg font-bold">Your report has been successfully ingested into our support pipeline.</p>
                 </div>
                 <button 
                   onClick={() => setStatus("idle")}
-                  className="px-10 py-5 bg-white text-black font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-blue-500 hover:text-white transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
+                  className="px-10 py-5 bg-[#b69cc4] text-black font-black uppercase tracking-widest text-[10px] rounded-lg border-2 border-black hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
                 >
                   Send Another Report
                 </button>
@@ -131,7 +122,7 @@ export default function ContactPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 onSubmit={handleSubmit}
-                className="space-y-10 bg-zinc-900/30 backdrop-blur-3xl p-10 md:p-14 rounded-[3.5rem] border border-zinc-800/50 shadow-2xl overflow-hidden relative"
+                className="space-y-10 bg-white border-2 border-black p-10 md:p-14 rounded-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
               >
                 <div className="space-y-8">
                   <div className="space-y-3">
@@ -141,7 +132,7 @@ export default function ContactPage() {
                       type="text" 
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      className="w-full bg-black/40 border border-zinc-800 rounded-2xl py-5 px-8 outline-none focus:border-white focus:bg-black transition-all text-sm placeholder:text-zinc-700 shadow-inner" 
+                      className="w-full bg-white border-2 border-black rounded-lg py-5 px-8 outline-none focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-sm placeholder:text-zinc-400 font-medium" 
                       placeholder="Your Full Name" 
                     />
                   </div>
@@ -152,7 +143,7 @@ export default function ContactPage() {
                       type="email" 
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="w-full bg-black/40 border border-zinc-800 rounded-2xl py-5 px-8 outline-none focus:border-white focus:bg-black transition-all text-sm placeholder:text-zinc-700 shadow-inner" 
+                      className="w-full bg-white border-2 border-black rounded-lg py-5 px-8 outline-none focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-sm placeholder:text-zinc-400 font-medium" 
                       placeholder="your@email.com" 
                     />
                   </div>
@@ -163,7 +154,7 @@ export default function ContactPage() {
                       rows={6} 
                       value={formData.message}
                       onChange={(e) => setFormData({...formData, message: e.target.value})}
-                      className="w-full bg-black/40 border border-zinc-800 rounded-3xl py-6 px-8 outline-none focus:border-white focus:bg-black transition-all text-sm resize-none placeholder:text-zinc-700 shadow-inner" 
+                      className="w-full bg-white border-2 border-black rounded-lg py-6 px-8 outline-none focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-sm resize-none placeholder:text-zinc-400 font-medium" 
                       placeholder="Detailed description of the issue..." 
                     />
                   </div>
@@ -172,7 +163,7 @@ export default function ContactPage() {
                 <div className="space-y-6">
                   <button 
                     disabled={status === "sending"}
-                    className="w-full py-6 bg-white text-black font-black uppercase tracking-[0.4em] text-[11px] rounded-2xl hover:bg-zinc-200 active:scale-[0.98] transition-all flex items-center justify-center gap-4 group/btn shadow-[0_30px_60px_rgba(255,255,255,0.1)] disabled:opacity-50"
+                    className="w-full py-6 bg-[#b69cc4] text-black font-black uppercase tracking-[0.4em] text-[11px] rounded-lg border-2 border-black hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-4 group/btn disabled:opacity-50"
                   >
                     {status === "sending" ? "Processing..." : "Dispatch Report"}
                     <Send size={14} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
@@ -182,15 +173,13 @@ export default function ContactPage() {
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-3 text-rose-500 justify-center text-[10px] font-black uppercase tracking-widest"
+                      className="flex items-center gap-3 text-rose-600 justify-center text-[10px] font-black uppercase tracking-widest"
                     >
                       <AlertCircle size={14} />
                       Connection Interrupted
                     </motion.div>
                   )}
                 </div>
-
-                <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-white/[0.01] rounded-full blur-[80px] pointer-events-none" />
               </motion.form>
             )}
           </AnimatePresence>
@@ -198,10 +187,12 @@ export default function ContactPage() {
       </main>
 
       {/* Footer Decoration */}
-      <div className="max-w-7xl mx-auto px-6 py-12 flex justify-between items-center opacity-30">
-        <div className="text-[9px] font-black uppercase tracking-[0.5em] text-zinc-600">Secure Transmission Layer 1.0</div>
-        <div className="w-12 h-[1px] bg-zinc-800" />
-        <div className="text-[9px] font-black uppercase tracking-[0.5em] text-zinc-600">AcademiaAI Intelligence</div>
+      <div className="border-t-2 border-black mt-24">
+        <div className="max-w-7xl mx-auto px-6 py-12 flex justify-between items-center">
+          <div className="text-[9px] font-black uppercase tracking-[0.5em] text-zinc-500">Secure Transmission Layer 1.0</div>
+          <div className="w-12 h-[2px] bg-black" />
+          <div className="text-[9px] font-black uppercase tracking-[0.5em] text-zinc-500">AcademiaAI Intelligence</div>
+        </div>
       </div>
     </div>
   );

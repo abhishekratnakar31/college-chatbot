@@ -7,7 +7,7 @@ export type Message = {
   content: string;
 };
 
-export type ChatMode = "pdf" | "web" | "compare";
+export type ChatMode = "research" | "compare";
 
 interface ChatContextType {
   messages: Message[];
@@ -26,7 +26,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [chatMode, setChatMode] = useState<ChatMode>("web");
+  const [chatMode, setChatMode] = useState<ChatMode>("research");
   const [webPdfFilename, setWebPdfFilename] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<string>("auto");
   const [isInitialized, setIsInitialized] = useState(false);

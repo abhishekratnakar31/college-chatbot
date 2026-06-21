@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, Suspense } from "react";
+import { useState, useRef, useEffect, useMemo, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
@@ -36,7 +36,8 @@ import {
   VolumeX,
   Paperclip,
   Activity, 
-  Bookmark
+  Bookmark,
+  ShieldCheck
 } from "lucide-react";
 import { useChat } from "../context/ChatContext";
 import { BarVisualizer } from "../components/ui/bar-visualizer";
@@ -51,11 +52,16 @@ type Message = {
 const COMPARISON_CRITERIA = [
   "Fees",
   "Placement",
-  "Hostel",
   "Rankings",
   "Campus Life",
+  "Hostel",
   "Alumni",
+  "Courses & Programs",
+  "Research & Innovation",
+  "Location & Infrastructure",
 ];
+
+const MAX_COMPARE_COLLEGES = 5;
 
 // ── Language Registry (mirrors server/src/lib/languageDetector.ts) ────────
 const LANGUAGES = [
@@ -100,10 +106,8 @@ const ChatInput = ({
   setIsMenuOpen,
   fileInputRef,
   abortControllerRef,
-  comp1,
-  setComp1,
-  comp2,
-  setComp2,
+  colleges,
+  setColleges,
   selectedCriteria,
   setSelectedCriteria,
   otherCriteria,
@@ -124,6 +128,7 @@ const ChatInput = ({
   startVoiceRecording,
   isSpeaking,
 }: any) => {
+  const [collegeInput, setCollegeInput] = useState("");
   const visualizerState = isRecordingVoice 
     ? "listening" 
     : isSpeaking 
@@ -152,22 +157,16 @@ const ChatInput = ({
           <div className="space-y-2">
             {[
               {
-                id: "web",
-                label: "Web Search",
-                icon: Globe,
-                desc: "Live internet intelligence",
-              },
-              {
-                id: "pdf",
-                label: "PDF Analysis",
-                icon: FileSearch,
-                desc: "Study uploaded documents",
+                id: "research",
+                label: "Research",
+                icon: Search,
+                desc: "Web search + PDF analysis",
               },
               {
                 id: "compare",
                 label: "Compare",
                 icon: GitCompare,
-                desc: "Side-by-side analysis",
+                desc: "Side-by-side college analysis",
               },
             ].map((mode) => (
               <button
@@ -344,14 +343,30 @@ const ChatInput = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               className={cn(
-                "absolute left-10 w-64 p-4 bg-white border-2 border-black rounded-lg z-50 shadow-[4px_4px_0px_0px_#000000] text-black",
+                "absolute left-10 w-72 p-4 bg-white border-2 border-black rounded-lg z-50 shadow-[4px_4px_0px_0px_#000000] text-black",
                 "top-full mt-2"
               )}
             >
-              <div className="flex flex-col gap-1.5 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
-                <h3 className="px-2 pt-1 pb-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#b69cc4]">
-                  Focus Parameters
-                </h3>
+              <div className="flex flex-col gap-1.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                <div className="flex items-center justify-between px-2 pt-1 pb-3">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#b69cc4]">
+                    Comparison Categories
+                  </h3>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => setSelectedCriteria([...COMPARISON_CRITERIA])}
+                      className="text-[8px] font-black uppercase tracking-wider px-2 py-1 bg-[#b69cc4] border border-black rounded hover:opacity-80 transition-opacity"
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => setSelectedCriteria([])}
+                      className="text-[8px] font-black uppercase tracking-wider px-2 py-1 bg-white border border-black rounded hover:bg-zinc-100 transition-colors"
+                    >
+                      None
+                    </button>
+                  </div>
+                </div>
                 {COMPARISON_CRITERIA.map((c) => {
                   const isSelected = selectedCriteria.includes(c);
                   return (
@@ -360,12 +375,12 @@ const ChatInput = ({
                       onClick={() => {
                         setSelectedCriteria((prev: string[]) =>
                           isSelected
-                            ? prev.filter((x) => x !== c)
+                            ? prev.filter((x: string) => x !== c)
                             : [...prev, c],
                         );
                       }}
                       className={cn(
-                        "flex items-center gap-3 w-full p-3 rounded-lg border-2 transition-all text-left group hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
+                        "flex items-center gap-3 w-full p-2.5 rounded-lg border-2 transition-all text-left group hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
                         isSelected
                           ? "bg-[#b69cc4] border-black text-black font-extrabold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                           : "bg-white border-black text-zinc-600 hover:text-black hover:border-black shadow-none",
@@ -373,15 +388,15 @@ const ChatInput = ({
                     >
                       <div
                         className={cn(
-                          "w-5 h-5 rounded flex items-center justify-center border-2 transition-colors shrink-0",
+                          "w-4 h-4 rounded flex items-center justify-center border-2 transition-colors shrink-0",
                           isSelected
                             ? "bg-black border-black text-white"
                             : "border-zinc-600 group-hover:border-zinc-400 text-transparent",
                         )}
                       >
-                        <Check className="w-3 h-3" />
+                        <Check className="w-2.5 h-2.5" />
                       </div>
-                      <span className="text-sm font-bold">{c}</span>
+                      <span className="text-xs font-bold">{c}</span>
                     </button>
                   );
                 })}
@@ -389,7 +404,7 @@ const ChatInput = ({
                 <button
                   onClick={() => setShowOtherInput(!showOtherInput)}
                   className={cn(
-                    "flex items-center gap-3 w-full p-3 rounded-lg border-2 transition-all text-left group hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
+                    "flex items-center gap-3 w-full p-2.5 rounded-lg border-2 transition-all text-left group hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[2px] active:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
                     showOtherInput
                       ? "bg-[#b69cc4] border-black text-black font-extrabold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                       : "bg-white border-black text-zinc-600 hover:text-black hover:border-black shadow-none",
@@ -397,24 +412,24 @@ const ChatInput = ({
                 >
                   <div
                     className={cn(
-                      "w-5 h-5 rounded flex items-center justify-center border-2 transition-colors shrink-0",
+                      "w-4 h-4 rounded flex items-center justify-center border-2 transition-colors shrink-0",
                       showOtherInput
                         ? "bg-black border-black text-white"
                         : "border-zinc-600 group-hover:border-zinc-400 text-transparent",
                     )}
                   >
-                    <Check className="w-3 h-3" />
+                    <Check className="w-2.5 h-2.5" />
                   </div>
-                  <span className="text-sm font-bold">Other (Custom)</span>
+                  <span className="text-xs font-bold">Other (Custom)</span>
                 </button>
 
                 {showOtherInput && (
-                  <div className="p-3 mt-1">
+                  <div className="p-2 mt-1">
                     <input
                       value={otherCriteria}
                       onChange={(e) => setOtherCriteria(e.target.value)}
-                      placeholder="Enter custom focus..."
-                      className="w-full bg-white border-2 border-black rounded-lg px-4 py-3 text-sm font-semibold text-black outline-none focus:shadow-[4px_4px_0px_0px_#b69cc4] transition-all placeholder:text-zinc-400"
+                      placeholder="Enter custom category..."
+                      className="w-full bg-white border-2 border-black rounded-lg px-3 py-2 text-xs font-semibold text-black outline-none focus:shadow-[4px_4px_0px_0px_#b69cc4] transition-all placeholder:text-zinc-400"
                     />
                   </div>
                 )}
@@ -488,13 +503,82 @@ const ChatInput = ({
               </button>
             </div>
 
-            {/* Main Input */}
-            {isRecordingVoice || isSpeaking ? (
+            {/* Main Input — College tags in compare mode, text input otherwise */}
+            {chatMode === "compare" ? (
+              <div className="flex-1 flex flex-col gap-1.5 py-1.5 min-w-0">
+                {/* College tags */}
+                {colleges && colleges.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {colleges.map((c: string, i: number) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#b69cc4] border border-black rounded-md text-[10px] font-black text-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+                      >
+                        {c}
+                        <button
+                          onClick={() => setColleges((prev: string[]) => prev.filter((_: string, idx: number) => idx !== i))}
+                          className="ml-0.5 hover:text-red-700 transition-colors"
+                          aria-label={`Remove ${c}`}
+                        >
+                          <X size={9} strokeWidth={3} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* Add college input row */}
+                <div className="flex items-center gap-1.5">
+                  <input
+                    value={collegeInput}
+                    onChange={(e) => setCollegeInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && collegeInput.trim()) {
+                        e.preventDefault();
+                        if ((colleges || []).length < MAX_COMPARE_COLLEGES) {
+                          setColleges((prev: string[]) => [...(prev || []), collegeInput.trim()]);
+                          setCollegeInput("");
+                        }
+                      }
+                    }}
+                    placeholder={
+                      (colleges || []).length >= MAX_COMPARE_COLLEGES
+                        ? `Max ${MAX_COMPARE_COLLEGES} colleges reached`
+                        : `Add college name... (${(colleges || []).length}/${MAX_COMPARE_COLLEGES})`
+                    }
+                    disabled={(colleges || []).length >= MAX_COMPARE_COLLEGES}
+                    className="flex-1 min-w-0 bg-transparent py-1 text-sm font-semibold text-black placeholder:text-zinc-400 outline-none disabled:opacity-40"
+                  />
+                  {collegeInput.trim() && (colleges || []).length < MAX_COMPARE_COLLEGES && (
+                    <button
+                      onClick={() => {
+                        setColleges((prev: string[]) => [...(prev || []), collegeInput.trim()]);
+                        setCollegeInput("");
+                      }}
+                      className="shrink-0 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-black text-white rounded border border-black hover:bg-zinc-800 transition-colors"
+                    >
+                      Add
+                    </button>
+                  )}
+                </div>
+                {/* Question input */}
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                  placeholder={
+                    (colleges || []).length < 2
+                      ? "Add at least 2 colleges above, then ask your question..."
+                      : "Ask a comparison question... (or press Enter to compare)"
+                  }
+                  className="flex-1 min-w-0 bg-transparent py-1 text-sm font-semibold text-black placeholder:text-zinc-400 outline-none"
+                />
+              </div>
+            ) : isRecordingVoice || isSpeaking ? (
               <div className="flex-1 flex items-center justify-center h-[44px]">
-                <BarVisualizer 
-                  state={visualizerState} 
-                  barCount={20} 
-                  className="w-full max-w-[200px]" 
+                <BarVisualizer
+                  state={visualizerState}
+                  barCount={20}
+                  className="w-full max-w-[200px]"
                 />
               </div>
             ) : (
@@ -609,13 +693,48 @@ const MessageBubble = ({
   index,
   onSpeak,
   isSpeaking,
+  chatMode,
 }: {
   msg: Message;
   index: number;
   onSpeak: (text: string, idx: number) => void;
   isSpeaking: boolean;
+  chatMode?: string;
 }) => {
   const [loadingIndex, setLoadingIndex] = useState(0);
+
+  const isCompare = chatMode === "compare";
+
+  const parsedCollegeSections = useMemo(() => {
+    if (!isCompare || !msg.content) return null;
+    const lines = msg.content.split("\n");
+    const sections: { heading: string; lines: string[] }[] = [];
+    let current: { heading: string; lines: string[] } | null = null;
+
+    for (const line of lines) {
+      const match = line.match(/^###\s+(.+)/);
+      if (match) {
+        if (current) sections.push(current);
+        current = { heading: match[1].trim(), lines: [line] };
+      } else if (current) {
+        current.lines.push(line);
+      }
+    }
+    if (current) sections.push(current);
+
+    const introLines: string[] = [];
+    const introEndIndex = msg.content.indexOf("\n### ");
+    const introText = introEndIndex === -1 ? "" : msg.content.substring(0, introEndIndex);
+    const restText = introEndIndex === -1 ? msg.content : msg.content.substring(introEndIndex);
+
+    const intro = introEndIndex === -1 ? msg.content : msg.content.substring(0, introEndIndex);
+    const collegeSections = sections.map((s) => ({ heading: s.heading, content: s.lines.join("\n") }));
+
+    const restEndIndex = restText.search(/\n##\s+/);
+    const rest = restEndIndex === -1 ? "" : restText.substring(restEndIndex);
+
+    return { intro, colleges: collegeSections, rest };
+  }, [msg.content, isCompare]);
 
   useEffect(() => {
     if (!msg.content && msg.role === "assistant") {
@@ -670,9 +789,44 @@ const MessageBubble = ({
       <div className="flex flex-col gap-5 w-full">
         <div className="prose prose-neutral max-w-none prose-premium prose-base sm:prose-lg lg:prose-xl text-black">
           {mainContent ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {mainContent}
-            </ReactMarkdown>
+            isCompare && parsedCollegeSections?.colleges.length ? (
+              <div className="flex flex-col gap-6">
+                {parsedCollegeSections.intro && (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {parsedCollegeSections.intro}
+                  </ReactMarkdown>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 not-prose">
+                  {parsedCollegeSections.colleges.map((college, i) => (
+                    <div
+                      key={i}
+                      className="border-2 border-black rounded-lg p-5 bg-white shadow-[4px_4px_0px_0px_#b69cc4]"
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <GraduationCap className="w-5 h-5 text-black shrink-0" />
+                        <h3 className="text-lg font-black text-black m-0">
+                          {college.heading}
+                        </h3>
+                      </div>
+                      <div className="prose prose-neutral max-w-none prose-premium prose-sm text-black">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {college.content}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {parsedCollegeSections.rest && (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {parsedCollegeSections.rest}
+                  </ReactMarkdown>
+                )}
+              </div>
+            ) : (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {mainContent}
+              </ReactMarkdown>
+            )
           ) : (
             <div className="flex flex-col gap-4 py-2">
               <div className="flex items-center gap-3">
@@ -752,7 +906,7 @@ function ChatContent() {
   const initialFile = searchParams.get("file");
   const initialFileUrl = searchParams.get("fileUrl");
   const initialMode =
-    (searchParams.get("mode") as "pdf" | "web" | "compare") ?? "web";
+    (searchParams.get("mode") as "research" | "compare") ?? "research";
 
   const buildInitialMessages = (): Message[] => {
     const base: Message[] = [];
@@ -782,8 +936,9 @@ function ChatContent() {
     setIsInitialized,
   } = useChat();
 
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -791,8 +946,7 @@ function ChatContent() {
   const [uploadProgressText, setUploadProgressText] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [comp1, setComp1] = useState("");
-  const [comp2, setComp2] = useState("");
+  const [colleges, setColleges] = useState<string[]>([]);
   const [currentlySpeaking, setCurrentlySpeaking] = useState<number | null>(
     null,
   );
@@ -840,7 +994,7 @@ function ChatContent() {
     }
   };
 
-  const [selectedCriteria, setSelectedCriteria] = useState<string[]>([]);
+  const [selectedCriteria, setSelectedCriteria] = useState<string[]>([...COMPARISON_CRITERIA]);
   const [showCompareInputs, setShowCompareInputs] = useState(true);
   const [otherCriteria, setOtherCriteria] = useState("");
   const [showOtherInput, setShowOtherInput] = useState(false);
@@ -849,6 +1003,22 @@ function ChatContent() {
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef("");
+
+  // Restore hero chat messages from localStorage after login
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("hero_chat_messages");
+      if (saved) {
+        const parsed = JSON.parse(saved) as Message[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+        }
+        localStorage.removeItem("hero_chat_messages");
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }, []);
 
   const startVoiceRecording = () => {
     const SpeechRecognition =
@@ -957,6 +1127,15 @@ function ChatContent() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
+  useEffect(() => {
+    if (!token) { setIsAdmin(false); return; }
+    fetch(`${API_URL}/admin/check`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => setIsAdmin(d.isAdmin))
+      .catch(() => setIsAdmin(false));
+  }, [token]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1019,13 +1198,13 @@ function ChatContent() {
         }
       }
       setWebPdfFilename(file.name);
-      setChatMode("pdf");
+      setChatMode("research");
       setMessages((prev) => [
         ...prev,
         { role: "user", content: `ATTACHMENT|${file.name}|${uploadedUrl}` },
         {
           role: "assistant",
-          content: `Successfully indexed **${file.name}**. Switched to PDF analysis mode.`,
+          content: `Successfully indexed **${file.name}**. I'm now in **Research mode** — I'll use both this document and live web search to answer your questions about it.`,
         },
       ]);
     } catch (err) {
@@ -1046,7 +1225,7 @@ function ChatContent() {
 
     if (!user) {
       const count = parseInt(localStorage.getItem("guest_questions_asked") || "0", 10);
-      if (count >= 2) {
+      if (count >= 3) {
         setShowAuthModal(true);
         return;
       }
@@ -1060,6 +1239,8 @@ function ChatContent() {
       if (showOtherInput && otherCriteria.trim())
         combined.push(otherCriteria.trim());
 
+      const collegeList = colleges.slice(0, MAX_COMPARE_COLLEGES);
+
       if (combined.length > 0) {
         const formattedCriteria =
           combined.length === 1
@@ -1072,10 +1253,14 @@ function ChatContent() {
 
       const criteriaStr =
         combined.length > 0
-          ? `STRICT INSTRUCTION: You must ONLY compare the institutions based on these specific factors: ${combined.join(", ")}. DO NOT provide information about any other factors.`
-          : "Provide a comprehensive general comparison including all standard academic metrics (fees, placements, campus life, academics, infrastructure, etc).";
+          ? `Compare ONLY on these categories: ${combined.join(", ")}.`
+          : "Provide a comprehensive comparison on all standard metrics (fees, placements, rankings, campus life, research, hostel, courses, alumni).";
 
-      finalHiddenPrefix = `SYSTEM: YOU ARE AN ACADEMIC INTELLIGENCE ENGINE. You must ONLY compare educational institutions. Be permissive. Provide a high-fidelity side-by-side comparison. ${criteriaStr}`;
+      const collegesStr = collegeList.length > 0
+        ? `Colleges to compare: ${collegeList.join(" | ")}.`
+        : "";
+
+      finalHiddenPrefix = `SYSTEM: Compare these educational institutions side-by-side. ${collegesStr} ${criteriaStr} After the table, MUST include a '## 🏆 Our Recommendation' section picking the best overall college and best college per goal (placements, research, budget, campus life).`;
     }
 
     const userMessage: Message = { role: "user", content: displayedText };
@@ -1101,11 +1286,12 @@ function ChatContent() {
       const response = await fetch(`${API_URL}/chat`, {
         method: "POST",
         signal: controller.signal,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({
           messages: [...currentHistory, apiMessage],
-          mode: chatMode,
+          mode: chatMode as "research" | "compare",
           ...(webPdfFilename ? { pdfFilename: webPdfFilename } : {}),
+          ...(chatMode === "compare" && colleges.length > 0 ? { colleges: colleges.slice(0, MAX_COMPARE_COLLEGES) } : {}),
           ...(selectedLanguageRef.current &&
           selectedLanguageRef.current !== "auto"
             ? { language: selectedLanguageRef.current }
@@ -1253,6 +1439,16 @@ function ChatContent() {
                       {user.email}
                     </p>
                   </div>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-xs font-black text-purple-700 hover:bg-purple-50 rounded-md transition-colors"
+                    >
+                      <ShieldCheck size={14} />
+                      Admin Dashboard
+                    </Link>
+                  )}
                   <button
                     onClick={() => {
                       logout();
@@ -1295,8 +1491,8 @@ function ChatContent() {
               <div className="text-center space-y-6 pt-12 md:pt-0">
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-black tracking-tight text-black px-4">
                   {chatMode === "compare"
-                    ? "Compare your institutions"
-                    : "What shall we analyze today?"}
+                    ? "Compare up to 5 institutions"
+                    : "What shall we research today?"}
                 </h1>
               </div>
             )}
@@ -1354,6 +1550,7 @@ function ChatContent() {
                         index={i}
                         onSpeak={speakMessage}
                         isSpeaking={currentlySpeaking === i}
+                        chatMode={chatMode}
                       />
                     </motion.div>
                   );
@@ -1382,10 +1579,8 @@ function ChatContent() {
                   setIsMenuOpen={setIsMenuOpen}
                   fileInputRef={fileInputRef}
                   abortControllerRef={abortControllerRef}
-                  comp1={comp1}
-                  setComp1={setComp1}
-                  comp2={comp2}
-                  setComp2={setComp2}
+                  colleges={colleges}
+                  setColleges={setColleges}
                   selectedCriteria={selectedCriteria}
                   setSelectedCriteria={setSelectedCriteria}
                   otherCriteria={otherCriteria}
@@ -1435,10 +1630,8 @@ function ChatContent() {
                 setIsMenuOpen={setIsMenuOpen}
                 fileInputRef={fileInputRef}
                 abortControllerRef={abortControllerRef}
-                comp1={comp1}
-                setComp1={setComp1}
-                comp2={comp2}
-                setComp2={setComp2}
+                colleges={colleges}
+                setColleges={setColleges}
                 selectedCriteria={selectedCriteria}
                 setSelectedCriteria={setSelectedCriteria}
                 otherCriteria={otherCriteria}
@@ -1505,7 +1698,7 @@ function ChatContent() {
                 Sign in to continue exploring
               </h3>
               <p className="text-sm text-zinc-700 leading-relaxed font-semibold">
-                You've reached the free guest limit of 2 questions. Sign in or create a free account to continue using AcademiaAI and unlock unlimited questions.
+                You've reached the free guest limit of 3 questions. Sign in or create a free account to continue using AcademiaAI and unlock unlimited questions.
               </p>
             </div>
 
@@ -1517,10 +1710,13 @@ function ChatContent() {
                 Sign In
               </Link>
               <button
-                onClick={() => setShowAuthModal(false)}
+                onClick={() => {
+                  localStorage.setItem("hero_chat_messages", JSON.stringify(messages));
+                  window.location.href = "/login?continue=/chat";
+                }}
                 className="w-full py-3 border-2 border-black bg-white text-black hover:bg-[#f3f4f6] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-extrabold text-sm rounded-lg transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
               >
-                Continue as Guest (View Chat)
+                Sign Up to Continue
               </button>
             </div>
           </div>
@@ -1531,7 +1727,14 @@ function ChatContent() {
 }
 
 export default function ChatPage() {
-  const { loading } = useAuth();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/");
+    }
+  }, [loading, user, router]);
 
   if (loading) {
     return (
@@ -1540,6 +1743,8 @@ export default function ChatPage() {
       </div>
     );
   }
+
+  if (!user) return null;
 
   return (
     <Suspense>

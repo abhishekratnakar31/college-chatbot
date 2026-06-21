@@ -43,15 +43,10 @@ const MIN_RESPONSE_LENGTH = 10;
  */
 const HALLUCINATION_SIGNALS: RegExp[] = [
   /as of my (knowledge )?cut[\s-]?off/i,
-  /I (believe|think|suppose|assume|imagine) (that )?/i,
-  /I('m| am) not (entirely |completely |100% )?sure/i,
-  /I cannot (guarantee|confirm|verify)/i,
-  /this (information )?may (be |have )?changed/i,
-  /it('s| is) possible that/i,
+  /I('m| am) not (entirely |completely |100% )?sure about (the |these |this )/i,
+  /I cannot (guarantee|confirm|verify) (this|that|the accuracy)/i,
   /to the best of my knowledge/i,
-  /I (don't|do not) have (access to |real-?time|current|live)/i,
   /my training data/i,
-  /as (far|much) as I know/i,
 ];
 
 /**

@@ -36,17 +36,21 @@ export async function newsRoute(app: FastifyInstance) {
       : sql``;
 
     try {
+      const publicWhere = conditions.length > 0
+        ? sql`WHERE status = 'published' AND ${conditions.reduce((acc, curr) => sql`${acc} AND ${curr}`)}`
+        : sql`WHERE status = 'published'`;
+
       const rows = await sql`
         SELECT id, title, summary, url, source, category, image, published_at, created_at
         FROM news
-        ${whereClause}
+        ${publicWhere}
         ORDER BY COALESCE(published_at, created_at) DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
 
       const countRes = await sql<[{ total: string }]>`
         SELECT COUNT(*)::text AS total FROM news
-        ${whereClause}
+        ${publicWhere}
       `;
       const total = parseInt(countRes[0]?.total ?? "0", 10);
 

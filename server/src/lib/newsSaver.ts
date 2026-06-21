@@ -31,8 +31,8 @@ export async function saveNews(articles: NewsArticle[]): Promise<void> {
   for (const a of articles) {
     try {
       const result = await sql`
-        INSERT INTO news (title, summary, url, source, category, image, published_at)
-        VALUES (${a.title}, ${a.summary}, ${a.url}, ${a.source}, ${a.category}, ${a.image}, ${a.publishedAt})
+        INSERT INTO news (title, summary, url, source, category, image, published_at, status)
+        VALUES (${a.title}, ${a.summary}, ${a.url}, ${a.source}, ${a.category}, ${a.image}, ${a.publishedAt}, 'draft')
         ON CONFLICT (url) DO UPDATE
           SET category = CASE
             WHEN news.category IS NULL OR news.category = '' THEN EXCLUDED.category

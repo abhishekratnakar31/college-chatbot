@@ -1,29 +1,10 @@
-/**
- * Query Enricher
- * ─────────────────────────────────────────────────────────────────
- * Generates a focused, context-aware Tavily web search query by
- * combining the user's question with key facts extracted from an
- * uploaded PDF document.
- *
- * This is used exclusively in "web" mode when the user has attached
- * a PDF alongside their question.
- */
-
 import type { ChatMessage } from "../types/chat.js";
+import { logApiUsage } from "../lib/apiUsageLogger.js";
 
-/**
- * Generate an enriched web search query using the user's question
- * AND relevant context from an uploaded PDF.
- *
- * @param userQuestion  The raw user question
- * @param pdfContext    First ~3000 chars of the PDF document text
- * @returns             An optimized, specific search query string
- */
 export async function generatePdfAwareSearchQuery(
   userQuestion: string,
   pdfContext: string,
 ): Promise<string> {
-  // Truncate pdfContext defensively in case caller hasn't already
   const truncatedContext = pdfContext.slice(0, 3000);
 
   const messages: ChatMessage[] = [
@@ -75,10 +56,19 @@ ${truncatedContext}`,
         response.status,
         await response.text().catch(() => ""),
       );
-      return userQuestion; // Fallback to raw question
+      return userQuestion;
     }
 
     const data = await response.json();
+    const usage = data.usage;
+    logApiUsage({
+      model: "openai/gpt-4o-mini",
+      endpointType: "query_enrichment",
+      promptTokens: usage?.prompt_tokens,
+      completionTokens: usage?.completion_tokens,
+      totalTokens: usage?.total_tokens,
+      metadata: { function: "generatePdfAwareSearchQuery" },
+    });
     const query =
       data.choices?.[0]?.message?.content?.replace(/"/g, "").trim() ||
       userQuestion;

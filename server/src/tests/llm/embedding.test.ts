@@ -8,12 +8,12 @@
  *   4. getEmbeddings — API returns empty data → returns zero vectors
  *   5. getEmbeddings — fetch throws (network error) → returns zero vectors
  *   6. getEmbedding — delegates correctly to getEmbeddings and returns [0]
- *   7. getEmbeddings — preserves correct dimensionality (1536)
+ *   7. getEmbeddings — preserves correct dimensionality (768)
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { getEmbedding, getEmbeddings } from "../../llm/embedding.js";
 
-const DIMENSIONS = 1536;
+const DIMENSIONS = 768;
 const ZERO_VECTOR = new Array(DIMENSIONS).fill(0);
 
 function makeEmbedVector(seed = 1): number[] {
@@ -62,7 +62,7 @@ afterEach(() => {
 // 1. getEmbedding — successful
 // ─────────────────────────────────────────────────────────────────────────────
 describe("getEmbedding — success", () => {
-  it("returns a 1536-dimensional vector", async () => {
+  it("returns a 768-dimensional vector", async () => {
     mockFetchSuccess([makeEmbedVector(1)]);
     const result = await getEmbedding("What courses are offered?");
     expect(result).toHaveLength(DIMENSIONS);
@@ -99,7 +99,7 @@ describe("getEmbeddings — success batch", () => {
 
     expect(fetch).toHaveBeenCalledOnce();
     const callArgs = JSON.parse((fetch as any).mock.calls[0][1].body);
-    expect(callArgs.model).toBe("openai/text-embedding-3-small");
+    expect(callArgs.model).toBe("text-embedding-004");
     expect(callArgs.input).toEqual(["hello world"]);
   });
 
@@ -181,7 +181,7 @@ describe("getEmbedding — fallback to zero vector", () => {
 // 7. Dimensionality check
 // ─────────────────────────────────────────────────────────────────────────────
 describe("Dimensionality", () => {
-  it("always returns 1536-dimensional vectors on success", async () => {
+  it("always returns 768-dimensional vectors on success", async () => {
     const vec = makeEmbedVector(99);
     expect(vec).toHaveLength(DIMENSIONS);
     mockFetchSuccess([vec]);
@@ -189,7 +189,7 @@ describe("Dimensionality", () => {
     expect(result).toHaveLength(DIMENSIONS);
   });
 
-  it("always returns 1536-dimensional zero vectors on failure", async () => {
+  it("always returns 768-dimensional zero vectors on failure", async () => {
     mockFetchError();
     const result = await getEmbedding("fail case");
     expect(result).toHaveLength(DIMENSIONS);

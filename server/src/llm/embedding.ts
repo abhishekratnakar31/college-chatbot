@@ -1,11 +1,13 @@
 export async function getEmbedding(text: string): Promise<number[]> {
   const result = await getEmbeddings([text]);
-  return result[0] || new Array(1536).fill(0);
+  return result[0] || new Array(768).fill(0);
 }
+
+import { logApiUsage } from "../lib/apiUsageLogger.js";
 
 export async function getEmbeddings(texts: string[], maxRetries = 4): Promise<number[][]> {
   let retryCount = 0;
-  let delayMs = process.env.NODE_ENV === "test" ? 0 : 2000; // Start with 2 seconds (0 for tests)
+  let delayMs = process.env.NODE_ENV === "test" ? 0 : 2000;
 
   while (retryCount <= maxRetries) {
     try {
@@ -18,32 +20,39 @@ export async function getEmbeddings(texts: string[], maxRetries = 4): Promise<nu
         body: JSON.stringify({
           model: "openai/text-embedding-3-small",
           input: texts,
+          dimensions: 768,
         }),
       });
 
       if (!response.ok) {
         const err = await response.text();
         
-        // If it's a rate limit (429) or server error (5xx), we retry
         if ((response.status === 429 || response.status >= 500) && retryCount < maxRetries) {
           console.warn(`[Embedding API] Error ${response.status}: ${err}. Retrying in ${delayMs}ms... (Attempt ${retryCount + 1}/${maxRetries})`);
           await new Promise(resolve => setTimeout(resolve, delayMs));
           retryCount++;
-          delayMs *= 2; // Exponential backoff
+          delayMs *= 2;
           continue;
         }
 
         console.error("Embedding API error (Final):", response.status, err);
-        // Return zero vectors so the app keeps running (if retries exhausted or it's a 4xx error like 401)
-        return texts.map(() => new Array(1536).fill(0) as number[]);
+        return texts.map(() => new Array(768).fill(0) as number[]);
       }
 
-      const data = await response.json() as { data?: { embedding: number[] }[] };
+      const data = await response.json() as { data?: { embedding: number[] }[]; usage?: { prompt_tokens: number; total_tokens: number } };
+      const usage = data.usage;
+      logApiUsage({
+        model: "openai/text-embedding-3-small",
+        endpointType: "embedding",
+        promptTokens: usage?.prompt_tokens,
+        totalTokens: usage?.total_tokens,
+        metadata: { texts_count: texts.length },
+      });
       const embeddings = data?.data?.map(d => d.embedding);
 
       if (!embeddings || embeddings.length === 0) {
         console.error("Embedding API returned no embedding. Response:", JSON.stringify(data));
-        return texts.map(() => new Array(1536).fill(0) as number[]);
+        return texts.map(() => new Array(768).fill(0) as number[]);
       }
 
       return embeddings;
@@ -56,10 +65,9 @@ export async function getEmbeddings(texts: string[], maxRetries = 4): Promise<nu
         continue;
       }
       console.error("Embedding fetch failed completely after retries:", error);
-      return texts.map(() => new Array(1536).fill(0) as number[]);
+      return texts.map(() => new Array(768).fill(0) as number[]);
     }
   }
 
-  // Fallback just in case
-  return texts.map(() => new Array(1536).fill(0) as number[]);
+  return texts.map(() => new Array(768).fill(0) as number[]);
 }

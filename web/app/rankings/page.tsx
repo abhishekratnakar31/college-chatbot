@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
 import {
   GraduationCap,
   Trophy,
@@ -301,6 +303,18 @@ function CollegeRow({ college, index }: { college: any; index: number }) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function RankingsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [authLoading, user, router]);
+
+  if (authLoading) return <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-black border-t-transparent rounded-full" /></div>;
+  if (!user) return null;
+
   return (
     <Suspense
       fallback={

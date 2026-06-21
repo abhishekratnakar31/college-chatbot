@@ -16,7 +16,7 @@ declare module "fastify" {
 
 export async function authenticate(request: FastifyRequest, reply: FastifyReply) {
   // Support mock authentication tokens during test runs
-  if (process.env.NODE_ENV === "test" && !firebaseAdminApp) {
+  if (process.env.NODE_ENV === "test") {
     const authHeader = request.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer mock-token-")) {
       const mockUid = authHeader.replace("Bearer mock-token-", "");

@@ -61,7 +61,7 @@ describe("generateSearchQuery — success", () => {
     expect(result).toBe("MIT Computer Science admission requirements 2024");
   });
 
-  it("calls the correct OpenRouter endpoint", async () => {
+  it("calls OpenRouter endpoint", async () => {
     mockFetchJson({
       choices: [{ message: { content: "query" } }],
     });
@@ -69,7 +69,7 @@ describe("generateSearchQuery — success", () => {
     expect((fetch as any).mock.calls[0][0]).toContain("openrouter.ai");
   });
 
-  it("sends gpt-4o-mini as the model", async () => {
+  it("sends openai/gpt-4o-mini as the model", async () => {
     mockFetchJson({ choices: [{ message: { content: "q" } }] });
     await generateSearchQuery(makeHistory("test"));
     const body = JSON.parse((fetch as any).mock.calls[0][1].body);

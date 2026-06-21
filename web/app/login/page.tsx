@@ -1,23 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { GraduationCap, Mail, Lock, ArrowRight, ChevronLeft } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function LoginPage() {
+function LoginForm() {
   const { loginWithEmail, loginWithGoogle, user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const continueUrl = searchParams.get("continue") || "/";
 
-  // If already logged in, redirect to home
+  const redirect = () => router.push(continueUrl);
+
+  // If already logged in, redirect
   if (user) {
-    router.push("/");
+    router.push(continueUrl);
     return null;
   }
 
@@ -27,7 +31,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await loginWithEmail(email, password);
-      router.push("/");
+      redirect();
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to log in. Please check your credentials.");
@@ -41,7 +45,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await loginWithGoogle();
-      router.push("/");
+      redirect();
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to sign in with Google.");
@@ -165,5 +169,13 @@ export default function LoginPage() {
         </p>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

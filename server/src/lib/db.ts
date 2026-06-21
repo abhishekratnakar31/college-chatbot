@@ -25,6 +25,7 @@ export async function initNewsTable() {
   `;
   // ── Migrations: add new columns to existing tables safely ──────────
   await sql`ALTER TABLE news ADD COLUMN IF NOT EXISTS category TEXT`;
+  await sql`ALTER TABLE news ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'published'`;
   // Index for fast source filtering and date ordering
   await sql`
     CREATE INDEX IF NOT EXISTS idx_news_source ON news (source)
@@ -168,6 +169,58 @@ export async function initDB() {
 
     // Cutoffs table
     await initCutoffsTable();
+
+    // Admin tables
+    await sql`
+      CREATE TABLE IF NOT EXISTS admin_users (
+        id         SERIAL PRIMARY KEY,
+        uid        TEXT UNIQUE NOT NULL,
+        email      TEXT UNIQUE NOT NULL,
+        name       TEXT,
+        role       TEXT DEFAULT 'admin',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_activity (
+        id          SERIAL PRIMARY KEY,
+        uid         TEXT NOT NULL,
+        email       TEXT,
+        action      TEXT NOT NULL,
+        details     JSONB,
+        created_at  TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_user_activity_uid ON user_activity (uid)
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_user_activity_created ON user_activity (created_at DESC)
+    `;
+
+    // API Usage tracking table
+    await sql`
+      CREATE TABLE IF NOT EXISTS api_usage (
+        id              SERIAL PRIMARY KEY,
+        model           TEXT NOT NULL,
+        endpoint_type   TEXT NOT NULL,
+        prompt_tokens   INT DEFAULT 0,
+        completion_tokens INT DEFAULT 0,
+        total_tokens    INT DEFAULT 0,
+        cost            NUMERIC DEFAULT 0,
+        metadata        JSONB,
+        created_at      TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_api_usage_created ON api_usage (created_at DESC)
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_api_usage_model ON api_usage (model)
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_api_usage_endpoint ON api_usage (endpoint_type)
+    `;
 
     console.log("PostgreSQL Database Initialized.");
   } catch (err) {

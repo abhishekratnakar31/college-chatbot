@@ -4,6 +4,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
+    env: {
+      GEMINI_API_KEY: "mock-gemini-key",
+    },
     include: ["src/tests/**/*.test.ts"],
     coverage: {
       provider: "v8",

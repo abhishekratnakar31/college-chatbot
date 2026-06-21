@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { GraduationCap, Mail, Lock, User, ArrowRight, ChevronLeft } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const { registerWithEmail, loginWithGoogle, user } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -15,10 +15,14 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const continueUrl = searchParams.get("continue") || "/";
 
-  // If already logged in, redirect to home
+  const redirect = () => router.push(continueUrl);
+
+  // If already logged in, redirect
   if (user) {
-    router.push("/");
+    router.push(continueUrl);
     return null;
   }
 
@@ -28,7 +32,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await registerWithEmail(email, password, name);
-      router.push("/");
+      redirect();
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to create account. Please check your inputs.");
@@ -42,7 +46,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await loginWithGoogle();
-      router.push("/");
+      redirect();
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to sign in with Google.");
@@ -183,5 +187,13 @@ export default function RegisterPage() {
         </p>
       </motion.div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   );
 }

@@ -3,6 +3,8 @@
 import { useEffect, useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
 import {
   GraduationCap,
   ChevronRight,
@@ -16,6 +18,7 @@ import {
   Sparkles,
   Bell,
   ExternalLink,
+  AlertTriangle,
 } from "lucide-react";
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(" ");
@@ -84,10 +87,22 @@ const getFallbackImage = (category?: string, index: number = 0) => {
 };
 
 export default function NewsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [authLoading, user, router]);
+
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [globalSearch, setGlobalSearch] = useState("");
   const [activeTab, setActiveTab] = useState("Home");
+
+  if (authLoading) return <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-black border-t-transparent rounded-full" /></div>;
+  if (!user) return null;
 
   const fetchNews = useCallback(async (category?: string) => {
     setLoading(true);

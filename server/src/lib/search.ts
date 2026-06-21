@@ -27,9 +27,9 @@ export async function searchWeb(query: string): Promise<SearchResult[]> {
           api_key: apiKey,
           query: query,
           search_depth: "advanced",
-          include_answer: false,
-          include_raw_content: false,
-          max_results: 8,
+          include_answer: true,
+          include_raw_content: true,
+          max_results: 10,
         }),
       },
       10000

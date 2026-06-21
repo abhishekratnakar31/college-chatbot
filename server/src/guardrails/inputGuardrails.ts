@@ -144,7 +144,7 @@ export function runInputGuardrails(
         pass: false,
         code: "DOMAIN_VIOLATION",
         message:
-          "I'm a College Assistant and can only answer questions related to colleges, admissions, academic programs, and campus life. Please ask a college-related question!",
+          `I'm **AcademiaAI** — your college & university intelligence assistant. I can help you with:\n\n🏢 College profiles & history | 📋 Admissions & cut-offs | 💰 Fees & scholarships | 📚 Courses & programs | 🏆 Rankings & placements | 🏠 Campus life | ⚖️ College comparisons | 🔬 Research & faculty\n\nPlease ask me something in these areas and I'll be happy to help!`,
       };
     }
   }

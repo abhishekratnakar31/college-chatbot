@@ -10,22 +10,38 @@ import { generatePdfAwareSearchQuery } from "../llm/queryEnricher.js";
 import { reRankChunks } from "../llm/reranker.js";
 import { detectColleges, computeInnovationScore } from "./rankings.js";
 import { sql } from "../lib/db.js";
+import { logApiUsage } from "../lib/apiUsageLogger.js";
 import { getCache, setCache, buildQueryCacheKey } from "../lib/cache.js";
 import { detectLanguage, getRespondInInstruction, isValidLangCode, SUPPORTED_LANGUAGES } from "../lib/languageDetector.js";
+import { getAuth } from "firebase-admin/auth";
+import { firebaseAdminApp } from "../lib/firebaseAdmin.js";
+
+async function extractUser(request: any) {
+  const authHeader = request.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ") || !firebaseAdminApp) return null;
+  try {
+    const decoded = await getAuth(firebaseAdminApp).verifyIdToken(authHeader.substring(7));
+    return { uid: decoded.uid, email: decoded.email || null, name: decoded.name || null };
+  } catch {
+    return null;
+  }
+}
 
 export async function chatRoute(app: FastifyInstance) {
   app.post("/chat", async (request, reply) => {
     try {
+      const chatUser = await extractUser(request);
       const body = request.body as {
         messages?: ChatMessage[];
-        mode?: "pdf" | "web" | "compare";
-        pdfContext?: string;    // Extracted PDF text (may be empty for scanned PDFs)
-        pdfFilename?: string;   // PDF filename — used as fallback when text is empty
-        filters?: Record<string, any>; // Optional metadata filters (e.g. { page_number: 5 })
-        language?: string;      // Optional explicit language code override (e.g. "hi", "ta")
-        contextHint?: string;   // Optional context hint (e.g. college name for widget)
+        mode?: "research" | "compare";   // Two modes: research (web+pdf) | compare (multi-college)
+        colleges?: string[];              // Up to 5 college names for compare mode
+        pdfContext?: string;             // Extracted PDF text (may be empty for scanned PDFs)
+        pdfFilename?: string;            // PDF filename — used as fallback when text is empty
+        filters?: Record<string, any>;   // Optional metadata filters (e.g. { page_number: 5 })
+        language?: string;               // Optional explicit language code override (e.g. "hi", "ta")
+        contextHint?: string;            // Optional context hint (e.g. college name for widget)
       };
-      const mode = body.mode || "pdf";
+      const mode = body.mode || "research";
 
       if (!body || !body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
         reply.status(400).send({ error: "Messages array required" });
@@ -86,31 +102,89 @@ export async function chatRoute(app: FastifyInstance) {
 
       console.log(`\n[RAG Search] ------------------------------------------------`);
       console.log(`[RAG Search] User question received: "${currentInput}"`);
-      console.log(`[RAG Search] Context Hint: ${body.contextHint || "None"}`);
+      console.log(`[RAG Search] Mode: ${mode}, Context Hint: ${body.contextHint || "None"}`);
+      if (mode === "compare" && body.colleges?.length) {
+        console.log(`[RAG Search] Colleges to compare: ${body.colleges.join(", ")}`);
+      }
       console.log(`[RAG Search] Optimizing query for vector search...`);
 
       // ── Rankings Context Injection (Parallel) ───────────────────────
       const rankingsPromise = (async () => {
         let context = "";
         try {
+          // ── Compare Mode: fetch verified data for up to 5 colleges ──
+          if (mode === "compare" && body.colleges && body.colleges.length >= 2) {
+            const colleges = body.colleges.slice(0, 5); // Hard cap at 5
+            const rows = await Promise.all(
+              colleges.map(async (name) => {
+                const res = await sql<any[]>`
+                  SELECT * FROM college_achievements
+                  WHERE college ILIKE ${"%" + name + "%"} OR ${name} = ANY(aliases)
+                  LIMIT 1
+                `;
+                if (res[0]) return { ...res[0], innovation_score: computeInnovationScore(res[0] as any) };
+                return null;
+              })
+            );
+            const validRows = rows.filter(Boolean) as any[];
+
+            if (validRows.length >= 2) {
+              // Build dynamic multi-college comparison table
+              const headers = ["Metric", ...validRows.map(c => c.college)];
+              const divider = headers.map(() => "---").join(" | ");
+              const headerRow = headers.join(" | ");
+
+              const metrics: { label: string; fn: (c: any) => string }[] = [
+                { label: "Location", fn: c => `${c.city}, ${c.state}` },
+                { label: `NIRF Rank`, fn: c => `#${c.nirf_rank ?? "N/A"} (${c.nirf_category})` },
+                { label: "QS Global Rank", fn: c => c.global_rank ? `#${c.global_rank}` : "N/A" },
+                { label: "Avg Package", fn: c => `₹${c.avg_package}L` },
+                { label: "Highest Package", fn: c => `₹${c.highest_package}L` },
+                { label: "Fees Range", fn: c => c.fees_range ?? "N/A" },
+                { label: "User Rating", fn: c => `${c.user_rating}/5` },
+                { label: "Patents Filed", fn: c => `${c.patents ?? 0}+` },
+                { label: "Research Papers", fn: c => `${c.research_papers ?? 0}+` },
+                { label: "Startups Incubated", fn: c => `${c.startups_incubated ?? 0}+` },
+                { label: "Innovation Score", fn: c => `${c.innovation_score}/100` },
+                { label: "Official Website", fn: c => c.website ? `[${c.website.replace(/^https?:\/\/(www\.)?/, "")}](${c.website})` : "N/A" },
+              ];
+
+              const tableRows = metrics.map(m =>
+                `| ${m.label} | ${validRows.map(c => m.fn(c)).join(" | ")} |`
+              );
+
+              context = `
+## VERIFIED MULTI-COLLEGE COMPARISON (NIRF 2024 Database — ${validRows.length} institutions)
+
+| ${headerRow} |
+| ${divider} |
+${tableRows.join("\n")}
+
+${validRows.map(c => `**Awards — ${c.college}**: ${(c.awards as string[]).join(", ") || "N/A"}`).join("\n")}
+`;
+            }
+            return context;
+          }
+
+          // ── Research / single-college mode ──────────────────────────
           // If a contextHint is provided, use it as a primary college for detection
-          const queryForDetection = body.contextHint 
+          const queryForDetection = body.contextHint
             ? `${body.contextHint} ${currentInput}`
             : currentInput;
 
           let mentioned = detectColleges(queryForDetection);
-          
-          // STRICT FILTER: If contextHint is present, ignore any other colleges mentioned in the prompt
-          // to prevent the LLM from getting verified data about competitors.
+
+          // STRICT FILTER: If contextHint is present, ignore any other colleges mentioned
           if (body.contextHint) {
-            mentioned = mentioned.filter(name => 
-              name.toLowerCase().includes(body.contextHint!.toLowerCase()) || 
+            mentioned = mentioned.filter(name =>
+              name.toLowerCase().includes(body.contextHint!.toLowerCase()) ||
               body.contextHint!.toLowerCase().includes(name.toLowerCase())
             );
             if (mentioned.length === 0) mentioned = [body.contextHint];
           }
 
           if (mentioned.length >= 2 && !body.contextHint) {
+            // Two colleges found — show comparison table
             const rows = await Promise.all(
               mentioned.slice(0, 2).map(async (name) => {
                 const res = await sql<any[]>`
@@ -181,9 +255,8 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
       })();
 
       // 1. ── Router: Optimize Query + Evaluate Intent (SINGLE CALL) ─────────
-      // Saves ~500-1000ms by combining intent check and query optimization
-      const hasPdfText = mode === "web" && !!body.pdfContext?.trim();
-      const hasPdfFilename = mode === "web" && !!body.pdfFilename?.trim();
+      const hasPdfText = !!body.pdfContext?.trim();
+      const hasPdfFilename = !!body.pdfFilename?.trim();
       const hasPdfContext = hasPdfText || hasPdfFilename;
 
       const { query: rawOptimizedQuery, intent: intentResult, variants: queryVariantsFromRouter } = await generateOptimizedQueryAndIntent(
@@ -200,7 +273,19 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
           "Connection": "keep-alive",
           "Access-Control-Allow-Origin": "*",
         });
-        const refusalMsg = "I am a College Assistant. Please ask me questions related to colleges, admissions, fees, placements, or rankings!";
+        const refusalMsg = `I'm **AcademiaAI**, your dedicated college & university intelligence assistant. 🎓
+
+I'm best suited to help you with:
+- 🏛️ **College & University Info** — profiles, history, accreditations
+- 📋 **Admissions** — eligibility, cut-offs, application process, deadlines
+- 💰 **Fees & Scholarships** — tuition, hostel, mess fees, financial aid
+- 📚 **Courses & Programs** — B.Tech, MBA, M.Tech, BBA, BCA, and more
+- 🏆 **Rankings & Placements** — NIRF, QS World, packages, recruiters
+- 🏠 **Campus Life** — hostels, clubs, sports, fests, facilities
+- ⚖️ **College Comparisons** — side-by-side analysis of up to 5 institutions
+- 🔬 **Research & Innovation** — patents, papers, incubators
+
+Please ask me anything in these areas and I'll be happy to help!`;
         reply.raw.write(`data: ${JSON.stringify({ choices: [{ delta: { content: refusalMsg } }] })}\n\n`);
         reply.raw.write("data: [DONE]\n\n");
         reply.raw.end();
@@ -208,16 +293,14 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
       }
 
       // 1b. Query Expansion (Improve Recall)
-      // Use the pre-computed variants from the router call.
-      const queryVariants = (intentResult === "VALID" && !hasPdfContext) 
+      const queryVariants = (intentResult === "VALID" && !hasPdfContext)
         ? [rawOptimizedQuery, ...queryVariantsFromRouter]
         : [rawOptimizedQuery];
 
-
-      // 1b. Sanitize out-of-domain query string (safety net — normally caught above)
+      // 1c. Sanitize out-of-domain query string (safety net)
       let finalQuery = rawOptimizedQuery;
       if (finalQuery === "OUT_OF_DOMAIN") {
-        if (mode === "web" && hasPdfContext) {
+        if (hasPdfContext) {
           const nameHint = body.pdfFilename
             ? body.pdfFilename.replace(/\.pdf$/i, "").replace(/[-_]/g, " ")
             : "college information";
@@ -243,8 +326,8 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
 
       // 3. ── Retrieval with Cache ──────────────────────────────────────────────
       const cacheKey = buildQueryCacheKey(mode, queryVariants.join("|"), activeDocuments);
-      const TTL_PDF = 5 * 60 * 1000;
-      const TTL_WEB = 3 * 60 * 1000;
+      const TTL_RESEARCH = 4 * 60 * 1000;
+      const TTL_COMPARE = 3 * 60 * 1000;
 
       interface CachedRetrieval { qdrantResults: any[]; webResults: any[]; }
       let qdrantResults: any[] = [];
@@ -256,71 +339,115 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
         qdrantResults = cached.qdrantResults;
         webResults = cached.webResults;
       } else {
-        if (mode === "pdf") {
-          // Multi-Query Vector + Keyword Search with RRF
-          const k = 60; // RRF constant
-          const scores: Record<string, { score: number; point: any }> = {};
+        if (mode === "research") {
+          // ── Research Mode: Parallel Web + PDF + News retrieval ──────────────
+          // All three run simultaneously for maximum speed
+          const [tavilyResults, newsResults, pdfResults] = await Promise.all([
+            // 1. Live web search — run multiple query variants for comprehensive coverage
+            (async () => {
+              const variantResults = await Promise.all(
+                queryVariants.slice(0, 3).map(q => searchWeb(q))
+              );
+              const seen = new Set<string>();
+              return variantResults.flat().filter(r => {
+                const key = r.url || r.title;
+                if (!key || seen.has(key)) return false;
+                seen.add(key);
+                return true;
+              }).slice(0, 12);
+            })(),
 
-          await Promise.all(queryVariants.map(async (q) => {
-            const queryEmbedding = await getEmbedding(q);
-            
-            // 1. Vector Search
-            const vectorRes = await qdrant.search("college_docs", {
-              vector: queryEmbedding,
-              limit: 25,
-              ...(activeDocuments.length > 0 ? { filter: { must: [{ key: "document", match: { any: activeDocuments } }] } } : {})
-            });
-
-            // 2. Keyword Search
-            const keywordRes = await qdrant.scroll("college_docs", {
-              limit: 20,
-              filter: {
-                must: [
-                  ...(activeDocuments.length > 0 ? [{ key: "document", match: { any: activeDocuments } }] : []),
-                  { key: "text", match: { text: q } }
-                ]
-              }
-            });
-
-            // Apply RRF scoring
-            vectorRes.forEach((r, rank) => {
-              const id = String(r.id);
-              if (!scores[id]) scores[id] = { score: 0, point: r };
-              scores[id].score += 1 / (k + rank + 1);
-            });
-
-            keywordRes.points.forEach((r, rank) => {
-              const id = String(r.id);
-              if (!scores[id]) scores[id] = { score: 0, point: r };
-              scores[id].score += 1 / (k + rank + 1);
-            });
-          }));
-
-          const combined = Object.values(scores)
-            .sort((a, b) => b.score - a.score)
-            .map(s => s.point);
-
-          // Re-rank top candidates
-          const rankedResults = combined.length > 3
-            ? await reRankChunks(queryVariants[0]!, combined.slice(0, 20))
-            : combined;
-          
-          // Score Gating (only keep relevant chunks)
-          qdrantResults = rankedResults.filter((r: any) => (r.rerank_score || 0) >= 4).slice(0, 8);
-          if (qdrantResults.length === 0 && rankedResults.length > 0) {
-             qdrantResults = rankedResults.slice(0, 3); // Fallback to top 3 if all gated
-          }
-
-        } else if (mode === "web" || mode === "compare") {
-          // Parallel Web + News Vector Search
-          const [tavilyResults, newsResults] = await Promise.all([
-            searchWeb(queryVariants[0]!),
+            // 2. News vector search
             (async () => {
               try {
                 const queryEmbedding = await getEmbedding(queryVariants[0]!);
                 const res = await qdrant.search("college_news", {
                   vector: queryEmbedding,
-                  limit: 5
+                  limit: 8
+                });
+                return res.map(r => ({
+                  title: `News: ${r.payload?.title || "Latest Update"}`,
+                  url: r.payload?.url || "#",
+                  content: r.payload?.text || "",
+                  score: r.score
+                }));
+              } catch (e) {
+                console.warn("[News Search] Failed:", e);
+                return [];
+              }
+            })(),
+
+            // 3. PDF vector + keyword search (only if documents are uploaded)
+            (async () => {
+              if (activeDocuments.length === 0) return [];
+              try {
+                const k = 60; // RRF constant
+                const scores: Record<string, { score: number; point: any }> = {};
+
+                const queryEmbedding = await getEmbedding(queryVariants[0]!);
+
+                const vectorRes = await qdrant.search("college_docs", {
+                  vector: queryEmbedding,
+                  limit: 15,
+                  filter: { must: [{ key: "document", match: { any: activeDocuments } }] }
+                });
+
+                const keywordRes = await qdrant.scroll("college_docs", {
+                  limit: 10,
+                  filter: {
+                    must: [
+                      { key: "document", match: { any: activeDocuments } },
+                      { key: "text", match: { text: queryVariants[0]! } }
+                    ]
+                  }
+                });
+
+                vectorRes.forEach((r, rank) => {
+                  const id = String(r.id);
+                  if (!scores[id]) scores[id] = { score: 0, point: r };
+                  scores[id].score += 1 / (k + rank + 1);
+                });
+
+                keywordRes.points.forEach((r, rank) => {
+                  const id = String(r.id);
+                  if (!scores[id]) scores[id] = { score: 0, point: r };
+                  scores[id].score += 1 / (k + rank + 1);
+                });
+
+                const combined = Object.values(scores)
+                  .sort((a, b) => b.score - a.score)
+                  .map(s => s.point);
+
+                const rankedResults = combined.length > 3
+                  ? await reRankChunks(queryVariants[0]!, combined.slice(0, 15))
+                  : combined;
+
+                const filtered = rankedResults.filter((r: any) => (r.rerank_score || 0) >= 4).slice(0, 6);
+                return filtered.length > 0 ? filtered : rankedResults.slice(0, 3);
+              } catch (e) {
+                console.warn("[PDF Search] Failed:", e);
+                return [];
+              }
+            })()
+          ]);
+
+          webResults = [...newsResults, ...tavilyResults];
+          qdrantResults = pdfResults;
+
+        } else if (mode === "compare") {
+          // ── Compare Mode: Web search across all colleges ─────────────────
+          const compareQuery = body.colleges?.length
+            ? `${body.colleges.join(" vs ")} comparison ${queryVariants[0]}`
+            : queryVariants[0]!;
+
+          const [tavilyResults, newsResults] = await Promise.all([
+            searchWeb(compareQuery),
+            (async () => {
+              try {
+                const queryEmbedding = await getEmbedding(compareQuery);
+                const res = await qdrant.search("college_news", {
+                  vector: queryEmbedding,
+                  limit: 8
                 });
                 return res.map(r => ({
                   title: `News: ${r.payload?.title || "Latest Update"}`,
@@ -334,14 +461,12 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
               }
             })()
           ]);
-          
+
           webResults = [...newsResults, ...tavilyResults];
         }
 
-        // Store results for subsequent identical queries
-        setCache<CachedRetrieval>(cacheKey, { qdrantResults, webResults }, mode === "pdf" ? TTL_PDF : TTL_WEB);
-        console.log(`[Cache] STORED — mode: ${mode}, variants: ${queryVariants.length}, ttl: ${mode === "pdf" ? "5m" : "3m"}`);
-
+        setCache<CachedRetrieval>(cacheKey, { qdrantResults, webResults }, mode === "research" ? TTL_RESEARCH : TTL_COMPARE);
+        console.log(`[Cache] STORED — mode: ${mode}, variants: ${queryVariants.length}, ttl: ${mode === "research" ? "4m" : "3m"}`);
       }
 
       const rankingsContext = await rankingsPromise;
@@ -353,14 +478,14 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
       const localContext = qdrantResults
         .map((r: any) => {
           const id = sourceCounter++;
-          sources.push({ 
-            id, 
-            type: "pdf", 
-            name: r.payload?.document, 
+          sources.push({
+            id,
+            type: "pdf",
+            name: r.payload?.document,
             chunk: r.payload?.chunk_index,
-            page: r.payload?.page_number 
+            page: r.payload?.page_number
           });
-          return `[Source ID: ${id}] (Document: ${r.payload?.document}, Page: ${r.payload?.page_number || "N/A"}) ${r.payload?.text}`;
+          return `[Source ID: ${id}] [PDF Source — Document: ${r.payload?.document}, Page: ${r.payload?.page_number || "N/A"}] ${(r.payload?.text || "").slice(0, 1200)}`;
         })
         .filter(Boolean)
         .join("\n\n");
@@ -369,88 +494,82 @@ Awards — ${b.college}: ${(b.awards as string[]).join(', ') || 'N/A'}
         .map((r: any) => {
           const id = sourceCounter++;
           sources.push({ id, type: "web", name: r.title, url: r.url });
-          return `[Source ID: ${id}] (Web Context: ${r.title}) ${r.content}`;
+          return `[Source ID: ${id}] [Web Source — ${r.title}] ${(r.content || "").slice(0, 1000)}`;
         })
         .join("\n\n");
 
-      // When PDF context is present in web mode, build a hybrid context block.
-      // Web results come FIRST — they are the primary source in web mode.
-      const pdfSnippetSection = hasPdfText
-        ? `\nBACKGROUND CONTEXT (from user-uploaded PDF — use for college name/program identification only):\n${body.pdfContext!.slice(0, 3000)}\n`
-        : "";
+      // Build unified context block for research mode
+      const hasPdfDocs = activeDocuments.length > 0 && qdrantResults.length > 0;
+      let context = "";
 
-      const context = mode === "pdf"
-        ? `INTERNAL_PDF_BASE (EXCLUSIVE):\n${localContext || "EMPTY (No documents uploaded or no relevant info found in PDFs)"}`
-        : `LIVE_WEB_SEARCH_RESULTS (PRIMARY SOURCE — cite these):\n${webContext || "EMPTY (No relevant web search results found)"}${pdfSnippetSection}`;
+      if (mode === "research") {
+        const webSection = `LIVE WEB SEARCH RESULTS (Primary Source — cite these):\n${webContext || "EMPTY (No relevant web results found)"}`;
+        const pdfSection = hasPdfDocs
+          ? `\n\nUPLOADED PDF DOCUMENTS (Supplementary Source — use for specific document questions):\n${localContext}`
+          : hasPdfContext
+          ? `\n\nBACKGROUND PDF CONTEXT (use for college name/program identification):\n${body.pdfContext!.slice(0, 2500)}`
+          : "";
+        context = webSection + pdfSection;
+      } else {
+        context = `LIVE WEB SEARCH RESULTS (Primary Source — cite these):\n${webContext || "EMPTY (No relevant web results found)"}`;
+      }
 
-      // 5. LLM messages (Pure Retrieval & Anti-Hallucination)
+      // 5. LLM messages
+      const compareColleges = mode === "compare" && body.colleges?.length
+        ? body.colleges.slice(0, 5)
+        : [];
+
       const messages: ChatMessage[] = [
         {
           role: "system",
-          content: `
-You are a specialized College Assistant chatbot operating in **${mode.toUpperCase()} MODE${hasPdfContext ? " + PDF CONTEXT" : ""}**. 
+          content: `You are AcademiaAI, a college assistant in **${mode.toUpperCase()} MODE**.
+${body.contextHint ? `Only answer about **${body.contextHint}**.` : ""}
 
-${body.contextHint ? `
-STRICT SCOPING PROTOCOL:
-1. You are the EXCLUSIVE AI assistant for **${body.contextHint}**.
-2. YOU MUST ONLY answer questions about **${body.contextHint}**. 
-3. If the user asks about ANY OTHER college, institution, or university, you MUST politely refuse and state: "I am specifically here to assist you with information regarding **${body.contextHint}**. For information about other institutions, please visit their respective pages or use our global comparison tool."
-4. DO NOT provide comparisons with other colleges in this mode. Stay 100% focused on **${body.contextHint}**.
-` : ""}
+Output format rules (FOLLOW EXACTLY):
 
-${mode === "pdf" ? `
-REASONING PROTOCOLS (PDF MODE):
-1. You ONLY have access to INTERNAL_PDF_BASE.
-2. IF INTERNAL_PDF_BASE is empty or doesn't contain the answer, you MUST state: **"I'm sorry, but I couldn't find any information about this in the uploaded document."**
-3. DO NOT use external knowledge, web search, or general facts about the college that are not in the PDF.
-4. If the user asks for "fees" and it is not in the PDF, say you don't have it in the document.
-` : `
-REASONING PROTOCOLS (WEB/COMPARE MODE${hasPdfContext ? " + PDF BACKGROUND" : ""}):
-1. Your PRIMARY source is LIVE_WEB_SEARCH_RESULTS. Always lead with live web data.
-2. If LIVE_WEB_SEARCH_RESULTS is empty or sparse, use your internal knowledge to provide a helpful answer, but ADD A DISCLAIMER that the information is from general knowledge and not a live search.
-3. **STRICT DOMAIN ENFORCEMENT**: Only answer questions about colleges, universities, admissions, programs, campus life, and careers.
-4. **OFFICIAL WEBSITES**: Always include the institution's official website in the response if it is available in the [Verified Data].
-5. DO NOT just say "I couldn't find information" if you can provide a high-quality analysis from your internal data.
-`}
+1. Use ## then ### headings. Never write plain text without a heading above it.
 
-CORE RULES:
-1. ONLY answer questions related to colleges, admissions, academic programs, and institutional campus life.
-2. ORGANIZE DATA INTO TABLES. If you are listing programs, courses, departments, or fees, you MUST use a Markdown Table.
-3. NEVER make up specific statistics (like exact current year placement % or fees) if you aren't sure. Use ranges or descriptive terms (e.g., "Competitive placement record") when using internal knowledge.
-4. ALWAYS NAME THE COLLEGE. Specifically mention the institution name.
-5. STERN DOMAIN ENFORCEMENT: Refuse to provide medical, dietary, nutrition, or general health advice. If asked about food on campus, focus ONLY on institutional aspects like mess facilities, fees, or operating hours.
-6. In PDF Mode, if it's not in the PDF, it's not available. In WEB/COMPARE mode, use internal knowledge only as a fallback.
-7. YOU ARE CURRENTLY IN ${mode.toUpperCase()} MODE.
-${mode === "compare" ? `
-7. COMPARE MODE RULES:
-   - Your primary mission is to provide objective, data-driven comparisons.
-   - Use the [Verified Data] table below as your primary source of truth.
-   - If the user asks for a comparison but you don't have [Verified Data] for one of the colleges, use the Web search results but CLEARLY state which data is verified and which is from the web.
-   - Highlight winners in specific categories (e.g., "IIT Delhi leads in patents, while IIT Bombay has more startups").` : ""}
+2. Tables: correct pipe syntax.
+   CORRECT:
+| Name | Fee |
+|------|-----|
+| IIT | 8L |
+   NEVER write | Name | Fee | | :----- (extra pipe + broken alignment)
 
-SOURCE CITATIONS:
-1. Every factual claim MUST cite its source using the [Source ID: X] format.
-${rankingsContext ? `
-COLLEGE RANKINGS & ACHIEVEMENTS (VERIFIED — NIRF 2024 Official Data):
-${rankingsContext}
-When answering ranking or achievement questions, always use this verified data and label it as [Verified Data].` : ""}
+3. Each table = one topic only. Never merge colleges + fees + exams into one table.
+
+4. For general questions like "tell me about X":
+## Overview of X
+### Key Details
+| Aspect | Detail |
+|--------|--------|
+| Duration | 4 years |
+### Top Colleges
+| College | Location | Fee |
+|---------|----------|-----|
+| IIT | Delhi | 8L |
+### Admission
+| Exam | Level |
+|------|-------|
+| JEE | National |
+
+5. Never truncate. Write the full answer, complete every sentence and every table row.
+
+${mode === "research" ? "Use web results. If sparse, add (General knowledge)." : ""}
+${mode === "compare" ? `Compare: ${compareColleges.join(" | ")}. Start with a brief intro paragraph. Then for EACH college, create a section starting with "### [College Name]" containing a metrics table with fees, ranking, placements, and key details. End with "## 🏆 Our Recommendation". Every college MUST have its own ### heading section.` : ""}
+${rankingsContext ? `NIRF data: [NIRF 2024].` : ""}
 ${context}
-${respondInstruction ? `
----
-${respondInstruction}` : ""}
-`,
+${respondInstruction || ""}`,
         },
-        ...history.slice(-5) // Pass the last few messages for context, history already includes the current user message
+        ...history.slice(-3)
       ];
-      
-      // Reinforce language instruction at the very end of the prompt for maximum adherence
+
+      // Reinforce language instruction at the very end of the prompt
       if (respondInstruction && messages.length > 0) {
         const lastMessage = messages[messages.length - 1];
-        // Using a type guard and explicit check to satisfy TypeScript
         if (lastMessage && lastMessage.role === "user") {
           lastMessage.content += `\n\n[STRICT RULE: Respond entirely in ${responseLangName}. Do not use English.]`;
         } else if (lastMessage) {
-          // Fallback: append as a separate system message if the last message isn't from the user
           messages.push({
             role: "system",
             content: `CRITICAL: ${respondInstruction}`
@@ -473,40 +592,45 @@ ${respondInstruction}` : ""}
       const decoder = new TextDecoder();
       let assistantReply = "";
       let buffer = "";
+      let usage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null = null;
 
       while (true) {
         const { done, value } = await reader!.read();
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
         reply.raw.write(chunk);
-        
+
         buffer += chunk;
         const lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep the last incomplete line in buffer
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
           const trimmedLine = line.trim();
           if (!trimmedLine.startsWith("data:")) continue;
-          
+
           const json = trimmedLine.replace("data: ", "").trim();
           if (json === "[DONE]") continue;
-          
+
           try {
             const jsonValue = JSON.parse(json);
+            // Capture usage from the final streaming chunk (choices is empty, usage is present)
+            if (jsonValue.usage) {
+              usage = jsonValue.usage;
+            }
             const content = jsonValue.choices?.[0]?.delta?.content;
             if (content) assistantReply += content;
           } catch {
-            // Partial JSON or other parse error, the buffer logic should handle this
+            // Partial JSON — buffer logic handles it
           }
         }
       }
 
       // ── OUTPUT GUARDRAILS ───────────────────────────────────────────
-      const contextChunksFound = mode === "pdf" ? qdrantResults.length : webResults.length;
+      const contextChunksFound = qdrantResults.length + webResults.length;
       const outputCheck = runOutputGuardrails({
         response: assistantReply,
         contextChunksFound,
-        mode,
+        mode: mode === "research" ? "web" : "compare", // map to legacy guardrail interface
         language: responseLangCode
       });
 
@@ -514,8 +638,6 @@ ${respondInstruction}` : ""}
         console.info(`[GUARDRAIL][OUTPUT] Triggered: ${outputCheck.triggered.join(", ")}`);
       }
 
-      // If the output guardrail modified the response (e.g., appended disclaimer),
-      // push the delta to the stream so the client sees it.
       if (outputCheck.wasModified && !outputCheck.wasBlocked) {
         const delta = outputCheck.finalResponse.slice(assistantReply.length);
         if (delta) {
@@ -525,16 +647,13 @@ ${respondInstruction}` : ""}
         }
       }
 
-      // If the output was blocked entirely, replace the streamed content.
-      // Note: since we've already streamed the response, we append an override message.
       if (outputCheck.wasBlocked) {
         reply.raw.write(
           `data: ${JSON.stringify({ choices: [{ delta: { content: "\n\n⚠️ " + outputCheck.finalResponse } }] })}\n\n`
         );
       }
 
-      // Use the guardrail-approved response for source citation
-      assistantReply = outputCheck.wasBlocked ? outputCheck.finalResponse : outputCheck.finalResponse;
+      assistantReply = outputCheck.finalResponse;
       // ── END OUTPUT GUARDRAILS ───────────────────────────────────────
 
       // 6. Append Sources Section (Only sources that were actually cited)
@@ -542,7 +661,7 @@ ${respondInstruction}` : ""}
         const regex = new RegExp(`\\[(Source ID:\\s*)?${s.id}\\]`, 'i');
         return regex.test(assistantReply);
       });
-      
+
       if (usedSources.length > 0 && !outputCheck.wasBlocked) {
         let sourcesText = "\n\n---\n**Sources:**\n";
         const seen = new Set<string>();
@@ -553,13 +672,12 @@ ${respondInstruction}` : ""}
           if (!identifier || seen.has(identifier)) continue;
           seen.add(identifier);
 
-          // Find the snippet from qdrantResults or webResults
           let snippet = "";
           if (s.type === "pdf") {
             const result = qdrantResults.find(r => r.payload?.document === s.name && r.payload?.chunk_index === s.chunk);
             snippet = result?.payload?.text || "";
             const pageInfo = s.page ? `, page ${s.page}` : "";
-            sourcesText += `• ${s.name}${pageInfo}\n`;
+            sourcesText += `• [PDF] ${s.name}${pageInfo}\n`;
           } else {
             const result = webResults.find(r => r.url === s.url);
             snippet = result?.content || "";
@@ -572,11 +690,10 @@ ${respondInstruction}` : ""}
             type: s.type,
             page: s.page,
             url: s.url,
-            snippet: snippet.slice(0, 500) // limit size
+            snippet: snippet.slice(0, 500)
           });
         }
-        
-        // Append hidden metadata for frontend intelligence (base64 to avoid breaking JSON/SSE)
+
         const encodedMeta = Buffer.from(JSON.stringify(metadata)).toString("base64");
         sourcesText += `\n[SOURCE_META:${encodedMeta}]`;
 
@@ -584,10 +701,36 @@ ${respondInstruction}` : ""}
         reply.raw.write(`data: ${JSON.stringify({ choices: [{ delta: { content: sourcesText } }] })}\n\n`);
       }
 
-      // 7. Finalize (No DB storage needed anymore)
-
       reply.raw.write("data: [DONE]\n\n");
       reply.raw.end();
+
+      if (!outputCheck.wasBlocked && assistantReply.length > 50) {
+        const pt = usage?.prompt_tokens ?? 0;
+        const ct = usage?.completion_tokens ?? 0;
+        const cost = (pt / 1_000_000 * 0.15) + (ct / 1_000_000 * 0.60); // GPT-4o-mini pricing
+        const uid = chatUser?.uid ?? "anonymous";
+        const email = chatUser?.email ?? null;
+        sql`
+          INSERT INTO user_activity (uid, email, action, details)
+          VALUES (${uid}, ${email}, 'chat_query', ${JSON.stringify({
+            query: currentInput.slice(0, 200),
+            mode,
+            lang: responseLangCode,
+            prompt_tokens: pt,
+            completion_tokens: ct,
+            total_tokens: pt + ct,
+            cost: Math.round(cost * 1_000_000) / 1_000_000,
+          })})
+        `.catch(() => {});
+        logApiUsage({
+          model: "openai/gpt-4o-mini",
+          endpointType: "chat_stream",
+          promptTokens: pt,
+          completionTokens: ct,
+          totalTokens: pt + ct,
+          metadata: { mode, lang: responseLangCode },
+        });
+      }
     } catch (err: any) {
       console.error("CHAT ERROR:", err);
       try {

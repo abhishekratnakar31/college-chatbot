@@ -16,6 +16,7 @@ import { uploadRoute } from "./routes/upload.js";
 import { contactRoute } from "./routes/contact.js";
 import { cutoffRoute } from "./routes/cutoff.js";
 import { authRoute } from "./routes/auth.js";
+import { adminRoute } from "./routes/admin.js";
 import { registerRateLimiter } from "./guardrails/index.js";
 import { startNewsCron } from "./jobs/newsCron.js";
 import { seedCollegeAchievements, seedCutoffs } from "./lib/collegeSeeds.js";
@@ -77,6 +78,7 @@ await app.register(contactRoute);
 await app.register(uploadRoute);
 await app.register(cutoffRoute);
 await app.register(authRoute);
+await app.register(adminRoute);
 
 async function initVectorDB() {
   const collections = await qdrant.getCollections();
@@ -85,7 +87,7 @@ async function initVectorDB() {
   // ── college_docs (PDF uploads) ──────────────────────────────────────
   if (!existingNames.includes("college_docs")) {
     await qdrant.createCollection("college_docs", {
-      vectors: { size: 1536, distance: "Cosine" },
+      vectors: { size: 768, distance: "Cosine" },
     });
     console.log("Vector DB: 'college_docs' collection created.");
   }
@@ -93,7 +95,7 @@ async function initVectorDB() {
   // ── college_news (RSS news articles) ───────────────────────────────
   if (!existingNames.includes("college_news")) {
     await qdrant.createCollection("college_news", {
-      vectors: { size: 1536, distance: "Cosine" },
+      vectors: { size: 768, distance: "Cosine" },
     });
     console.log("Vector DB: 'college_news' collection created.");
   }

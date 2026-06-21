@@ -65,7 +65,7 @@ describe("generatePdfAwareSearchQuery — success", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
-  it("uses gpt-4o-mini model", async () => {
+  it("uses openai/gpt-4o-mini model", async () => {
     mockSuccess("query");
     await generatePdfAwareSearchQuery("test", SAMPLE_PDF_CONTEXT);
     const body = JSON.parse((fetch as any).mock.calls[0][1].body);

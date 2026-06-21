@@ -38,21 +38,19 @@ async function checkConnections() {
     }
   }
 
-  // 3. Check OpenRouter
-  if (!process.env.OPENROUTER_API_KEY) {
-    console.error("❌ OPENROUTER_API_KEY missing");
+  // 3. Check Gemini
+  if (!process.env.GEMINI_API_KEY) {
+    console.error("❌ GEMINI_API_KEY missing");
   } else {
     try {
-      const res = await fetch("https://openrouter.ai/api/v1/auth/key", {
-        headers: { "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}` }
-      });
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`);
       if (res.ok) {
-        console.log("✅ OpenRouter API Key: VALID");
+        console.log("✅ Gemini API Key: VALID");
       } else {
-        console.error("❌ OpenRouter API Key: INVALID");
+        console.error("❌ Gemini API Key: INVALID");
       }
     } catch (err) {
-      console.error("❌ OpenRouter API Key Check: ERROR");
+      console.error("❌ Gemini API Key Check: ERROR");
       console.error((err as Error).message);
     }
   }

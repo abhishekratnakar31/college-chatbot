@@ -1,4 +1,5 @@
 import type { ChatMessage } from "../types/chat.js";
+import { logApiUsage } from "../lib/apiUsageLogger.js";
 
 export interface RankedChunk {
   text: string;
@@ -12,8 +13,6 @@ export async function reRankChunks(query: string, chunks: any[]): Promise<any[]>
 
   console.log(`[RAG Re-ranker] Re-ranking ${chunks.length} chunks for query: "${query}"`);
 
-  // Truncate each chunk to 300 chars to prevent token overflow and keep re-ranking fast.
-  // Relevance signals are almost always in the first few sentences.
   const CHUNK_PREVIEW_LEN = 300;
   const chunkItems = chunks
     .map((c, i) => {
@@ -48,7 +47,7 @@ Instructions:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-4o-mini", // Fast and cheap for scoring
+          model: "openai/gpt-4o-mini",
           messages: [{ role: "user", content: prompt }],
           max_tokens: 300,
           temperature: 0,
@@ -62,9 +61,17 @@ Instructions:
     }
 
     const data = await response.json();
+    const usage = data.usage;
+    logApiUsage({
+      model: "openai/gpt-4o-mini",
+      endpointType: "reranking",
+      promptTokens: usage?.prompt_tokens,
+      completionTokens: usage?.completion_tokens,
+      totalTokens: usage?.total_tokens,
+      metadata: { function: "reRankChunks", chunk_count: chunks.length },
+    });
     const content = data.choices?.[0]?.message?.content?.trim();
     
-    // Attempt to parse the array
     try {
       const scores = JSON.parse(content.match(/\[.*\]/)?.[0] || content);
       if (!Array.isArray(scores)) throw new Error("Invalid scores format");

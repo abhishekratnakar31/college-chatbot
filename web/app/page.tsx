@@ -8,6 +8,7 @@ import {
   useTransform,
 } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "./context/AuthContext";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -25,7 +26,6 @@ import {
   ExternalLink,
   Calendar,
   ArrowUpRight,
-  Paperclip,
   FileText,
   X,
   Trophy,
@@ -1124,24 +1124,89 @@ function Footer() {
   );
 }
 
+function AssistantContent({ content, mode }: { content: string; mode: string }) {
+  if (mode !== "compare") {
+    return (
+      <div className="prose prose-neutral max-w-none text-black">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      </div>
+    );
+  }
+
+  const introEndIndex = content.indexOf("\n### ");
+  const restEndIndex = content.search(/\n##\s+/);
+  const intro = introEndIndex === -1 ? "" : content.substring(0, introEndIndex);
+  const rest = restEndIndex === -1 ? "" : content.substring(restEndIndex);
+
+  const sections: { heading: string; body: string }[] = [];
+  const parts = content.split(/(?=^### )/m);
+  for (const part of parts) {
+    const firstLine = part.split("\n")[0];
+    const match = firstLine.match(/^###\s+(.+)/);
+    if (match) {
+      const body = part.replace(/^###\s+.+\n?/, "");
+      sections.push({ heading: match[1].trim(), body });
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {intro && (
+        <div className="prose prose-neutral max-w-none text-black">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{intro}</ReactMarkdown>
+        </div>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {sections.map((college, i) => (
+          <div
+            key={i}
+            className="border-2 border-black rounded-lg p-4 bg-white shadow-[2px_2px_0px_0px_#b69cc4]"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <GraduationCap className="w-4 h-4 text-black shrink-0" />
+              <h4 className="font-black text-sm text-black m-0">{college.heading}</h4>
+            </div>
+            <div className="prose prose-neutral max-w-none prose-sm text-black">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{college.body}</ReactMarkdown>
+            </div>
+          </div>
+        ))}
+      </div>
+      {rest && (
+        <div className="prose prose-neutral max-w-none text-black">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{rest}</ReactMarkdown>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4006";
 
 export default function HeroPage() {
-  const { user, logout } = useAuth();
+  const { user, token, logout, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push("/chat");
+    }
+  }, [authLoading, user, router]);
+
+  const [isAdmin, setIsAdmin] = useState(false);
   const [query, setQuery] = useState("");
-  const [attachedFile, setAttachedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgressText, setUploadProgressText] = useState("");
   const [news, setNews] = useState<any[]>([]);
   const [rankings, setRankings] = useState<any[]>([]);
-  const [mode, setMode] = useState<"web" | "compare" | "pdf">("web");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [mode, setMode] = useState<"web" | "compare">("web");
   const headerRef = useRef<HTMLElement>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isChatActive, setIsChatActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [colleges, setColleges] = useState<string[]>([]);
+  const [collegeInput, setCollegeInput] = useState("");
+  const MAX_COMPARE_COLLEGES = 5;
   const [showAuthModal, setShowAuthModal] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -1150,12 +1215,22 @@ export default function HeroPage() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
+  useEffect(() => {
+    if (!token) { setIsAdmin(false); return; }
+    fetch(`${API_URL}/admin/check`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => setIsAdmin(d.isAdmin))
+      .catch(() => setIsAdmin(false));
+  }, [token]);
+
   const handleSend = async (textToSend: string) => {
     if (!textToSend.trim() || isLoading) return;
 
     if (!user) {
       const count = parseInt(localStorage.getItem("guest_questions_asked") || "0", 10);
-      if (count >= 2) {
+      if (count >= 3) {
         setShowAuthModal(true);
         return;
       }
@@ -1185,7 +1260,7 @@ export default function HeroPage() {
         body: JSON.stringify({
           messages: [...currentHistory, userMessage],
           mode: mode,
-          ...(mode === "pdf" && attachedFile ? { pdfFilename: attachedFile.name } : {}),
+          ...(mode === "compare" && colleges.length > 0 ? { colleges: colleges.slice(0, MAX_COMPARE_COLLEGES) } : {}),
         }),
       });
 
@@ -1254,77 +1329,8 @@ export default function HeroPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAttachedFile(file);
-      setMode("pdf");
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === "pdf" && attachedFile) {
-      setIsUploading(true);
-      setUploadProgressText("Initializing...");
-      let uploadedFileUrl = "";
-      try {
-        const formData = new FormData();
-        formData.append("file", attachedFile);
-        const res = await fetch(`${API_URL}/upload`, {
-          method: "POST",
-          body: formData,
-        });
-        const reader = res.body?.getReader();
-        const decoder = new TextDecoder();
-        let done = false;
-        while (!done) {
-          const result = await reader?.read();
-          if (result?.done) break;
-          const chunk = decoder.decode(result?.value);
-          const lines = chunk.split("\n");
-          for (const line of lines) {
-            if (line.startsWith("data:")) {
-              try {
-                const parsed = JSON.parse(line.replace("data: ", "").trim());
-                if (parsed.status === "verifying")
-                  setUploadProgressText("Verifying relevance...");
-                else if (parsed.status === "started")
-                  setUploadProgressText(`Embedding (0/${parsed.total})...`);
-                else if (parsed.status === "embedding")
-                  setUploadProgressText(
-                    `Embedding (${parsed.progress}/${parsed.total})...`,
-                  );
-                else if (parsed.status === "done") {
-                  uploadedFileUrl = parsed.fileUrl ?? "";
-                  done = true;
-                } else if (parsed.page) {
-                  setUploadProgressText(`Reading page ${parsed.page}...`);
-                }
-              } catch (e) {}
-            }
-          }
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsUploading(false);
-        setUploadProgressText("");
-      }
-
-      setIsChatActive(true);
-      setMessages([
-        {
-          role: "assistant",
-          content: `I've finished indexing **${attachedFile.name}**. You can now ask me questions about its content!`,
-        },
-      ]);
-      if (query.trim()) {
-        handleSend(query.trim());
-      }
-      return;
-    }
-
     if (query.trim()) {
       handleSend(query.trim());
     }
@@ -1408,6 +1414,16 @@ export default function HeroPage() {
                         {user.email}
                       </p>
                     </div>
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-xs font-black text-purple-700 hover:bg-purple-50 rounded-md transition-colors"
+                      >
+                        <ShieldCheck size={14} />
+                        Admin Dashboard
+                      </Link>
+                    )}
                     <button
                       onClick={() => {
                         logout();
@@ -1515,40 +1531,80 @@ export default function HeroPage() {
                       isChatActive ? "max-w-xl mx-0 text-left" : "max-w-3xl mx-auto"
                     )}
                   >
-                    <div className="relative flex items-center bg-white rounded-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus-within:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all p-2">
-                      <input
-                        type="text"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder={
-                          mode === "compare"
-                            ? "Which colleges should I compare?"
-                            : mode === "pdf"
-                              ? "Ask something about your document..."
+                    <div className="bg-white rounded-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus-within:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all p-2">
+                      {mode === "compare" && (
+                        <div className="flex flex-col gap-1.5 px-3 pt-2 pb-1 border-b border-black/10 mb-1">
+                          {colleges.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {colleges.map((c, i) => (
+                                <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#b69cc4] border border-black rounded-md text-[10px] font-black text-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                                  {c}
+                                  <button
+                                    onClick={() => setColleges((prev) => prev.filter((_, idx) => idx !== i))}
+                                    className="ml-0.5 hover:text-red-700 transition-colors"
+                                  >
+                                    <X size={9} strokeWidth={3} />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              value={collegeInput}
+                              onChange={(e) => setCollegeInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && collegeInput.trim()) {
+                                  e.preventDefault();
+                                  if (colleges.length < MAX_COMPARE_COLLEGES) {
+                                    setColleges((prev) => [...prev, collegeInput.trim()]);
+                                    setCollegeInput("");
+                                  }
+                                }
+                              }}
+                              placeholder={colleges.length >= MAX_COMPARE_COLLEGES ? `Max ${MAX_COMPARE_COLLEGES} colleges reached` : `Add college name... (${colleges.length}/${MAX_COMPARE_COLLEGES})`}
+                              disabled={colleges.length >= MAX_COMPARE_COLLEGES}
+                              className="flex-1 min-w-0 bg-transparent py-1 text-sm font-semibold text-black placeholder:text-zinc-400 outline-none disabled:opacity-40"
+                            />
+                            {collegeInput.trim() && colleges.length < MAX_COMPARE_COLLEGES && (
+                              <button
+                                onClick={() => {
+                                  setColleges((prev) => [...prev, collegeInput.trim()]);
+                                  setCollegeInput("");
+                                }}
+                                className="shrink-0 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-black text-white rounded border border-black hover:bg-zinc-800 transition-colors"
+                              >
+                                Add
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center">
+                        <input
+                          type="text"
+                          value={query}
+                          onChange={(e) => setQuery(e.target.value)}
+                          placeholder={
+                            mode === "compare"
+                              ? colleges.length < 2
+                                ? "Add at least 2 colleges above, then ask your question..."
+                                : "Ask a comparison question..."
                               : "How can I help you today?"
-                        }
-                        className="w-full bg-transparent pl-4 pr-4 py-4 text-lg md:text-xl text-black placeholder:text-zinc-500 outline-none font-medium"
-                      />
-                      <button
-                        type="submit"
-                        disabled={isUploading}
-                        className="px-6 py-3 bg-[#b69cc4] text-black font-black text-sm rounded-lg border-2 border-black hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all shrink-0 flex items-center gap-2"
-                      >
-                        {isUploading
-                          ? "..."
-                          : mode === "compare"
+                          }
+                          className="w-full bg-transparent pl-4 pr-4 py-4 text-lg md:text-xl text-black placeholder:text-zinc-500 outline-none font-medium"
+                        />
+                        <button
+                          type="submit"
+                          className="px-6 py-3 bg-[#b69cc4] text-black font-black text-sm rounded-lg border-2 border-black hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all shrink-0 flex items-center gap-2"
+                        >
+                          {mode === "compare"
                             ? "Compare"
                             : "Ask Academia"}
-                        <ArrowRight size={18} />
-                      </button>
+                          <ArrowRight size={18} />
+                        </button>
+                      </div>
                     </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      className="hidden"
-                      onChange={handleFileChange}
-                      accept=".pdf"
-                    />
                   </form>
 
                   <div className={cn(
@@ -1578,22 +1634,6 @@ export default function HeroPage() {
                         {item.label}
                       </button>
                     ))}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode("pdf");
-                        fileInputRef.current?.click();
-                      }}
-                      className={cn(
-                        "flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 font-black text-xs transition-all",
-                        mode === "pdf"
-                          ? "border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                          : "border-black bg-white text-black hover:bg-zinc-100 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
-                      )}
-                    >
-                      <Paperclip size={14} />
-                      Upload PDF
-                    </button>
                   </div>
                 </div>
               </Reveal>
@@ -1645,11 +1685,7 @@ export default function HeroPage() {
                         )}
                       >
                         {msg.role === "assistant" ? (
-                          <div className="prose prose-neutral max-w-none text-black">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                              {msg.content || "Thinking..."}
-                            </ReactMarkdown>
-                          </div>
+                          <AssistantContent content={msg.content || "Thinking..."} mode={mode} />
                         ) : (
                           msg.content
                         )}
@@ -1685,7 +1721,7 @@ export default function HeroPage() {
                     Sign in to continue exploring
                   </h3>
                   <p className="text-sm text-zinc-700 leading-relaxed">
-                    You've reached the free guest limit of 2 questions. Sign in or create a free account to continue using AcademiaAI and unlock unlimited questions.
+                    You've reached the free guest limit of 3 questions. Sign in or create a free account to continue using AcademiaAI and unlock unlimited questions.
                   </p>
                 </div>
 
@@ -1697,10 +1733,13 @@ export default function HeroPage() {
                     Sign In
                   </Link>
                   <button
-                    onClick={() => setShowAuthModal(false)}
+                    onClick={() => {
+                      localStorage.setItem("hero_chat_messages", JSON.stringify(messages));
+                      router.push("/login?continue=/chat");
+                    }}
                     className="w-full py-3 border-2 border-black bg-white text-black hover:bg-[#f3f4f6] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-extrabold text-sm rounded-lg transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
                   >
-                    Continue as Guest (View Chat)
+                    Continue to Full Chat (Sign Up)
                   </button>
                 </div>
               </div>

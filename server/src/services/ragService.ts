@@ -176,31 +176,27 @@ export async function processRAGQuery(
 
   // 6. Context Building
   const context = mode === "pdf" 
-    ? qdrantResults.map(r => r.payload?.text).join("\n\n")
-    : webResults.map(r => r.content).join("\n\n");
+    ? qdrantResults.map(r => (r.payload?.text || "").slice(0, 1200)).join("\n\n")
+    : webResults.map(r => (r.content || "").slice(0, 1000)).join("\n\n");
 
   const systemMessage = {
     role: "system",
-    content: `You are AcademiaAI, a premium Academic Intelligence Engine.
-    Mode: ${mode.toUpperCase()}
-    
-    CRITICAL FORMATTING RULES:
-    1. For lists of courses, fees, or comparative data, ALWAYS use clean Markdown Tables with clear headers.
-    2. Use **Bold Section Headings** to organize different parts of your answer.
-    3. Use structured bullet points for features, highlights, or placements.
-    4. Maintain a professional, high-fidelity tone.
-    5. Citation Requirement: ALWAYS cite the document name or source if available from the context.
-    
-    CONTEXT DATA:
-    ${context}
-    ${rankingsContext}
-    
-    ${respondInstruction}
-    
-    FINAL RULE: Answer ONLY academic or college-related questions. If the context is insufficient, state that clearly but provide what you can based on the available facts.`
+    content: `AcademiaAI, college assistant. Mode: ${mode.toUpperCase()}
+
+Format rules:
+1. ## then ### headings. Never write text without a heading.
+2. Tables: correct pipes. CORRECT: | Name | Fee |\n|------|-----|\n| IIT | 8L |. WRONG: | Name | Fee | | :----- (extra pipe).
+3. One table per topic. Never merge categories.
+4. For general queries: ## Overview → ### Key Details (table) → ### Top Institutions (table) → ### Fees (table) → ### Admission (table).
+5. Never truncate. Write the whole answer.
+
+Context:
+${context}
+${rankingsContext}
+${respondInstruction}`
   };
 
-  const messages = [systemMessage, ...history.slice(-5)];
+  const messages = [systemMessage, ...history.slice(-3)];
 
   if (options.stream) {
     return { stream: await generateStream(messages as any), metadata: { qdrantResults, webResults } };
