@@ -7,7 +7,12 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is required");
 }
 
-export const sql = postgres(connectionString);
+const isLocalhost = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
+
+export const sql = postgres(connectionString, {
+  prepare: false, // Required for Supabase poolers and pgBouncer
+  ssl: isLocalhost ? false : "require",
+});
 
 export async function initNewsTable() {
   await sql`
@@ -223,8 +228,14 @@ export async function initDB() {
     `;
 
     console.log("PostgreSQL Database Initialized.");
-  } catch (err) {
+  } catch (err: any) {
     console.error("Failed to initialize PostgreSQL:", err);
+    if (err?.message?.includes("tenant") || err?.message?.includes("ENOTFOUND")) {
+      console.error("\n💡 Supabase Connection Hint:");
+      console.error("1. Check if your Supabase project is PAUSED (Dashboard -> Restore project).");
+      console.error("2. Verify your connection string in Supabase -> Settings -> Database -> Connection String (URI).");
+      console.error("3. If using pooler, ensure region matches (e.g. aws-0-ap-south-1.pooler.supabase.com).\n");
+    }
     throw err;
   }
 }

@@ -11,7 +11,11 @@ async function checkConnections() {
     console.error("❌ DATABASE_URL missing");
   } else {
     try {
-      const sql = postgres(process.env.DATABASE_URL);
+      const isLocalhost = process.env.DATABASE_URL.includes("localhost") || process.env.DATABASE_URL.includes("127.0.0.1");
+      const sql = postgres(process.env.DATABASE_URL, {
+        prepare: false,
+        ssl: isLocalhost ? false : "require",
+      });
       await sql`SELECT 1`;
       console.log("✅ PostgreSQL Connection: OK");
       await sql.end();
