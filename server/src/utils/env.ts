@@ -2,11 +2,13 @@ import { z } from "zod";
 import "dotenv/config";
 
 const envSchema = z.object({
-  PORT: z.string().transform(Number).default(4005),
+  PORT: z.coerce.number().default(4006),
   DATABASE_URL: z.string().url(),
   QDRANT_URL: z.string().url().optional().default("http://localhost:6333"),
   QDRANT_API_KEY: z.string().optional(),
   OPENROUTER_API_KEY: z.string().min(1),
+  OPENROUTER_MODEL: z.string().optional().default("openai/gpt-4o-mini"),
+  CHAT_HISTORY_LIMIT: z.coerce.number().optional().default(20),
   ALLOWED_ORIGIN: z.string().default("*"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   TAVILY_API_KEY: z.string().optional(),

@@ -53,12 +53,14 @@ const INJECTION_PATTERNS: RegExp[] = [
  * Only triggers on very clear non-academic topics to avoid false positives.
  */
 const OFF_TOPIC_KEYWORDS: RegExp[] = [
-  /\b(recipe|ingredients?|cook(ing)?|bake|baking)\b/i,
-  /\b(box\s*office|movie\s*review|film\s*critic)\b/i,
-  /\b(stock\s*market|crypto(currency)?|bitcoin|forex)\b/i,
-  /\b(horoscope|astrology|zodiac\s*sign)\b/i,
-  /\b(sports?\s*bet|gambling|casino|poker)\b/i,
-  /\b(diet|nutrition|workout|fitness|medical\s*advice|health\s*tips)\b/i,
+  /\b(recipe|ingredients?|cook(ing)?|bake|baking|brew(ing)?)\b/i,
+  /\b(how\s+to\s+(make|brew|prepare|cook))\s+(tea|coffee|chai|beer|wine|food|snack|dish|pizza|burger|cake|pasta|rice|curry)\b/i,
+  /\b(tea|coffee|chai)\s+(recipe|making|preparation)\b/i,
+  /\b(box\s*office|movie\s*review|film\s*critic|celebrity\s*gossip)\b/i,
+  /\b(stock\s*market|crypto(currency)?|bitcoin|forex|trading\s*strategy)\b/i,
+  /\b(horoscope|astrology|zodiac\s*sign|tarot)\b/i,
+  /\b(sports?\s*bet|gambling|casino|poker|blackjack)\b/i,
+  /\b(diet|nutrition|workout|fitness|medical\s*advice|health\s*tips|disease\s*treatment)\b/i,
 ];
 
 /**

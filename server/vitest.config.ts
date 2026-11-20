@@ -5,7 +5,10 @@ export default defineConfig({
     globals: true,
     environment: "node",
     env: {
-      GEMINI_API_KEY: "mock-gemini-key",
+      DATABASE_URL: "postgresql://mock:mock@localhost:5432/mock_db",
+      OPENROUTER_API_KEY: "mock-openrouter-key",
+      TAVILY_API_KEY: "mock-tavily-key",
+      NODE_ENV: "test",
     },
     include: ["src/tests/**/*.test.ts"],
     coverage: {

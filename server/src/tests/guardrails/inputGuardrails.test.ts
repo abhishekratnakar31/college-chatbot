@@ -117,7 +117,7 @@ describe("Off-Topic Domain Violation", () => {
       expect(result.pass).toBe(false);
       if (!result.pass) {
         expect(result.code).toBe("DOMAIN_VIOLATION");
-        expect(result.message).toContain("College Assistant");
+        expect(result.message).toContain("AcademiaAI");
       }
     });
   }

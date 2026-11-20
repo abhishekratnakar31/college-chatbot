@@ -273,8 +273,99 @@ function TopStudyPlaces() {
   );
 }
 
-function ExperienceHub({ news, rankings }: { news: any[]; rankings: any[] }) {
+const DEFAULT_PREVIEW_NEWS = [
+  {
+    id: 1,
+    title: "UP NEET PG 2026 Round 2 Merit List Out: Check State Rank List & Choice",
+    source: "NEET PG",
+    category: "Admissions",
+    published_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+  },
+  {
+    id: 2,
+    title: "IIT Delhi Launches Special PhD Admission Drive for Emerging Tech Research",
+    source: "IIT Delhi",
+    category: "Research",
+    published_at: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
+  },
+  {
+    id: 3,
+    title: "JEE Advanced 2026 Cutoff Ranks & B.Tech CSE Opening-Closing Trends",
+    source: "JEE Portal",
+    category: "Admissions",
+    published_at: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
+  },
+];
+
+const DEFAULT_PREVIEW_RANKINGS = [
+  {
+    id: 1,
+    college: "IIT Madras",
+    nirf_rank: 1,
+    nirf_category: "Engineering",
+    city: "Chennai",
+    state: "Tamil Nadu",
+    avg_package: "21.4",
+  },
+  {
+    id: 2,
+    college: "IISc Bangalore",
+    nirf_rank: 2,
+    nirf_category: "University",
+    city: "Bangalore",
+    state: "Karnataka",
+    avg_package: "28.0",
+  },
+  {
+    id: 3,
+    college: "IIT Bombay",
+    nirf_rank: 3,
+    nirf_category: "Engineering",
+    city: "Mumbai",
+    state: "Maharashtra",
+    avg_package: "23.5",
+  },
+  {
+    id: 4,
+    college: "IIT Delhi",
+    nirf_rank: 4,
+    nirf_category: "Engineering",
+    city: "New Delhi",
+    state: "Delhi",
+    avg_package: "22.8",
+  },
+];
+
+function ExperienceHub({ news: propNews, rankings: propRankings }: { news?: any[]; rankings?: any[] }) {
   const [activeTab, setActiveTab] = useState("Chat");
+  const [newsList, setNewsList] = useState<any[]>(propNews && propNews.length > 0 ? propNews : DEFAULT_PREVIEW_NEWS);
+  const [rankingsList, setRankingsList] = useState<any[]>(propRankings && propRankings.length > 0 ? propRankings : DEFAULT_PREVIEW_RANKINGS);
+
+  useEffect(() => {
+    if (propNews && propNews.length > 0) {
+      setNewsList(propNews);
+    } else {
+      fetch(`${API_URL}/news?limit=5`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.articles && d.articles.length > 0) setNewsList(d.articles);
+        })
+        .catch(() => {});
+    }
+  }, [propNews]);
+
+  useEffect(() => {
+    if (propRankings && propRankings.length > 0) {
+      setRankingsList(propRankings);
+    } else {
+      fetch(`${API_URL}/rankings?limit=5&sort=nirf_rank`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.colleges && d.colleges.length > 0) setRankingsList(d.colleges);
+        })
+        .catch(() => {});
+    }
+  }, [propRankings]);
   const tabs = [
     {
       id: "Chat",
@@ -426,57 +517,86 @@ function ExperienceHub({ news, rankings }: { news: any[]; rankings: any[] }) {
                         </div>
                       )}
                       {activeTab === "News" && (
-                        <div className="space-y-6 text-left">
-                          <div className="flex justify-between items-center px-2">
-                            <h4 className="text-[10px] font-black text-black uppercase tracking-widest">
-                              Global Intelligence
-                            </h4>
-                            <Radio
-                              size={12}
-                              className="text-black animate-pulse"
-                            />
+                        <div className="space-y-4 text-left w-full">
+                          <div className="flex justify-between items-center px-1">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                              <h4 className="text-xs font-black text-black uppercase tracking-widest">
+                                Global Intelligence Feed
+                              </h4>
+                            </div>
+                            <Link
+                              href="/news"
+                              className="text-[11px] font-black text-black hover:text-[#8a689b] flex items-center gap-1 group bg-white/70 px-2.5 py-1 rounded-full border border-black/30 shadow-[1px_1px_0px_0px_#000000]"
+                            >
+                              <span>Explore News</span>
+                              <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                            </Link>
                           </div>
-                          <div className="space-y-4">
-                            {news.slice(0, 3).map((article, i) => (
-                              <div
-                                key={i}
-                                className="p-4 rounded-2xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-2"
+                          <div className="space-y-2.5">
+                            {newsList.slice(0, 3).map((article, i) => (
+                              <Link
+                                key={article.id || i}
+                                href="/news"
+                                className="block p-4 rounded-2xl bg-white border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all group/item"
                               >
-                                <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-zinc-500">
-                                  <span>{article.source}</span>
-                                  <span>{article.time}</span>
+                                <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-wider text-zinc-500 mb-1.5">
+                                  <span className="bg-[#b69cc4] text-black px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_0px_#000000]">
+                                    {article.category || "Intel"}
+                                  </span>
+                                  <span className="font-bold text-zinc-600">
+                                    {article.source || "Official Source"} • {formatRelativeTime(article.published_at || article.created_at) || "Latest"}
+                                  </span>
                                 </div>
-                                <p className="text-xs font-bold text-black line-clamp-1">
+                                <p className="text-xs md:text-sm font-bold text-black line-clamp-1 group-hover/item:text-[#8a689b] transition-colors">
                                   {article.title}
                                 </p>
-                              </div>
+                              </Link>
                             ))}
                           </div>
                         </div>
                       )}
                       {activeTab === "Rankings" && (
-                        <div className="space-y-5 text-left">
-                          <h4 className="text-[10px] font-black text-black uppercase tracking-widest px-2 mb-2">
-                            Live Leaderboard
-                          </h4>
-                          <div className="space-y-3">
-                            {rankings.slice(0, 4).map((college, i) => (
-                              <div
-                                key={i}
-                                className="flex items-center gap-4 p-4 rounded-2xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group/rank transition-all"
+                        <div className="space-y-4 text-left w-full">
+                          <div className="flex justify-between items-center px-1">
+                            <div className="flex items-center gap-2">
+                              <Trophy size={14} className="text-black" />
+                              <h4 className="text-xs font-black text-black uppercase tracking-widest">
+                                Live NIRF Leaderboard
+                              </h4>
+                            </div>
+                            <Link
+                              href="/rankings"
+                              className="text-[11px] font-black text-black hover:text-[#8a689b] flex items-center gap-1 group bg-white/70 px-2.5 py-1 rounded-full border border-black/30 shadow-[1px_1px_0px_0px_#000000]"
+                            >
+                              <span>View Rankings</span>
+                              <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                            </Link>
+                          </div>
+                          <div className="space-y-2.5">
+                            {rankingsList.slice(0, 4).map((college, i) => (
+                              <Link
+                                key={college.id || i}
+                                href="/rankings"
+                                className="flex items-center gap-3.5 p-3 rounded-2xl bg-white border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] group/rank hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
                               >
-                                <div className="w-8 h-8 rounded-lg bg-[#f3f4f6] border border-black flex items-center justify-center text-[10px] font-black text-black">
-                                  #{college.rank || i + 1}
+                                <div className="w-8 h-8 rounded-xl bg-[#f3f4f6] border border-black flex items-center justify-center text-xs font-black text-black group-hover/rank:bg-[#b69cc4] transition-colors shrink-0">
+                                  #{college.nirf_rank || college.rank || i + 1}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold text-black truncate">
+                                  <p className="text-xs font-bold text-black truncate group-hover/rank:text-[#8a689b] transition-colors">
                                     {college.college}
                                   </p>
-                                  <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">
-                                    {college.city}
+                                  <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider truncate">
+                                    {college.city}{college.state ? `, ${college.state}` : ""}
                                   </p>
                                 </div>
-                              </div>
+                                <div className="text-right shrink-0">
+                                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-zinc-100 border border-black/20 text-zinc-700">
+                                    {college.avg_package && Number(college.avg_package) > 0 ? `₹${college.avg_package}L` : college.nirf_category || "NIRF Top"}
+                                  </span>
+                                </div>
+                              </Link>
                             ))}
                           </div>
                         </div>
@@ -1348,7 +1468,7 @@ export default function HeroPage() {
       try {
         const [newsRes, rankingsRes] = await Promise.all([
           fetch(`${API_URL}/news?limit=10`).then((r) => r.json()),
-          fetch(`${API_URL}/rankings?limit=20&sort=rank_2024`).then((r) =>
+          fetch(`${API_URL}/rankings?limit=20&sort=nirf_rank`).then((r) =>
             r.json(),
           ),
         ]);

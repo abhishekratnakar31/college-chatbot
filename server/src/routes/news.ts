@@ -37,8 +37,8 @@ export async function newsRoute(app: FastifyInstance) {
 
     try {
       const publicWhere = conditions.length > 0
-        ? sql`WHERE status = 'published' AND ${conditions.reduce((acc, curr) => sql`${acc} AND ${curr}`)}`
-        : sql`WHERE status = 'published'`;
+        ? sql`WHERE (status = 'published' OR status IS NULL) AND ${conditions.reduce((acc, curr) => sql`${acc} AND ${curr}`)}`
+        : sql`WHERE (status = 'published' OR status IS NULL)`;
 
       const rows = await sql`
         SELECT id, title, summary, url, source, category, image, published_at, created_at

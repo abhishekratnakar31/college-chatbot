@@ -47,7 +47,7 @@ Instructions:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-4o-mini",
+          model: process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini",
           messages: [{ role: "user", content: prompt }],
           max_tokens: 300,
           temperature: 0,

@@ -43,7 +43,7 @@ ${truncatedContext}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-4o-mini",
+          model: process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini",
           messages,
           max_tokens: 60,
         }),

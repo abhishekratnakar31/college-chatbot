@@ -120,11 +120,11 @@ describe("searchWeb — success", () => {
     expect(body.query).toBe("IIT Delhi fees 2024");
   });
 
-  it("requests max_results = 8", async () => {
+  it("requests max_results = 10", async () => {
     mockFetchSuccess();
     await searchWeb("test");
     const body = JSON.parse((fetch as any).mock.calls[0][1].body);
-    expect(body.max_results).toBe(8);
+    expect(body.max_results).toBe(10);
   });
 
   it("uses search_depth = 'advanced'", async () => {

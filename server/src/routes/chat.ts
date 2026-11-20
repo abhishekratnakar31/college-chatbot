@@ -15,6 +15,7 @@ import { getCache, setCache, buildQueryCacheKey } from "../lib/cache.js";
 import { detectLanguage, getRespondInInstruction, isValidLangCode, SUPPORTED_LANGUAGES } from "../lib/languageDetector.js";
 import { getAuth } from "firebase-admin/auth";
 import { firebaseAdminApp } from "../lib/firebaseAdmin.js";
+import { env } from "../utils/env.js";
 
 async function extractUser(request: any) {
   const authHeader = request.headers.authorization;
@@ -99,6 +100,25 @@ export async function chatRoute(app: FastifyInstance) {
         console.log(`[Language] Input: ${inputLangName} (${inputLangCode}), Response: ${responseLangName} (${responseLangCode}) — ${body.language ? "user-selected" : "auto-detected"}`);
       }
       // ── END LANGUAGE DETECTION ───────────────────────────────────────────
+
+      // ── GREETINGS & INTRO FAST-PATH ──────────────────────────────────────
+      const GREETING_REGEX = /^(hi|hello|hey|heya|howdy|greetings|good\s+(morning|afternoon|evening)|namaste|hola|sup|yo)(\s+there|\s+bot|\s+academiaai)?[\s.!?]*$/i;
+      const IDENTITY_REGEX = /^(who\s+are\s+you|what\s+can\s+you\s+do|what\s+is\s+academiaai|what\s+do\s+you\s+do|tell\s+me\s+about\s+yourself)[\s.!?]*$/i;
+
+      if (GREETING_REGEX.test(currentInput.trim()) || IDENTITY_REGEX.test(currentInput.trim())) {
+        reply.raw.writeHead(200, {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+          "Access-Control-Allow-Origin": "*",
+        });
+        const welcomeMsg = `Hello! 👋 I'm **AcademiaAI**, your dedicated college and university intelligence assistant.\n\nI can help you with:\n- 🏛️ **College & University Research** — profiles, accreditations, facilities\n- 📋 **Admissions & Cut-offs** — eligibility criteria, opening & closing ranks\n- 💰 **Fees & Scholarships** — tuition, hostel costs, fee waivers, financial aid\n- 📚 **Courses & Degrees** — B.Tech, MBA, MBBS, specializations\n- 🏆 **Rankings & Placements** — NIRF, QS rankings, packages, top recruiters\n- ⚖️ **Side-by-Side Comparisons** — compare up to 5 colleges across key metrics\n\nWhich college, course, or entrance exam would you like to explore today?`;
+        reply.raw.write(`data: ${JSON.stringify({ choices: [{ delta: { content: welcomeMsg } }] })}\n\n`);
+        reply.raw.write("data: [DONE]\n\n");
+        reply.raw.end();
+        return;
+      }
+      // ── END GREETINGS FAST-PATH ──────────────────────────────────────────
 
       console.log(`\n[RAG Search] ------------------------------------------------`);
       console.log(`[RAG Search] User question received: "${currentInput}"`);
@@ -522,8 +542,17 @@ Please ask me anything in these areas and I'll be happy to help!`;
       const messages: ChatMessage[] = [
         {
           role: "system",
-          content: `You are AcademiaAI, a college assistant in **${mode.toUpperCase()} MODE**.
+          content: `You are AcademiaAI, a dedicated College & University Intelligence Assistant in **${mode.toUpperCase()} MODE**.
 ${body.contextHint ? `Only answer about **${body.contextHint}**.` : ""}
+
+CORE IDENTITY & SCOPE (STRICT):
+1. You ONLY provide information regarding colleges, universities, admissions, entrance exams, courses, degrees, rankings, placements, campus life, hostels, fees, and scholarships.
+2. If the user asks an off-topic question unrelated to colleges, universities, or academic education (e.g. food recipes, tea, cooking, movies, entertainment, sports results, general coding, or medical advice), you MUST POLITELY REFUSE. Explain that you are strictly an academic intelligence assistant and ask how you can help with their college research.
+3. STRICT FACTUAL GROUNDING & ANTI-HALLUCINATION:
+   - Base all college information, statistics, and figures STRICTLY on the verified database and retrieved context provided below.
+   - NEVER invent or fabricate fee figures, placement packages, NIRF rankings, or cut-offs.
+   - If a specific statistic or detail is not present in the provided context, state "Information not available in verified records" rather than guessing.
+   - Cite retrieved sources using [1], [2] annotations.
 
 Output format rules (FOLLOW EXACTLY):
 
@@ -538,8 +567,8 @@ Output format rules (FOLLOW EXACTLY):
 
 3. Each table = one topic only. Never merge colleges + fees + exams into one table.
 
-4. For general questions like "tell me about X":
-## Overview of X
+4. For general college or academic program inquiries (e.g. "tell me about B.Tech CSE" or "tell me about IIT Delhi"):
+## Overview of [Topic]
 ### Key Details
 | Aspect | Detail |
 |--------|--------|
@@ -555,13 +584,13 @@ Output format rules (FOLLOW EXACTLY):
 
 5. Never truncate. Write the full answer, complete every sentence and every table row.
 
-${mode === "research" ? "Use web results. If sparse, add (General knowledge)." : ""}
+${mode === "research" ? "Use web results. If sparse, state what is verified and mention that official college brochures should be checked." : ""}
 ${mode === "compare" ? `Compare: ${compareColleges.join(" | ")}. Start with a brief intro paragraph. Then for EACH college, create a section starting with "### [College Name]" containing a metrics table with fees, ranking, placements, and key details. End with "## 🏆 Our Recommendation". Every college MUST have its own ### heading section.` : ""}
 ${rankingsContext ? `NIRF data: [NIRF 2024].` : ""}
 ${context}
 ${respondInstruction || ""}`,
         },
-        ...history.slice(-3)
+        ...history.slice(-(env.CHAT_HISTORY_LIMIT || 20))
       ];
 
       // Reinforce language instruction at the very end of the prompt
@@ -723,7 +752,7 @@ ${respondInstruction || ""}`,
           })})
         `.catch(() => {});
         logApiUsage({
-          model: "openai/gpt-4o-mini",
+          model: env.OPENROUTER_MODEL || "openai/gpt-4o-mini",
           endpointType: "chat_stream",
           promptTokens: pt,
           completionTokens: ct,

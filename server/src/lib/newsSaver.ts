@@ -32,7 +32,7 @@ export async function saveNews(articles: NewsArticle[]): Promise<void> {
     try {
       const result = await sql`
         INSERT INTO news (title, summary, url, source, category, image, published_at, status)
-        VALUES (${a.title}, ${a.summary}, ${a.url}, ${a.source}, ${a.category}, ${a.image}, ${a.publishedAt}, 'draft')
+        VALUES (${a.title}, ${a.summary}, ${a.url}, ${a.source}, ${a.category}, ${a.image}, ${a.publishedAt}, 'published')
         ON CONFLICT (url) DO UPDATE
           SET category = CASE
             WHEN news.category IS NULL OR news.category = '' THEN EXCLUDED.category
@@ -41,7 +41,8 @@ export async function saveNews(articles: NewsArticle[]): Promise<void> {
           image = CASE
             WHEN news.image IS NULL OR news.image = '' THEN EXCLUDED.image
             ELSE news.image
-          END
+          END,
+          status = 'published'
         RETURNING (xmax = 0) AS inserted
       `;
 

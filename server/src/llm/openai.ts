@@ -3,6 +3,7 @@ import type { ChatMessage } from "../types/chat.js";
 import { logApiUsage } from "../lib/apiUsageLogger.js";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
 
 function openRouterHeaders() {
   return {
@@ -14,13 +15,14 @@ function openRouterHeaders() {
 }
 
 export async function generateStream(messages: ChatMessage[]) {
+  const model = DEFAULT_MODEL;
   const response = await fetchWithTimeout(
     OPENROUTER_URL,
     {
       method: "POST",
       headers: openRouterHeaders(),
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
+        model,
         stream: true,
         messages,
         max_tokens: 32768,
@@ -37,7 +39,7 @@ export async function generateStream(messages: ChatMessage[]) {
 
 export async function generateChatCompletion(
   messages: ChatMessage[],
-  model = "openai/gpt-4o-mini",
+  model = DEFAULT_MODEL,
   maxTokens = 1000,
   jsonMode = false
 ) {
@@ -90,7 +92,7 @@ export async function generateSearchQuery(
       method: "POST",
       headers: openRouterHeaders(),
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
+        model: DEFAULT_MODEL,
         messages: [
           {
             role: "system",
@@ -117,7 +119,7 @@ export async function generateSearchQuery(
     const data = await response.json();
     const usage = data.usage;
     logApiUsage({
-      model: "openai/gpt-4o-mini",
+      model: DEFAULT_MODEL,
       endpointType: "search_query",
       promptTokens: usage?.prompt_tokens,
       completionTokens: usage?.completion_tokens,
@@ -144,7 +146,7 @@ export async function generateMultiQuery(
         method: "POST",
         headers: openRouterHeaders(),
         body: JSON.stringify({
-          model: "openai/gpt-4o-mini",
+          model: DEFAULT_MODEL,
           messages: [
             {
               role: "system",
@@ -177,7 +179,7 @@ Example output: ["IITB campus recruitment statistics", "Indian Institute of Tech
     const data = await response.json();
     const usage = data.usage;
     logApiUsage({
-      model: "openai/gpt-4o-mini",
+      model: DEFAULT_MODEL,
       endpointType: "multi_query",
       promptTokens: usage?.prompt_tokens,
       completionTokens: usage?.completion_tokens,
@@ -228,7 +230,7 @@ export async function evaluateIntent(messages: ChatMessage[]): Promise<string> {
       method: "POST",
       headers: openRouterHeaders(),
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
+        model: DEFAULT_MODEL,
         messages: [
           {
             role: "system",
@@ -272,7 +274,7 @@ Reply EXACTLY with 'VALID' or 'OUT_OF_DOMAIN'.`,
     const data = await response.json();
     const usage = data.usage;
     logApiUsage({
-      model: "openai/gpt-4o-mini",
+      model: DEFAULT_MODEL,
       endpointType: "intent_evaluation",
       promptTokens: usage?.prompt_tokens,
       completionTokens: usage?.completion_tokens,
@@ -321,23 +323,24 @@ export async function generateOptimizedQueryAndIntent(
         method: "POST",
         headers: openRouterHeaders(),
         body: JSON.stringify({
-          model: "openai/gpt-4o-mini",
+          model: DEFAULT_MODEL,
           messages: [
             {
               role: "system",
               content: `You are a specialized query router for AcademiaAI — a College & University Intelligence Assistant. Analyze the user's request.
 
 RULES:
-1. 'intent': Set to 'VALID' if the query relates to ANY of these: colleges, universities, admissions, fees, courses, programs, placements, rankings, scholarships, campus life, hostels, clubs, fests, faculty, research, exams, results, alumni, comparisons, or any institutional topic. Set to 'OUT_OF_DOMAIN' ONLY for clearly non-educational queries (e.g., cooking, celebrity gossip, medical diagnoses, political news).
+1. 'intent': Set to 'VALID' if the query relates to ANY of these: colleges, universities, admissions, fees, courses, programs, placements, rankings, scholarships, campus life, hostels, clubs, fests, faculty, research, exams, results, alumni, comparisons, or any institutional topic. Set to 'OUT_OF_DOMAIN' for non-educational queries (e.g., cooking, recipes, tea, coffee, food, celebrity gossip, medical diagnoses, general entertainment).
 2. 'query': A clean, keyword-dense English search query optimized for vector database retrieval. Include institution names, course names, and specific terms. ${langRule}
 3. 'variants': Array of 2 alternative phrasings using synonyms and different keyword angles (e.g., "fees" → "tuition cost", "admission" → "enrollment process").
 4. Output ONLY a valid JSON object: {"intent": "VALID"|"OUT_OF_DOMAIN", "query": "string", "variants": ["str1", "str2"]}
-   - When in doubt, default to VALID. Academic topics are broad and include all aspects of student and institutional life.${contextRule}`,
+   - When in doubt about an academic topic, default to VALID.${contextRule}`,
             },
             ...messages.slice(-3).map(m => m === messages[messages.length-1] ? { ...m, content: sanitizedInput } : m),
           ],
-          max_tokens: 150,
+          max_tokens: 350,
           temperature: 0,
+          reasoning: { max_tokens: 0 },
           response_format: { type: "json_object" }
         }),
       }
@@ -348,7 +351,7 @@ RULES:
     const data = await response.json();
     const usage = data.usage;
     logApiUsage({
-      model: "openai/gpt-4o-mini",
+      model: DEFAULT_MODEL,
       endpointType: "query_router",
       promptTokens: usage?.prompt_tokens,
       completionTokens: usage?.completion_tokens,
@@ -357,13 +360,24 @@ RULES:
     });
     const result = JSON.parse(data.choices?.[0]?.message?.content || "{}");
     
+    // Strict intent resolution:
+    let resolvedIntent: "VALID" | "OUT_OF_DOMAIN" = "VALID";
+    if (result.intent === "OUT_OF_DOMAIN") {
+      resolvedIntent = "OUT_OF_DOMAIN";
+    } else if (result.intent === "VALID") {
+      resolvedIntent = "VALID";
+    } else {
+      // If LLM returned unparsed/empty intent, fallback to academic heuristic
+      resolvedIntent = isLikelyAcademic ? "VALID" : "OUT_OF_DOMAIN";
+    }
+
     return {
       query: result.query || sanitizedInput,
-      intent: isLikelyAcademic ? "VALID" : (result.intent === "OUT_OF_DOMAIN" ? "OUT_OF_DOMAIN" : "VALID"),
+      intent: resolvedIntent,
       variants: Array.isArray(result.variants) ? result.variants : []
     };
   } catch (error) {
     console.error("[LLM Router] Error:", error);
-    return { query: sanitizedInput, intent: "VALID", variants: [] };
+    return { query: sanitizedInput, intent: isLikelyAcademic ? "VALID" : "OUT_OF_DOMAIN", variants: [] };
   }
 }

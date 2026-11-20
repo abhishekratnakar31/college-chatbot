@@ -99,7 +99,7 @@ describe("getEmbeddings — success batch", () => {
 
     expect(fetch).toHaveBeenCalledOnce();
     const callArgs = JSON.parse((fetch as any).mock.calls[0][1].body);
-    expect(callArgs.model).toBe("text-embedding-004");
+    expect(callArgs.model).toBe("openai/text-embedding-3-small");
     expect(callArgs.input).toEqual(["hello world"]);
   });
 
